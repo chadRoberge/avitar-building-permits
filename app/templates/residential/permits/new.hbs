@@ -1,0 +1,356 @@
+{{page-title "Apply for Permit - Residential Portal"}}
+
+<div class="permit-application">
+  <div class="container">
+    <!-- Header -->
+    <div class="application-header mb-4">
+      <div class="row items-center">
+        <div class="col-md-8">
+          <h1 class="text-primary mb-2">Apply for Building Permit</h1>
+          <p class="text-muted">{{@model.municipality.name}} - {{@model.property.address.street}}</p>
+        </div>
+        <div class="col-md-4 text-right">
+          <button type="button" class="btn btn-outline-secondary" {{on "click" this.cancel}}>
+            Cancel Application
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-section mb-5">
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: {{this.progressPercentage}}%"></div>
+        </div>
+        <div class="progress-steps">
+          {{#each (make-array 1 2 3 4) as |step|}}
+            <div class="progress-step {{if (lte step this.currentStep) 'active' ''}} {{if (eq step this.currentStep) 'current' ''}}" {{on "click" (fn this.goToStep step)}}>
+              <div class="step-number">{{step}}</div>
+              <div class="step-label">
+                {{#if (eq step 1)}}Permit Type{{/if}}
+                {{#if (eq step 2)}}Project Details{{/if}}
+                {{#if (eq step 3)}}Contractor Info{{/if}}
+                {{#if (eq step 4)}}Review & Submit{{/if}}
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+    <!-- Application Form -->
+    <div class="application-form card shadow-lg">
+      <div class="card-body p-5">
+        
+        {{#if this.errorMessage}}
+          <div class="alert alert-danger mb-4">
+            {{this.errorMessage}}
+          </div>
+        {{/if}}
+
+        <!-- Step 1: Permit Type Selection -->
+        {{#if (eq this.currentStep 1)}}
+          <div class="form-step">
+            <div class="step-header mb-4">
+              <h3 class="text-primary">Select Permit Type</h3>
+              <p class="text-muted">Choose the type of permit you need for your project.</p>
+            </div>
+
+            {{#if @model.permitTypes.length}}
+              <div class="permit-types-grid">
+                {{#each @model.permitTypes as |permitType|}}
+                  <div class="permit-type-card card {{if (eq this.selectedPermitType permitType._id) 'selected' ''}}" {{on "click" (fn this.selectPermitType permitType._id)}}>
+                    <div class="card-body p-4">
+                      <div class="permit-type-header mb-3">
+                        <h4 class="permit-type-name">{{permitType.name}}</h4>
+                        <div class="permit-type-fee text-success font-weight-bold">
+                          {{format-currency permitType.fees.0.amount}}
+                        </div>
+                      </div>
+                      
+                      <p class="permit-type-description text-muted mb-3">{{permitType.description}}</p>
+                      
+                      {{#if permitType.requirements.length}}
+                        <div class="permit-requirements">
+                          <h6 class="text-muted mb-2">Requirements:</h6>
+                          <ul class="requirements-list">
+                            {{#each permitType.requirements as |requirement|}}
+                              <li class="requirement-item">{{requirement}}</li>
+                            {{/each}}
+                          </ul>
+                        </div>
+                      {{/if}}
+                    </div>
+                  </div>
+                {{/each}}
+              </div>
+            {{else}}
+              <div class="empty-state text-center p-5">
+                <div class="empty-icon mb-3">📋</div>
+                <h4 class="text-muted mb-2">No Permit Types Available</h4>
+                <p class="text-muted">Please contact the building department for assistance.</p>
+              </div>
+            {{/if}}
+          </div>
+        {{/if}}
+
+        <!-- Step 2: Project Details -->
+        {{#if (eq this.currentStep 2)}}
+          <div class="form-step">
+            <div class="step-header mb-4">
+              <h3 class="text-primary">Project Details</h3>
+              <p class="text-muted">Provide details about your construction project.</p>
+            </div>
+
+            <div class="row">
+              <div class="col-md-8">
+                <div class="form-group mb-4">
+                  <label for="project-description" class="form-label required">Project Description</label>
+                  <textarea
+                    id="project-description"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Describe your project in detail (minimum 10 characters)..."
+                    value={{this.projectDescription}}
+                    {{on "input" this.updateProjectDescription}}
+                  ></textarea>
+                  <small class="form-text text-muted">
+                    {{this.projectDescription.length}} characters (minimum 10 required)
+                  </small>
+                </div>
+
+                <div class="form-group mb-4">
+                  <label for="project-value" class="form-label required">Estimated Project Value</label>
+                  <div class="input-group">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text">$</span>
+                    </div>
+                    <input
+                      id="project-value"
+                      type="number"
+                      class="form-control"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      value={{this.projectValue}}
+                      {{on "input" this.updateProjectValue}}
+                    />
+                  </div>
+                  <small class="form-text text-muted">
+                    Include materials, labor, and equipment costs
+                  </small>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                {{#if this.selectedPermitTypeObject}}
+                  <div class="fee-summary card bg-light">
+                    <div class="card-body">
+                      <h5 class="card-title text-primary">Fee Summary</h5>
+                      <div class="fee-breakdown">
+                        <div class="fee-item d-flex justify-between">
+                          <span>Base Permit Fee:</span>
+                          <span>{{this.formattedBaseFee}}</span>
+                        </div>
+                        {{#if (gt (float this.projectValue) 50000)}}
+                          <div class="fee-item d-flex justify-between">
+                            <span>Project Value Fee (2.0%):</span>
+                            <span>{{this.formattedProjectValueFee}}</span>
+                          </div>
+                        {{/if}}
+                        <hr class="my-2">
+                        <div class="fee-total d-flex justify-between font-weight-bold text-primary">
+                          <span>Total Estimated Fee:</span>
+                          <span>{{this.formattedTotalFee}}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {{/if}}
+              </div>
+            </div>
+          </div>
+        {{/if}}
+
+        <!-- Step 3: Contractor Information -->
+        {{#if (eq this.currentStep 3)}}
+          <div class="form-step">
+            <div class="step-header mb-4">
+              <h3 class="text-primary">Contractor Information</h3>
+              <p class="text-muted">Provide information about the contractor performing the work.</p>
+            </div>
+
+            <div class="form-group mb-4">
+              <div class="form-check">
+                <input
+                  id="has-contractor"
+                  type="checkbox"
+                  class="form-check-input"
+                  checked={{this.contractorInfo.hasContractor}}
+                  {{on "change" this.toggleContractor}}
+                />
+                <label for="has-contractor" class="form-check-label">
+                  I am using a licensed contractor for this project
+                </label>
+              </div>
+            </div>
+
+            {{#if this.contractorInfo.hasContractor}}
+              <div class="contractor-notice bg-warning p-4 rounded">
+                <div class="d-flex">
+                  <div class="notice-icon mr-3">
+                    <span class="text-warning" style="font-size: 2rem;">⚠️</span>
+                  </div>
+                  <div class="notice-content">
+                    <h5 class="text-warning mb-2">Contractor Must Apply</h5>
+                    <p class="mb-3">
+                      Since you're using a licensed contractor, <strong>the contractor must submit the permit application</strong> on your behalf through the Commercial Portal.
+                    </p>
+                    <div class="notice-actions">
+                      <p class="mb-2"><strong>Next Steps:</strong></p>
+                      <ul class="mb-3">
+                        <li>Contact your contractor about applying for the permit</li>
+                        <li>Have them visit the Commercial Portal to submit the application</li>
+                        <li>Or uncheck the box above if you'll be doing the work yourself</li>
+                      </ul>
+                      <button type="button" class="btn btn-outline-warning" {{on "click" this.contactContractor}}>
+                        📞 Contact Information
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {{else}}
+              <div class="no-contractor-info bg-light p-4 rounded">
+                <h5 class="text-primary">Owner-Builder Project</h5>
+                <p class="text-muted mb-0">
+                  As the property owner, you will be responsible for all work performed. 
+                  Please ensure you are familiar with local building codes and requirements.
+                </p>
+              </div>
+            {{/if}}
+          </div>
+        {{/if}}
+
+        <!-- Step 4: Review & Submit -->
+        {{#if (eq this.currentStep 4)}}
+          <div class="form-step">
+            <div class="step-header mb-4">
+              <h3 class="text-primary">Review & Submit</h3>
+              <p class="text-muted">Review your application details and submit your permit request.</p>
+            </div>
+
+            <div class="row">
+              <div class="col-md-8">
+                <div class="form-group mb-4">
+                  <label for="start-date" class="form-label required">Proposed Start Date</label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    class="form-control"
+                    value={{this.workDetails.startDate}}
+                    {{on "input" (fn this.updateWorkField "startDate")}}
+                  />
+                </div>
+
+                <div class="form-group mb-4">
+                  <label for="duration" class="form-label">Estimated Duration</label>
+                  <select
+                    id="duration"
+                    class="form-control"
+                    value={{this.workDetails.estimatedDuration}}
+                    {{on "change" (fn this.updateWorkField "estimatedDuration")}}
+                  >
+                    <option value="">Select duration</option>
+                    <option value="1-7 days">1-7 days</option>
+                    <option value="1-2 weeks">1-2 weeks</option>
+                    <option value="2-4 weeks">2-4 weeks</option>
+                    <option value="1-3 months">1-3 months</option>
+                    <option value="3-6 months">3-6 months</option>
+                    <option value="6+ months">6+ months</option>
+                  </select>
+                </div>
+
+                <div class="form-group mb-4">
+                  <label for="additional-info" class="form-label">Additional Information</label>
+                  <textarea
+                    id="additional-info"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Any additional details or special considerations..."
+                    value={{this.additionalInfo}}
+                    {{on "input" this.updateAdditionalInfo}}
+                  ></textarea>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="application-summary card">
+                  <div class="card-header">
+                    <h5 class="card-title mb-0">Application Summary</h5>
+                  </div>
+                  <div class="card-body">
+                    {{#if this.selectedPermitTypeObject}}
+                      <div class="summary-item mb-3">
+                        <strong>Permit Type:</strong><br>
+                        <span class="text-muted">{{this.selectedPermitTypeObject.name}}</span>
+                      </div>
+                    {{/if}}
+                    
+                    <div class="summary-item mb-3">
+                      <strong>Project Value:</strong><br>
+                      <span class="text-muted">{{format-currency this.projectValue}}</span>
+                    </div>
+                    
+                    {{#if this.contractorInfo.hasContractor}}
+                      <div class="summary-item mb-3">
+                        <strong>Contractor:</strong><br>
+                        <span class="text-muted">{{this.contractorInfo.name}}</span>
+                      </div>
+                    {{/if}}
+                    
+                    <div class="summary-item mb-3">
+                      <strong>Total Fee:</strong><br>
+                      <span class="text-success font-weight-bold">{{format-currency this.totalFee}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {{/if}}
+
+        <!-- Navigation Buttons -->
+        <div class="form-navigation mt-5 pt-4 border-top">
+          <div class="d-flex justify-between">
+            <div>
+              {{#if (gt this.currentStep 1)}}
+                <button type="button" class="btn btn-outline-secondary" {{on "click" this.previousStep}}>
+                  ← Previous
+                </button>
+              {{/if}}
+            </div>
+            
+            <div>
+              {{#if (lt this.currentStep this.totalSteps)}}
+                <button type="button" class="btn btn-primary {{unless this.canProceedToNextStep 'disabled'}}" {{on "click" this.nextStep}} disabled={{not this.canProceedToNextStep}}>
+                  Next →
+                </button>
+              {{else}}
+                <button type="button" class="btn btn-success {{unless this.canProceedToNextStep 'disabled'}} {{if this.isSubmitting 'loading'}}" {{on "click" this.submitApplication}} disabled={{or (not this.canProceedToNextStep) this.isSubmitting}}>
+                  {{#if this.isSubmitting}}
+                    <span class="spinner-border spinner-border-sm mr-2" role="status"></span>
+                    Submitting...
+                  {{else}}
+                    Submit Application
+                  {{/if}}
+                </button>
+              {{/if}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

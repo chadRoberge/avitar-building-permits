@@ -1,0 +1,153 @@
+{{page-title "Building Permits Portal"}}
+
+<div class="home-container">
+  <header class="avitar-header">
+    <div class="container">
+      <div class="row items-center">
+        <div class="col-md-8">
+          <div class="header-brand d-flex items-center mb-3">
+            <div class="brand-icon">🏛️</div>
+            <div class="brand-content">
+              <h1 class="brand-title">Avitar Building Permits</h1>
+              <p class="brand-subtitle">Streamline your building permit process</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 text-right">
+          <div class="header-actions">
+            <button type="button" class="btn btn-outline-secondary btn-sm" {{on "click" this.showMunicipalityRegistration}}>
+              Register Municipality
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="row justify-center">
+        <div class="col-lg-8">
+          <div class="selection-card card shadow-lg">
+            <div class="card-body">
+              <div class="welcome-content text-center mb-4">
+                <h2 class="text-primary mb-2">Select Your Municipality</h2>
+                <p class="text-muted">Choose your municipality to access the building permits portal</p>
+              </div>
+
+              <div class="municipality-search">
+                <div class="search-form">
+                  <div class="form-group mb-3">
+                    <label for="municipality-search" class="form-label font-weight-medium">Search for your municipality</label>
+                    <input
+                      id="municipality-search"
+                      type="text"
+                      value={{this.searchTerm}}
+                      {{on "input" this.updateSearchTerm}}
+                      placeholder="Enter municipality name, city, or ZIP code"
+                      class="form-control search-input"
+                    />
+                  </div>
+          
+                  {{#if this.searchTerm}}
+                    <div class="search-results">
+                      {{#if this.isSearching}}
+                        <div class="loading-message text-center p-3">
+                          <div class="spinner-border text-primary mb-2" role="status"></div>
+                          <div>Searching municipalities...</div>
+                        </div>
+                      {{else if this.filteredMunicipalities}}
+                        <div class="results-list">
+                          {{#each this.filteredMunicipalities as |municipality|}}
+                            <div class="municipality-item card mb-2" {{on "click" (fn this.selectMunicipality municipality)}}>
+                              <div class="card-body p-3">
+                                <div class="municipality-name font-weight-semibold text-primary">{{municipality.name}}</div>
+                                <div class="municipality-location text-muted small">{{municipality.city}}, {{municipality.state}} {{municipality.zip}}</div>
+                              </div>
+                            </div>
+                          {{/each}}
+                        </div>
+                      {{else}}
+                        <div class="no-results text-center p-3">
+                          <p class="text-muted">No municipalities found.</p>
+                          <button type="button" class="btn btn-outline-primary btn-sm" {{on "click" this.showAddMunicipality}}>
+                            Add your municipality
+                          </button>
+                        </div>
+                      {{/if}}
+                    </div>
+                  {{/if}}
+                </div>
+
+                {{#if this.showAddForm}}
+                  <div class="add-municipality-form card bg-light mt-3">
+                    <div class="card-body text-center">
+                      <h4 class="text-primary mb-2">Add Your Municipality</h4>
+                      <p class="text-muted mb-3">Don't see your municipality? Add it to get started.</p>
+                      <button type="button" class="btn btn-primary" {{on "click" this.showMunicipalityRegistration}}>
+                        Register New Municipality
+                      </button>
+                    </div>
+                  </div>
+                {{/if}}
+              </div>
+
+              {{#if this.isLoading}}
+                <div class="loading-municipalities text-center p-5">
+                  <div class="spinner-border text-primary mb-3" role="status"></div>
+                  <h4 class="text-primary mb-2">Loading Available Municipalities...</h4>
+                  <p class="text-muted">Fetching the latest list of participating municipalities.</p>
+                </div>
+              {{else if this.errorMessage}}
+                <div class="error-municipalities text-center p-5">
+                  <div class="mb-3">⚠️</div>
+                  <h4 class="text-danger mb-2">Unable to Load Municipalities</h4>
+                  <p class="text-muted mb-4">{{this.errorMessage}}</p>
+                  <div class="error-actions d-flex justify-center gap-2">
+                    <button type="button" class="btn btn-outline-primary" {{on "click" this.loadMunicipalities}}>
+                      Try Again
+                    </button>
+                    <button type="button" class="btn btn-primary" {{on "click" this.showMunicipalityRegistration}}>
+                      Register New Municipality
+                    </button>
+                  </div>
+                </div>
+              {{else}}
+                <div class="popular-municipalities">
+                  <h4 class="text-center text-primary mb-4">Popular Municipalities</h4>
+                  {{#if this.popularMunicipalities.length}}
+                    <div class="row">
+                      {{#each this.popularMunicipalities as |municipality|}}
+                        <div class="col-sm-6 col-lg-4 mb-3">
+                          <div class="municipality-card card h-100" {{on "click" (fn this.selectMunicipality municipality)}}>
+                            <div class="card-body text-center">
+                              <div class="municipality-icon mb-2">🏛️</div>
+                              <h5 class="municipality-name text-primary mb-1">{{municipality.name}}</h5>
+                              <p class="municipality-location text-muted small mb-1">{{municipality.city}}, {{municipality.state}}</p>
+                              {{#if municipality.population}}
+                                <div class="municipality-population text-muted small">Population: {{municipality.population}}</div>
+                              {{/if}}
+                            </div>
+                          </div>
+                        </div>
+                      {{/each}}
+                    </div>
+                  {{else}}
+                    <div class="no-municipalities text-center p-5">
+                      <div class="empty-icon mb-3">🏛️</div>
+                      <h4 class="text-muted mb-2">No Municipalities Yet</h4>
+                      <p class="text-muted mb-4">Be the first to register your municipality and start managing building permits online.</p>
+                      <button type="button" class="btn btn-primary" {{on "click" this.showMunicipalityRegistration}}>
+                        Register First Municipality
+                      </button>
+                    </div>
+                  {{/if}}
+                </div>
+              {{/if}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

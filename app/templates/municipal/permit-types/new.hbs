@@ -1,0 +1,295 @@
+{{page-title "Add New Permit Type - Municipal Portal"}}
+
+<div class="permit-type-form-container">
+  <header class="form-header">
+    <div class="header-content">
+      <h1>Add New Permit Type</h1>
+      <p>Configure a new permit category and customize application questions</p>
+    </div>
+    <div class="header-actions">
+      <LinkTo @route="municipal.permit-types.index" class="btn btn-secondary">
+        <span class="btn-icon">←</span>
+        Back to Permit Types
+      </LinkTo>
+    </div>
+  </header>
+
+  <form class="permit-type-form" {{on "submit" this.createPermitType}}>
+    {{! Step 1: Select Permit Category }}
+    <div class="form-section">
+      <div class="section-header">
+        <h2>1. Select Permit Category</h2>
+        <p>Choose a predefined category or create a custom one</p>
+      </div>
+
+      <div class="permit-categories">
+        {{#each this.predefinedCategories as |category|}}
+          <div class="category-card {{if (eq this.selectedCategory.id category.id) 'selected'}}" {{on "click" (fn this.selectCategory category)}}>
+            <div class="category-icon">{{category.icon}}</div>
+            <div class="category-content">
+              <h3 class="category-name">{{category.name}}</h3>
+              <p class="category-description">{{category.description}}</p>
+              <div class="category-examples">
+                <span class="examples-label">Examples:</span>
+                {{#each category.examples as |example|}}
+                  <span class="example-tag">{{example}}</span>
+                {{/each}}
+              </div>
+            </div>
+            {{#if (eq this.selectedCategory.id category.id)}}
+              <div class="selection-indicator">✓</div>
+            {{/if}}
+          </div>
+        {{/each}}
+
+        {{! Custom Category Option }}
+        <div class="category-card custom {{if this.isCustomCategory 'selected'}}" {{on "click" this.selectCustomCategory}}>
+          <div class="category-icon">🛠️</div>
+          <div class="category-content">
+            <h3 class="category-name">Custom Permit Type</h3>
+            <p class="category-description">Create a unique permit category for specialized requirements</p>
+          </div>
+          {{#if this.isCustomCategory}}
+            <div class="selection-indicator">✓</div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{#if this.isCustomCategory}}
+        <div class="custom-category-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="custom-name">Custom Category Name</label>
+              <Input @id="custom-name" @value={{this.customCategoryName}} placeholder="Enter permit type name" required />
+            </div>
+            <div class="form-group">
+              <label for="custom-description">Description</label>
+              <Textarea @id="custom-description" @value={{this.customCategoryDescription}} placeholder="Describe what this permit type covers" rows="3" />
+            </div>
+          </div>
+        </div>
+      {{/if}}
+    </div>
+
+    {{! Step 2: Configure Basic Settings }}
+    {{#if this.selectedCategory}}
+      <div class="form-section">
+        <div class="section-header">
+          <h2>2. Basic Configuration</h2>
+          <p>Set up permit details and fees</p>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="permit-name">Permit Name</label>
+            <Input @id="permit-name" @value={{this.permitName}} placeholder="{{this.selectedCategory.name}}" required />
+            <small class="form-help">This will be displayed to applicants</small>
+          </div>
+
+          <div class="form-group">
+            <label for="permit-code">Permit Code</label>
+            <Input @id="permit-code" @value={{this.permitCode}} placeholder="{{this.suggestedCode}}" required />
+            <small class="form-help">Short code for internal reference (e.g., BP, ZP, EP)</small>
+          </div>
+
+          <div class="form-group">
+            <label for="base-fee">Base Fee ($)</label>
+            <Input @id="base-fee" @type="number" @value={{this.baseFee}} placeholder="0.00" step="0.01" min="0" />
+            <small class="form-help">Standard application fee</small>
+          </div>
+
+          <div class="form-group">
+            <label for="processing-time">Processing Time (days)</label>
+            <Input @id="processing-time" @type="number" @value={{this.processingTime}} placeholder="14" min="1" />
+            <small class="form-help">Typical time to process applications</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="permit-description">Detailed Description</label>
+          <Textarea @id="permit-description" @value={{this.permitDescription}} placeholder="Provide detailed information about when this permit is required..." rows="4" />
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <Input @type="checkbox" @checked={{this.requiresInspection}} />
+            <span class="checkbox-text">Requires Inspection</span>
+          </label>
+          <small class="form-help">Check if this permit type requires on-site inspections</small>
+        </div>
+      </div>
+
+      {{! Step 3: Application Questions }}
+      <div class="form-section">
+        <div class="section-header">
+          <h2>3. Application Questions</h2>
+          <p>Customize the information you collect from applicants</p>
+        </div>
+
+        <div class="questions-section">
+          <div class="questions-header">
+            <div class="questions-tabs">
+              <button type="button" class="tab-btn {{if (eq this.activeQuestionTab 'default') 'active'}}" {{on "click" (fn this.setQuestionTab 'default')}}>
+                Default Questions
+              </button>
+              <button type="button" class="tab-btn {{if (eq this.activeQuestionTab 'custom') 'active'}}" {{on "click" (fn this.setQuestionTab 'custom')}}>
+                Custom Questions
+              </button>
+            </div>
+            {{#if (eq this.activeQuestionTab 'custom')}}
+              <button type="button" class="btn btn-outline" {{on "click" this.addCustomQuestion}}>
+                <span class="btn-icon">➕</span>
+                Add Question
+              </button>
+            {{/if}}
+          </div>
+
+          {{#if (eq this.activeQuestionTab 'default')}}
+            <div class="default-questions">
+              <p class="section-note">These are standard questions for {{this.selectedCategory.name}} permits. You can remove any that don't apply.</p>
+              
+              {{#each this.defaultQuestions as |question|}}
+                <div class="question-item {{if question.isRequired 'required'}}">
+                  <div class="question-header">
+                    <div class="question-info">
+                      <span class="question-type-badge">{{question.type}}</span>
+                      <span class="question-label">{{question.label}}</span>
+                      {{#if question.isRequired}}
+                        <span class="required-badge">Required</span>
+                      {{/if}}
+                    </div>
+                    <div class="question-actions">
+                      <button type="button" class="btn-icon" {{on "click" (fn this.toggleDefaultQuestion question)}} title="{{if question.isIncluded 'Remove' 'Include'}} question">
+                        {{#if question.isIncluded}}
+                          <span class="remove-icon">✓</span>
+                        {{else}}
+                          <span class="add-icon">+</span>
+                        {{/if}}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {{#if question.description}}
+                    <p class="question-description">{{question.description}}</p>
+                  {{/if}}
+                  
+                  {{#if question.options}}
+                    <div class="question-options">
+                      <span class="options-label">Options:</span>
+                      {{#each question.options as |option|}}
+                        <span class="option-tag">{{option}}</span>
+                      {{/each}}
+                    </div>
+                  {{/if}}
+                </div>
+              {{/each}}
+            </div>
+          {{/if}}
+
+          {{#if (eq this.activeQuestionTab 'custom')}}
+            <div class="custom-questions">
+              {{#if this.customQuestions.length}}
+                {{#each this.customQuestions as |question index|}}
+                  <div class="custom-question-form">
+                    <div class="question-form-header">
+                      <h4>Question {{add index 1}}</h4>
+                      <button type="button" class="btn-icon danger" {{on "click" (fn this.removeCustomQuestion index)}} title="Remove question">
+                        <span class="remove-icon">🗑️</span>
+                      </button>
+                    </div>
+
+                    <div class="form-grid">
+                      <div class="form-group">
+                        <label>Question Type</label>
+                        <select class="form-select" value={{question.type}} {{on "change" (fn this.updateQuestionType index)}}>
+                          <option value="text">Short Text</option>
+                          <option value="textarea">Long Text</option>
+                          <option value="number">Number</option>
+                          <option value="select">Dropdown</option>
+                          <option value="radio">Multiple Choice</option>
+                          <option value="checkbox">Checkboxes</option>
+                          <option value="date">Date</option>
+                          <option value="file">File Upload</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label>Question Label</label>
+                        <Input @value={{question.label}} placeholder="Enter your question" {{on "input" (fn this.updateQuestionLabel index)}} />
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Description (optional)</label>
+                      <Textarea @value={{question.description}} placeholder="Provide additional context or instructions" rows="2" {{on "input" (fn this.updateQuestionDescription index)}} />
+                    </div>
+
+                    {{#if (includes question.type (array "select" "radio" "checkbox"))}}
+                      <div class="form-group">
+                        <label>Options</label>
+                        <div class="options-builder">
+                          {{#each question.options as |option optionIndex|}}
+                            <div class="option-item">
+                              <Input @value={{option}} placeholder="Option {{add optionIndex 1}}" {{on "input" (fn this.updateQuestionOption index optionIndex)}} />
+                              <button type="button" class="btn-icon" {{on "click" (fn this.removeQuestionOption index optionIndex)}} title="Remove option">
+                                <span class="remove-icon">×</span>
+                              </button>
+                            </div>
+                          {{/each}}
+                          <button type="button" class="btn btn-outline btn-sm" {{on "click" (fn this.addQuestionOption index)}}>
+                            <span class="btn-icon">+</span>
+                            Add Option
+                          </button>
+                        </div>
+                      </div>
+                    {{/if}}
+
+                    <div class="question-settings">
+                      <label class="checkbox-label">
+                        <Input @type="checkbox" @checked={{question.isRequired}} {{on "change" (fn this.toggleQuestionRequired index)}} />
+                        <span class="checkbox-text">Required Question</span>
+                      </label>
+                    </div>
+                  </div>
+                {{/each}}
+              {{else}}
+                <div class="empty-questions">
+                  <div class="empty-icon">❓</div>
+                  <h3>No Custom Questions</h3>
+                  <p>Add custom questions to collect specific information for this permit type.</p>
+                  <button type="button" class="btn btn-primary" {{on "click" this.addCustomQuestion}}>
+                    <span class="btn-icon">➕</span>
+                    Add Your First Question
+                  </button>
+                </div>
+              {{/if}}
+            </div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{! Form Actions }}
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" {{on "click" this.cancelForm}}>
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" disabled={{this.isSubmitting}}>
+          {{#if this.isSubmitting}}
+            <span class="btn-spinner"></span>
+            Creating...
+          {{else}}
+            <span class="btn-icon">💾</span>
+            Create Permit Type
+          {{/if}}
+        </button>
+      </div>
+    {{/if}}
+  </form>
+
+  {{#if this.errorMessage}}
+    <div class="error-alert">
+      <span class="error-icon">⚠️</span>
+      <span class="error-text">{{this.errorMessage}}</span>
+    </div>
+  {{/if}}
+</div>

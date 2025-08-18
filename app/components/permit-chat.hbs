@@ -1,0 +1,109 @@
+<div class="permit-chat">
+  <!-- Chat Header -->
+  <div class="chat-header" {{on "click" this.toggleExpanded}}>
+    <div class="chat-title">
+      <span class="chat-icon">💬</span>
+      <span class="chat-label">Messages & Communications</span>
+      {{#if this.hasMessages}}
+        <span class="message-count">({{this.messageCountText}})</span>
+      {{/if}}
+      {{#if (and (not this.isExpanded) (gt this.unreadCount 0))}}
+        <span class="unread-badge">{{this.unreadCount}}</span>
+      {{/if}}
+    </div>
+    <button type="button" class="toggle-btn">
+      {{#if this.isExpanded}}
+        ▼ Hide
+      {{else}}
+        ▶ Show
+      {{/if}}
+    </button>
+  </div>
+
+  {{#if this.isExpanded}}
+    <div class="chat-content">
+      <!-- Messages Container -->
+      <div class="messages-container">
+        {{#if this.isLoading}}
+          <div class="loading-messages">
+            <div class="loading-spinner"></div>
+            <p>Loading messages...</p>
+          </div>
+        {{else if this.hasMessages}}
+          {{#each this.messages as |message|}}
+            <div class="message other-message {{message.sender.type}}">
+              <div class="message-header">
+                <div class="sender-info">
+                  <span class="sender-name">{{message.sender.name}}</span>
+                  {{#if message.sender.department}}
+                    <span class="sender-department">{{message.sender.department}}</span>
+                  {{else}}
+                    <span class="sender-type">{{capitalize message.sender.type}}</span>
+                  {{/if}}
+                </div>
+                <div class="message-time">
+                  {{format-date message.createdAt}}
+                </div>
+              </div>
+              <div class="message-content">
+                <div class="message-text">{{message.message}}</div>
+                <div class="message-timestamp">
+                  {{format-datetime message.createdAt}}
+                </div>
+                {{#if message.isInternal}}
+                  <span class="internal-badge">Internal</span>
+                {{/if}}
+              </div>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="no-messages">
+            <div class="no-messages-icon">💬</div>
+            <h4>No messages yet</h4>
+            <p>Start a conversation with the review team about this permit.</p>
+          </div>
+        {{/if}}
+      </div>
+
+      <!-- Message Input -->
+      <div class="message-input-container">
+        {{#if this.errorMessage}}
+          <div class="error-message">
+            {{this.errorMessage}}
+          </div>
+        {{/if}}
+        
+        <div class="input-group">
+          <textarea
+            class="message-input"
+            placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+            rows="3"
+            maxlength="2000"
+            value={{this.newMessage}}
+            {{on "input" this.updateMessage}}
+            {{on "keydown" this.handleKeyDown}}
+            disabled={{this.isSending}}
+          ></textarea>
+          
+          <button
+            type="button"
+            class="send-btn {{if this.canSendMessage 'enabled' 'disabled'}}"
+            {{on "click" this.sendMessage}}
+            disabled={{not this.canSendMessage}}
+          >
+            {{#if this.isSending}}
+              <div class="btn-spinner"></div>
+            {{else}}
+              Send
+            {{/if}}
+          </button>
+        </div>
+        
+        <div class="input-help">
+          <span class="char-count">{{sub 2000 this.newMessage.length}} characters remaining</span>
+          <span class="input-tip">You can ask questions, provide updates, or request information from the review team.</span>
+        </div>
+      </div>
+    </div>
+  {{/if}}
+</div>

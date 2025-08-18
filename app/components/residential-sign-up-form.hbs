@@ -1,0 +1,213 @@
+<form class="auth-form residential-signup-form" {{on "submit" this.handleSubmit}}>
+  <h2>Create Residential Account</h2>
+  <p class="form-subtitle">For homeowners and residential property owners in {{@municipality.name}}</p>
+  
+  {{#if this.errorMessage}}
+    <div class="error-message">{{this.errorMessage}}</div>
+  {{/if}}
+
+  <div class="form-section">
+    <h3>Personal Information</h3>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label for="residential-firstname">First Name *</label>
+        <input
+          id="residential-firstname"
+          type="text"
+          value={{this.firstName}}
+          {{on "input" (fn this.updateField "firstName")}}
+          placeholder="Enter your first name"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="residential-lastname">Last Name *</label>
+        <input
+          id="residential-lastname"
+          type="text"
+          value={{this.lastName}}
+          {{on "input" (fn this.updateField "lastName")}}
+          placeholder="Enter your last name"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="residential-email">Email Address *</label>
+      <input
+        id="residential-email"
+        type="email"
+        value={{this.email}}
+        {{on "input" (fn this.updateField "email")}}
+        placeholder="Enter your email"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="residential-phone">Phone Number</label>
+      <input
+        id="residential-phone"
+        type="tel"
+        value={{this.phone}}
+        {{on "input" (fn this.updateField "phone")}}
+        placeholder="(603) 555-0123"
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="residential-password">Password *</label>
+        <input
+          id="residential-password"
+          type="password"
+          value={{this.password}}
+          {{on "input" (fn this.updateField "password")}}
+          placeholder="Enter password (min 6 characters)"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="residential-confirm-password">Confirm Password *</label>
+        <input
+          id="residential-confirm-password"
+          type="password"
+          value={{this.confirmPassword}}
+          {{on "input" (fn this.updateField "confirmPassword")}}
+          placeholder="Confirm your password"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Property Information</h3>
+    
+    <div class="form-group">
+      <label for="property-street">Property Address *</label>
+      <input
+        id="property-street"
+        type="text"
+        value={{this.propertyStreet}}
+        {{on "input" (fn this.updateField "propertyStreet")}}
+        placeholder="Street address of the property"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="property-city">City *</label>
+        <input
+          id="property-city"
+          type="text"
+          value={{this.propertyCity}}
+          readonly
+          required
+          class="readonly-field"
+        />
+        <small class="form-help">Property must be located in {{@municipality.city}}</small>
+      </div>
+
+      <div class="form-group">
+        <label for="property-state">State</label>
+        <input
+          id="property-state"
+          type="text"
+          value={{this.propertyState}}
+          readonly
+          disabled
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="property-zip">ZIP Code *</label>
+        <input
+          id="property-zip"
+          type="text"
+          value={{this.propertyZip}}
+          {{on "input" (fn this.updateField "propertyZip")}}
+          placeholder="ZIP Code"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="property-type">Property Type *</label>
+      <select
+        id="property-type"
+        value={{this.propertyType}}
+        {{on "change" (fn this.updateField "propertyType")}}
+        required
+        disabled={{this.isLoading}}
+      >
+        <option value="">Select Property Type</option>
+        <option value="single-family">Single Family Home</option>
+        <option value="duplex">Duplex</option>
+        <option value="townhouse">Townhouse</option>
+        <option value="condominium">Condominium</option>
+        <option value="mobile-home">Mobile Home</option>
+        <option value="multi-family">Multi-Family (3+ units)</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Property Ownership *</label>
+      <div class="radio-group">
+        <label class="radio-label">
+          <input
+            type="radio"
+            name="ownership"
+            value="true"
+            checked={{this.isOwner}}
+            {{on "change" this.updateOwnerStatus}}
+            disabled={{this.isLoading}}
+          />
+          I own this property
+        </label>
+        <label class="radio-label">
+          <input
+            type="radio"
+            name="ownership"
+            value="false"
+            checked={{not this.isOwner}}
+            {{on "change" this.updateOwnerStatus}}
+            disabled={{this.isLoading}}
+          />
+          I am an authorized agent/contractor
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <button 
+    type="submit" 
+    class="submit-btn"
+    disabled={{this.isLoading}}
+  >
+    {{#if this.isLoading}}
+      Creating Residential Account...
+    {{else}}
+      Create Residential Account
+    {{/if}}
+  </button>
+
+  <div class="form-footer">
+    <p><small>* Required fields</small></p>
+  </div>
+</form>

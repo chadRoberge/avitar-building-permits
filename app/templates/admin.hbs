@@ -1,0 +1,180 @@
+{{page-title "Municipal Staff Portal - Sign In"}}
+
+<div class="admin-signin-container">
+  <header class="admin-signin-header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo-icon">🏛️</div>
+        <div class="logo-text">
+          <h1>Municipal Staff Portal</h1>
+          <p>Building Permits Administration</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-signin-main">
+    <div class="signin-card">
+      <div class="signin-header">
+        <h2>Welcome Back</h2>
+        <p>Sign in to your municipal staff account</p>
+      </div>
+
+      <form class="admin-signin-form" {{on "submit" this.handleSignIn}}>
+        {{#if this.errorMessage}}
+          <div class="error-message">
+            {{this.errorMessage}}
+          </div>
+        {{/if}}
+
+        {{#if this.successMessage}}
+          <div class="success-message">
+            {{this.successMessage}}
+          </div>
+        {{/if}}
+
+        <div class="form-group">
+          <label for="admin-email">Work Email Address</label>
+          <input
+            id="admin-email"
+            type="email"
+            value={{this.email}}
+            {{on "input" this.updateEmail}}
+            placeholder="your.name@municipality.gov"
+            required
+            disabled={{this.isLoading}}
+            autocomplete="username"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="admin-password">Password</label>
+          <input
+            id="admin-password"
+            type="password"
+            value={{this.password}}
+            {{on "input" this.updatePassword}}
+            placeholder="Enter your password"
+            required
+            disabled={{this.isLoading}}
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="form-options">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              checked={{this.rememberMe}}
+              {{on "change" this.toggleRememberMe}}
+              disabled={{this.isLoading}}
+            />
+            Remember me for 30 days
+          </label>
+        </div>
+
+        <button 
+          type="submit" 
+          class="signin-btn"
+          disabled={{this.isLoading}}
+        >
+          {{#if this.isLoading}}
+            <span class="loading-spinner small"></span>
+            Signing In...
+          {{else}}
+            Sign In to Portal
+          {{/if}}
+        </button>
+
+        <div class="form-footer">
+          <button 
+            type="button" 
+            class="forgot-password-link"
+            {{on "click" this.showForgotPassword}}
+            disabled={{this.isLoading}}
+          >
+            Forgot your password?
+          </button>
+        </div>
+      </form>
+
+      {{#if this.showForgotPasswordForm}}
+        <div class="forgot-password-section">
+          <h3>Reset Password</h3>
+          <p>Enter your work email address and we'll send you a reset link.</p>
+          
+          <form {{on "submit" this.handleForgotPassword}}>
+            <div class="form-group">
+              <label for="reset-email">Work Email Address</label>
+              <input
+                id="reset-email"
+                type="email"
+                value={{this.resetEmail}}
+                {{on "input" this.updateResetEmail}}
+                placeholder="your.name@municipality.gov"
+                required
+                disabled={{this.isResetting}}
+              />
+            </div>
+
+            <div class="reset-actions">
+              <button 
+                type="button" 
+                class="btn btn-secondary"
+                {{on "click" this.hideForgotPassword}}
+                disabled={{this.isResetting}}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                class="btn btn-primary"
+                disabled={{this.isResetting}}
+              >
+                {{#if this.isResetting}}
+                  Sending...
+                {{else}}
+                  Send Reset Link
+                {{/if}}
+              </button>
+            </div>
+          </form>
+        </div>
+      {{/if}}
+
+      <div class="signin-help">
+        <div class="help-section">
+          <h4>Need Help?</h4>
+          <ul>
+            <li>Contact your IT administrator for account issues</li>
+            <li>New staff members: Ask your supervisor to create your account</li>
+            <li>For technical support: <a href="mailto:support@buildingpermits.com">support@buildingpermits.com</a></li>
+          </ul>
+        </div>
+
+        <div class="security-notice">
+          <h4>🔒 Security Notice</h4>
+          <p>This portal is for authorized municipal staff only. Unauthorized access is prohibited and monitored.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="public-portal-link">
+      <p>Looking for the public permits portal?</p>
+      <LinkTo @route="home" class="public-link">
+        Go to Public Portal →
+      </LinkTo>
+    </div>
+  </main>
+
+  <footer class="admin-signin-footer">
+    <div class="footer-content">
+      <p>&copy; {{this.currentYear}} Building Permits Portal. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="/support">Support</a>
+      </div>
+    </div>
+  </footer>
+</div>

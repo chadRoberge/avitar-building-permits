@@ -1,0 +1,110 @@
+{{! Mobile Header }}
+<div class="mobile-header {{if this.isMobileMenuOpen 'menu-open'}}">
+  <div class="mobile-header-content">
+    <div class="mobile-logo">
+      <span class="mobile-logo-icon">🏛️</span>
+      <span class="mobile-logo-text">{{@municipality.name}}</span>
+    </div>
+    <button 
+      type="button" 
+      class="mobile-menu-toggle {{if this.isMobileMenuOpen 'active'}}"
+      {{on "click" this.toggleSidebar}}
+      aria-label="Toggle navigation menu"
+    >
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </button>
+  </div>
+</div>
+
+{{! Mobile Menu Overlay }}
+{{#if this.isMobileMenuOpen}}
+  <div class="mobile-menu-overlay" {{on "click" this.closeMobileMenu}}></div>
+{{/if}}
+
+{{! Sidebar Navigation }}
+<nav class="municipal-sidebar {{if this.isCollapsed 'collapsed'}} {{if this.isMobileMenuOpen 'mobile-open'}}">
+  {{! Header Section }}
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-icon">🏛️</span>
+      {{#unless this.isCollapsed}}
+        <div class="sidebar-logo-content">
+          <h1 class="sidebar-title">{{@municipality.name}}</h1>
+          <p class="sidebar-subtitle">Building Department</p>
+        </div>
+      {{/unless}}
+    </div>
+    
+    {{! Desktop Toggle Button }}
+    <button 
+      type="button" 
+      class="sidebar-toggle desktop-only {{if this.isCollapsed 'collapsed'}}"
+      {{on "click" this.toggleSidebar}}
+      aria-label="{{if this.isCollapsed 'Expand' 'Collapse'}} sidebar"
+    >
+      <span class="toggle-icon">{{if this.isCollapsed '▶' '◀'}}</span>
+    </button>
+  </div>
+
+  {{! Navigation Menu }}
+  <div class="sidebar-menu">
+    <ul class="nav-list">
+      {{#each this.navigationItems as |item|}}
+        <li class="nav-item">
+          <LinkTo 
+            @route={{item.route}} 
+            class="nav-link {{if (eq this.router.currentRouteName item.route) 'active'}}"
+            {{on "click" this.closeMobileMenu}}
+          >
+            <span class="nav-icon">{{item.icon}}</span>
+            {{#unless this.isCollapsed}}
+              <div class="nav-content">
+                <span class="nav-label">{{item.label}}</span>
+                <span class="nav-description">{{item.description}}</span>
+              </div>
+            {{/unless}}
+            {{#if this.isCollapsed}}
+              <div class="nav-tooltip">
+                <span class="tooltip-text">{{item.label}}</span>
+              </div>
+            {{/if}}
+          </LinkTo>
+        </li>
+      {{/each}}
+    </ul>
+  </div>
+
+  {{! User Section }}
+  <div class="sidebar-footer">
+    <div class="user-section">
+      <div class="user-avatar">
+        <span class="avatar-icon">👤</span>
+      </div>
+      {{#unless this.isCollapsed}}
+        <div class="user-info">
+          <span class="user-name">{{@user.firstName}} {{@user.lastName}}</span>
+          <span class="user-role">{{@user.role}} User</span>
+        </div>
+      {{/unless}}
+    </div>
+    
+    <div class="user-actions">
+      <button 
+        type="button" 
+        class="logout-btn {{if this.isCollapsed 'collapsed'}}"
+        {{on "click" this.logout}}
+        title="Sign Out"
+      >
+        <span class="logout-icon">🚪</span>
+        {{#unless this.isCollapsed}}
+          <span class="logout-text">Sign Out</span>
+        {{/unless}}
+      </button>
+    </div>
+  </div>
+</nav>
+
+{{! Main Content Spacer }}
+<div class="sidebar-spacer {{if this.isCollapsed 'collapsed'}}"></div>

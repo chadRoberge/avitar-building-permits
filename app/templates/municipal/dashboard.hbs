@@ -1,0 +1,198 @@
+{{page-title "Dashboard - Municipal Portal"}}
+
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h1>Dashboard</h1>
+    <p>{{this.currentYear}} Municipal Building Permits Overview</p>
+  </header>
+
+  {{#if this.isLoading}}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading dashboard data...</p>
+    </div>
+  {{else}}
+    <!-- Key Metrics Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card permits-card">
+        <div class="metric-icon">📋</div>
+        <div class="metric-content">
+          <h3>Permits This Year</h3>
+          <div class="metric-value">{{this.dashboardData.totalPermits}}</div>
+          <div class="metric-change positive">
+            +{{this.dashboardData.permitGrowth}}% from last year
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card inspections-card">
+        <div class="metric-icon">🔍</div>
+        <div class="metric-content">
+          <h3>Pending Inspections</h3>
+          <div class="metric-value">{{this.dashboardData.pendingInspections}}</div>
+          <div class="metric-subtitle">
+            {{this.dashboardData.overdueInspections}} overdue
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card approvals-card">
+        <div class="metric-icon">✅</div>
+        <div class="metric-content">
+          <h3>Awaiting Approval</h3>
+          <div class="metric-value">{{this.dashboardData.pendingApprovals}}</div>
+          <div class="metric-subtitle">
+            Avg. {{this.dashboardData.avgApprovalTime}} days to approve
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card revenue-card">
+        <div class="metric-icon">💰</div>
+        <div class="metric-content">
+          <h3>Permit Revenue</h3>
+          <div class="metric-value">${{this.formatCurrency this.dashboardData.permitRevenue}}</div>
+          <div class="metric-change positive">
+            +{{this.dashboardData.revenueGrowth}}% from last year
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card economic-card">
+        <div class="metric-icon">🏗️</div>
+        <div class="metric-content">
+          <h3>Total Project Value</h3>
+          <div class="metric-value">${{this.formatCurrency this.dashboardData.totalProjectValue}}</div>
+          <div class="metric-subtitle">
+            Economic impact in municipality
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card completion-card">
+        <div class="metric-icon">📈</div>
+        <div class="metric-content">
+          <h3>Completion Rate</h3>
+          <div class="metric-value">{{this.dashboardData.completionRate}}%</div>
+          <div class="metric-subtitle">
+            Permits completed on time
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts and Detailed Views -->
+    <div class="dashboard-grid">
+      <!-- Recent Activity -->
+      <div class="dashboard-section recent-activity">
+        <h2>Recent Permit Activity</h2>
+        <div class="activity-list">
+          {{#each this.dashboardData.recentActivity as |activity|}}
+            <div class="activity-item">
+              <div class="activity-icon {{activity.type}}">
+                {{#if (eq activity.type "submitted")}}📝{{/if}}
+                {{#if (eq activity.type "approved")}}✅{{/if}}
+                {{#if (eq activity.type "inspection")}}🔍{{/if}}
+                {{#if (eq activity.type "completed")}}🎉{{/if}}
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">{{activity.title}}</div>
+                <div class="activity-details">
+                  {{activity.permitType}} - {{activity.applicant}}
+                </div>
+                <div class="activity-time">{{activity.timeAgo}}</div>
+              </div>
+              <LinkTo @route="municipal.permits.view" @model={{activity.permitId}} class="activity-link">
+                View →
+              </LinkTo>
+            </div>
+          {{/each}}
+        </div>
+        <LinkTo @route="municipal.permits" class="view-all-link">
+          View All Permits →
+        </LinkTo>
+      </div>
+
+      <!-- Permit Status Breakdown -->
+      <div class="dashboard-section permit-status">
+        <h2>Permit Status Overview</h2>
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="status-label">Submitted</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.submitted}}</div>
+            <div class="status-bar">
+              <div class="status-fill submitted" style="width: {{this.getStatusPercentage "submitted"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Under Review</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.reviewing}}</div>
+            <div class="status-bar">
+              <div class="status-fill reviewing" style="width: {{this.getStatusPercentage "reviewing"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Approved</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.approved}}</div>
+            <div class="status-bar">
+              <div class="status-fill approved" style="width: {{this.getStatusPercentage "approved"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Active</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.active}}</div>
+            <div class="status-bar">
+              <div class="status-fill active" style="width: {{this.getStatusPercentage "active"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Completed</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.completed}}</div>
+            <div class="status-bar">
+              <div class="status-fill completed" style="width: {{this.getStatusPercentage "completed"}}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="dashboard-section quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+          <LinkTo @route="municipal.permits" @query={{hash filter="pending-approval"}} class="action-btn primary">
+            <span class="action-icon">✅</span>
+            Review Pending Permits
+            <span class="action-count">{{this.dashboardData.pendingApprovals}}</span>
+          </LinkTo>
+          <LinkTo @route="municipal.permits" @query={{hash filter="pending-inspection"}} class="action-btn secondary">
+            <span class="action-icon">🔍</span>
+            Schedule Inspections
+            <span class="action-count">{{this.dashboardData.pendingInspections}}</span>
+          </LinkTo>
+          <LinkTo @route="municipal.permit-types.new" class="action-btn tertiary">
+            <span class="action-icon">➕</span>
+            Add Permit Type
+          </LinkTo>
+          <LinkTo @route="municipal.settings" class="action-btn tertiary">
+            <span class="action-icon">⚙️</span>
+            Portal Settings
+          </LinkTo>
+        </div>
+      </div>
+
+      <!-- Monthly Trends -->
+      <div class="dashboard-section monthly-trends">
+        <h2>Monthly Permit Trends</h2>
+        <div class="trend-chart">
+          {{#each this.dashboardData.monthlyTrends as |month|}}
+            <div class="trend-month">
+              <div class="trend-bar" style="height: {{month.percentage}}%"></div>
+              <div class="trend-value">{{month.count}}</div>
+              <div class="trend-label">{{month.name}}</div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+  {{/if}}
+</div>

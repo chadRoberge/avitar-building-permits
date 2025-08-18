@@ -1,0 +1,152 @@
+<div class="modal-backdrop" {{on "click" this.handleBackdropClick}}>
+  <div class="modal-content add-property-modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Add New Property</h2>
+      <button type="button" class="modal-close-btn" {{on "click" this.handleCancel}}>
+        <span class="close-icon">✕</span>
+      </button>
+    </div>
+
+    <form class="add-property-form" {{on "submit" this.handleSubmit}}>
+      <div class="form-section">
+        <h3 class="section-title">Property Information</h3>
+        
+        <div class="form-group">
+          <label for="displayName" class="form-label">Property Name <span class="required">*</span></label>
+          <input
+            type="text"
+            id="displayName"
+            class="form-input"
+            value={{this.displayName}}
+            placeholder="e.g., Main Residence, Vacation Home"
+            {{on "input" (fn this.updateField "displayName")}}
+            disabled={{this.isLoading}}
+          />
+          <p class="form-help">Give this property a memorable name</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-checkbox-label">
+            <input
+              type="checkbox"
+              class="form-checkbox"
+              checked={{this.isPrimary}}
+              {{on "change" (fn this.updateCheckbox "isPrimary")}}
+              disabled={{this.isLoading}}
+            />
+            <span class="checkbox-text">Set as primary property</span>
+          </label>
+          <p class="form-help">Your primary property will be selected by default</p>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3 class="section-title">Property Address</h3>
+        
+        <div class="form-group">
+          <label class="form-label">Municipality</label>
+          <div class="municipality-display">
+            <div class="municipality-info">
+              <span class="municipality-name">{{this.currentMunicipality.name}}</span>
+              <span class="municipality-location">{{this.currentMunicipality.address.city}}, {{this.currentMunicipality.address.state}}</span>
+            </div>
+          </div>
+          <p class="form-help">Property will be added to your current municipality</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="street" class="form-label">Street Address <span class="required">*</span></label>
+          <input
+            type="text"
+            id="street"
+            class="form-input"
+            value={{this.street}}
+            placeholder="123 Main Street"
+            {{on "input" (fn this.updateField "street")}}
+            disabled={{this.isLoading}}
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city" class="form-label">City <span class="required">*</span></label>
+            <input
+              type="text"
+              id="city"
+              class="form-input"
+              value={{this.city}}
+              placeholder="City"
+              {{on "input" (fn this.updateField "city")}}
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="state" class="form-label">State <span class="required">*</span></label>
+            <input
+              type="text"
+              id="state"
+              class="form-input"
+              value={{this.state}}
+              placeholder="NY"
+              maxlength="2"
+              {{on "input" (fn this.updateField "state")}}
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="zip" class="form-label">ZIP Code <span class="required">*</span></label>
+            <input
+              type="text"
+              id="zip"
+              class="form-input"
+              value={{this.zip}}
+              placeholder="12345"
+              {{on "input" (fn this.updateField "zip")}}
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+      </div>
+
+      {{#if this.errorMessage}}
+        <div class="error-message">
+          <span class="error-icon">⚠️</span>
+          {{this.errorMessage}}
+        </div>
+      {{/if}}
+
+      {{#if this.successMessage}}
+        <div class="success-message">
+          <span class="success-icon">✅</span>
+          {{this.successMessage}}
+        </div>
+      {{/if}}
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          {{on "click" this.handleCancel}}
+          disabled={{this.isLoading}}
+        >
+          Cancel
+        </button>
+        
+        <button
+          type="submit"
+          class="btn btn-primary"
+          disabled={{this.isLoading}}
+        >
+          {{#if this.isLoading}}
+            <span class="loading-spinner"></span>
+            Adding Property...
+          {{else}}
+            Add Property
+          {{/if}}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

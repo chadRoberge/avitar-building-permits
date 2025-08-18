@@ -1,0 +1,418 @@
+<form class="municipality-registration-form" {{on "submit" this.submitRegistration}}>
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div class="progress-bar">
+      <div class="progress-fill" style="width: {{this.progressPercentage}}%"></div>
+    </div>
+    <div class="progress-text">Step {{this.currentStep}} of 3</div>
+  </div>
+
+  {{#if this.errorMessage}}
+    <div class="error-message">{{this.errorMessage}}</div>
+  {{/if}}
+
+  {{#if this.successMessage}}
+    <div class="success-message">{{this.successMessage}}</div>
+  {{/if}}
+
+  <!-- Step 1: Municipality Information -->
+  {{#if (eq this.currentStep 1)}}
+    <div class="form-step">
+      <h3>Municipality Information</h3>
+      <p class="step-description">Basic information about your municipality</p>
+
+      <div class="form-section">
+        <div class="form-group">
+          <label for="municipality-name">Municipality Name *</label>
+          <input
+            id="municipality-name"
+            type="text"
+            value={{this.municipalityName}}
+            {{on "input" (fn this.updateField "municipalityName")}}
+            placeholder="e.g., Town of Hanover, City of Manchester"
+            required
+            disabled={{this.isLoading}}
+          />
+          {{#if this.checkingName}}
+            <small class="field-status checking">Checking availability...</small>
+          {{else if (eq this.nameAvailable true)}}
+            <small class="field-status available">✓ Name available</small>
+          {{else if (eq this.nameAvailable false)}}
+            <small class="field-status unavailable">✗ Name already taken</small>
+          {{/if}}
+        </div>
+
+        <div class="form-group">
+          <label for="municipality-type">Municipality Type *</label>
+          <select
+            id="municipality-type"
+            value={{this.municipalityType}}
+            {{on "change" (fn this.updateField "municipalityType")}}
+            required
+            disabled={{this.isLoading}}
+          >
+            <option value="">Select Type</option>
+            <option value="town">Town</option>
+            <option value="city">City</option>
+            <option value="county">County</option>
+            <option value="village">Village</option>
+            <option value="township">Township</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="street-address">Street Address *</label>
+          <input
+            id="street-address"
+            type="text"
+            value={{this.streetAddress}}
+            {{on "input" (fn this.updateField "streetAddress")}}
+            placeholder="Municipal office street address"
+            required
+            disabled={{this.isLoading}}
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city">City *</label>
+            <input
+              id="city"
+              type="text"
+              value={{this.city}}
+              {{on "input" (fn this.updateField "city")}}
+              placeholder="City"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="state">State *</label>
+            <select
+              id="state"
+              value={{this.state}}
+              {{on "change" (fn this.updateField "state")}}
+              required
+              disabled={{this.isLoading}}
+            >
+              {{#each @states as |state|}}
+                <option value={{state.code}}>{{state.name}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="zip-code">ZIP Code *</label>
+            <input
+              id="zip-code"
+              type="text"
+              value={{this.zipCode}}
+              {{on "input" (fn this.updateField "zipCode")}}
+              placeholder="ZIP Code"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="county">County *</label>
+          <input
+            id="county"
+            type="text"
+            value={{this.county}}
+            {{on "input" (fn this.updateField "county")}}
+            placeholder="County name"
+            required
+            disabled={{this.isLoading}}
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="website">Municipality Website</label>
+            <input
+              id="website"
+              type="url"
+              value={{this.website}}
+              {{on "input" (fn this.updateField "website")}}
+              placeholder="https://www.yourtown.nh.gov"
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="population">Population (Optional)</label>
+            <input
+              id="population"
+              type="number"
+              value={{this.population}}
+              {{on "input" (fn this.updateField "population")}}
+              placeholder="Approximate population"
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" {{on "click" this.nextStep}} disabled={{this.isLoading}}>
+          Next: Department Information
+        </button>
+      </div>
+    </div>
+  {{/if}}
+
+  <!-- Step 2: Department Information -->
+  {{#if (eq this.currentStep 2)}}
+    <div class="form-step">
+      <h3>Building Department Information</h3>
+      <p class="step-description">Contact information for your building department</p>
+
+      <div class="form-section">
+        <div class="form-group">
+          <label for="department-name">Department Name *</label>
+          <input
+            id="department-name"
+            type="text"
+            value={{this.departmentName}}
+            {{on "input" (fn this.updateField "departmentName")}}
+            placeholder="Building Department"
+            required
+            disabled={{this.isLoading}}
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="department-phone">Department Phone *</label>
+            <input
+              id="department-phone"
+              type="tel"
+              value={{this.departmentPhone}}
+              {{on "input" (fn this.updateField "departmentPhone")}}
+              placeholder="(603) 555-0123"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="department-email">Department Email *</label>
+            <input
+              id="department-email"
+              type="email"
+              value={{this.departmentEmail}}
+              {{on "input" (fn this.updateField "departmentEmail")}}
+              placeholder="building@yourtown.nh.gov"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="department-fax">Department Fax</label>
+            <input
+              id="department-fax"
+              type="tel"
+              value={{this.departmentFax}}
+              {{on "input" (fn this.updateField "departmentFax")}}
+              placeholder="(603) 555-0124"
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="hours-operation">Hours of Operation</label>
+            <input
+              id="hours-operation"
+              type="text"
+              value={{this.hoursOfOperation}}
+              {{on "input" (fn this.updateField "hoursOfOperation")}}
+              placeholder="Monday-Friday 8:00 AM - 4:30 PM"
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="department-address">Department Address</label>
+          <input
+            id="department-address"
+            type="text"
+            value={{this.departmentAddress}}
+            {{on "input" (fn this.updateField "departmentAddress")}}
+            placeholder="Leave blank to use municipal office address"
+            disabled={{this.isLoading}}
+          />
+          <small class="field-help">If different from municipal office address</small>
+        </div>
+
+        <div class="form-group">
+          <label for="permit-fee-schedule">Permit Fee Schedule URL</label>
+          <input
+            id="permit-fee-schedule"
+            type="url"
+            value={{this.permitFeeSchedule}}
+            {{on "input" (fn this.updateField "permitFeeSchedule")}}
+            placeholder="https://www.yourtown.nh.gov/building/fees"
+            disabled={{this.isLoading}}
+          />
+          <small class="field-help">Link to your current permit fee schedule</small>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" {{on "click" this.previousStep}} disabled={{this.isLoading}}>
+          Previous
+        </button>
+        <button type="button" class="btn btn-primary" {{on "click" this.nextStep}} disabled={{this.isLoading}}>
+          Next: Administrator Account
+        </button>
+      </div>
+    </div>
+  {{/if}}
+
+  <!-- Step 3: Administrator Account -->
+  {{#if (eq this.currentStep 3)}}
+    <div class="form-step">
+      <h3>Administrator Account</h3>
+      <p class="step-description">Create your building inspector/administrator login</p>
+
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="admin-firstname">First Name *</label>
+            <input
+              id="admin-firstname"
+              type="text"
+              value={{this.adminFirstName}}
+              {{on "input" (fn this.updateField "adminFirstName")}}
+              placeholder="Your first name"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="admin-lastname">Last Name *</label>
+            <input
+              id="admin-lastname"
+              type="text"
+              value={{this.adminLastName}}
+              {{on "input" (fn this.updateField "adminLastName")}}
+              placeholder="Your last name"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="admin-title">Job Title *</label>
+          <input
+            id="admin-title"
+            type="text"
+            value={{this.adminTitle}}
+            {{on "input" (fn this.updateField "adminTitle")}}
+            placeholder="e.g., Building Inspector, Code Enforcement Officer"
+            required
+            disabled={{this.isLoading}}
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="admin-email">Work Email *</label>
+            <input
+              id="admin-email"
+              type="email"
+              value={{this.adminEmail}}
+              {{on "input" (fn this.updateField "adminEmail")}}
+              placeholder="your.email@yourtown.nh.gov"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="admin-phone">Work Phone</label>
+            <input
+              id="admin-phone"
+              type="tel"
+              value={{this.adminPhone}}
+              {{on "input" (fn this.updateField "adminPhone")}}
+              placeholder="(603) 555-0123"
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="admin-employee-id">Employee ID (Optional)</label>
+          <input
+            id="admin-employee-id"
+            type="text"
+            value={{this.adminEmployeeId}}
+            {{on "input" (fn this.updateField "adminEmployeeId")}}
+            placeholder="Employee identification number"
+            disabled={{this.isLoading}}
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="admin-password">Password *</label>
+            <input
+              id="admin-password"
+              type="password"
+              value={{this.adminPassword}}
+              {{on "input" (fn this.updateField "adminPassword")}}
+              placeholder="Create a strong password (min 8 characters)"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="admin-confirm-password">Confirm Password *</label>
+            <input
+              id="admin-confirm-password"
+              type="password"
+              value={{this.adminConfirmPassword}}
+              {{on "input" (fn this.updateField "adminConfirmPassword")}}
+              placeholder="Confirm your password"
+              required
+              disabled={{this.isLoading}}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" {{on "click" this.previousStep}} disabled={{this.isLoading}}>
+          Previous
+        </button>
+        <button 
+          type="submit" 
+          class="btn btn-success"
+          disabled={{this.isLoading}}
+        >
+          {{#if this.isLoading}}
+            Creating Municipality Portal...
+          {{else}}
+            Create Municipality Portal
+          {{/if}}
+        </button>
+      </div>
+    </div>
+  {{/if}}
+
+  <div class="form-footer">
+    <p><small>* Required fields</small></p>
+    <p><small>By creating this portal, you agree that the information provided is accurate and that you are authorized to establish this municipal portal.</small></p>
+  </div>
+</form>

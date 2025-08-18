@@ -1,0 +1,252 @@
+<form class="auth-form commercial-signup-form" {{on "submit" this.handleSubmit}}>
+  <h2>Create Commercial Account</h2>
+  <p class="form-subtitle">For businesses and commercial developers in {{@municipality.name}}</p>
+  
+  {{#if this.errorMessage}}
+    <div class="error-message">{{this.errorMessage}}</div>
+  {{/if}}
+
+  <div class="form-section">
+    <h3>Contact Information</h3>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label for="commercial-firstname">First Name *</label>
+        <input
+          id="commercial-firstname"
+          type="text"
+          value={{this.firstName}}
+          {{on "input" (fn this.updateField "firstName")}}
+          placeholder="Enter your first name"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="commercial-lastname">Last Name *</label>
+        <input
+          id="commercial-lastname"
+          type="text"
+          value={{this.lastName}}
+          {{on "input" (fn this.updateField "lastName")}}
+          placeholder="Enter your last name"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="commercial-email">Business Email Address *</label>
+      <input
+        id="commercial-email"
+        type="email"
+        value={{this.email}}
+        {{on "input" (fn this.updateField "email")}}
+        placeholder="Enter your business email"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="commercial-phone">Business Phone Number</label>
+      <input
+        id="commercial-phone"
+        type="tel"
+        value={{this.phone}}
+        {{on "input" (fn this.updateField "phone")}}
+        placeholder="(603) 555-0123"
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="commercial-password">Password *</label>
+        <input
+          id="commercial-password"
+          type="password"
+          value={{this.password}}
+          {{on "input" (fn this.updateField "password")}}
+          placeholder="Enter password (min 6 characters)"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="commercial-confirm-password">Confirm Password *</label>
+        <input
+          id="commercial-confirm-password"
+          type="password"
+          value={{this.confirmPassword}}
+          {{on "input" (fn this.updateField "confirmPassword")}}
+          placeholder="Confirm your password"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Business Information</h3>
+    
+    <div class="form-group">
+      <label for="business-name">Business Name *</label>
+      <input
+        id="business-name"
+        type="text"
+        value={{this.businessName}}
+        {{on "input" (fn this.updateField "businessName")}}
+        placeholder="Enter your business name"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="business-type">Business Type *</label>
+      <select
+        id="business-type"
+        value={{this.businessType}}
+        {{on "change" (fn this.updateField "businessType")}}
+        required
+        disabled={{this.isLoading}}
+      >
+        <option value="">Select Business Type</option>
+        <option value="general-contractor">General Contractor</option>
+        <option value="electrical-contractor">Electrical Contractor</option>
+        <option value="plumbing-contractor">Plumbing Contractor</option>
+        <option value="hvac-contractor">HVAC Contractor</option>
+        <option value="roofing-contractor">Roofing Contractor</option>
+        <option value="excavation-contractor">Excavation Contractor</option>
+        <option value="architect">Architect</option>
+        <option value="engineer">Engineer</option>
+        <option value="developer">Property Developer</option>
+        <option value="builder">Home Builder</option>
+        <option value="commercial-business">Commercial Business</option>
+        <option value="utility-company">Utility Company</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="license-type">License Type</label>
+        <select
+          id="license-type"
+          value={{this.licenseType}}
+          {{on "change" (fn this.updateField "licenseType")}}
+          disabled={{this.isLoading}}
+        >
+          <option value="">Select License Type</option>
+          <option value="contractor-license">Contractor License</option>
+          <option value="professional-license">Professional License</option>
+          <option value="business-license">Business License</option>
+          <option value="trade-license">Trade License</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="license-number">License Number</label>
+        <input
+          id="license-number"
+          type="text"
+          value={{this.licenseNumber}}
+          {{on "input" (fn this.updateField "licenseNumber")}}
+          placeholder="Enter license number"
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="federal-tax-id">Federal Tax ID (EIN)</label>
+      <input
+        id="federal-tax-id"
+        type="text"
+        value={{this.federalTaxId}}
+        {{on "input" (fn this.updateField "federalTaxId")}}
+        placeholder="XX-XXXXXXX"
+        disabled={{this.isLoading}}
+      />
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Business Address</h3>
+    
+    <div class="form-group">
+      <label for="business-street">Business Address *</label>
+      <input
+        id="business-street"
+        type="text"
+        value={{this.businessStreet}}
+        {{on "input" (fn this.updateField "businessStreet")}}
+        placeholder="Street address of your business"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="business-city">City *</label>
+        <input
+          id="business-city"
+          type="text"
+          value={{this.businessCity}}
+          {{on "input" (fn this.updateField "businessCity")}}
+          placeholder="City"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="business-state">State</label>
+        <input
+          id="business-state"
+          type="text"
+          value={{this.businessState}}
+          readonly
+          disabled
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="business-zip">ZIP Code *</label>
+        <input
+          id="business-zip"
+          type="text"
+          value={{this.businessZip}}
+          {{on "input" (fn this.updateField "businessZip")}}
+          placeholder="ZIP Code"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+  </div>
+
+  <button 
+    type="submit" 
+    class="submit-btn"
+    disabled={{this.isLoading}}
+  >
+    {{#if this.isLoading}}
+      Creating Commercial Account...
+    {{else}}
+      Create Commercial Account
+    {{/if}}
+  </button>
+
+  <div class="form-footer">
+    <p><small>* Required fields</small></p>
+    <p><small>Business information will be verified before account activation.</small></p>
+  </div>
+</form>

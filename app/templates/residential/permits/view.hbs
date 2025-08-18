@@ -1,0 +1,238 @@
+{{page-title "Permit Details - Residential Portal"}}
+
+<div class="permit-view">
+  {{#if @model.error}}
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h2>Error Loading Permit</h2>
+      <p>{{@model.error}}</p>
+      <button type="button" class="btn btn-primary" {{on "click" (fn this.goBack)}}>
+        ← Back to My Permits
+      </button>
+    </div>
+  {{else if @model.permit}}
+    <!-- Header -->
+    <header class="permit-header">
+      <div class="header-content">
+        <button type="button" class="back-btn" {{on "click" (fn this.goBack)}}>
+          ← Back to My Permits
+        </button>
+        <div class="permit-title">
+          <h1>{{@model.permit.type}} Permit</h1>
+          <div class="permit-meta">
+            <span class="permit-number">Application ID: {{@model.permit.permitNumber}}</span>
+            <span class="permit-status">
+              <span class="status-badge {{get-status-badge-class @model.permit.status}}">
+                {{@model.permit.status}}
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="permit-content">
+      <!-- Review Process and Chat Side by Side -->
+      <div class="review-and-chat-container">
+        <!-- Review Process Status -->
+        <section class="review-process">
+          <h2>Review Process</h2>
+          <div class="process-timeline">
+            {{#each @model.permit.reviewProcess.steps as |step index|}}
+              <div class="timeline-item {{step.status}}">
+                <div class="timeline-marker">
+                  {{#if (eq step.status "completed")}}
+                    ✅
+                  {{else if (eq step.status "in_progress")}}
+                    🔄
+                  {{else if (eq step.status "failed")}}
+                    ❌
+                  {{else if (eq step.status "pending")}}
+                    ⏳
+                  {{else}}
+                    ⚪
+                  {{/if}}
+                </div>
+                <div class="timeline-content">
+                  <h4>{{step.name}}</h4>
+                  <p class="department">{{step.department}}</p>
+                  {{#if step.date}}
+                    <p class="date">{{format-date step.date}}</p>
+                  {{/if}}
+                  {{#if (eq step.status "in_progress")}}
+                    <p class="status-text">Currently under review</p>
+                  {{else if (eq step.status "pending")}}
+                    <p class="status-text">Waiting for review</p>
+                  {{else if (eq step.status "failed")}}
+                    <p class="status-text">Requires attention</p>
+                  {{else if (eq step.status "completed")}}
+                    <p class="status-text">Completed</p>
+                  {{/if}}
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </section>
+
+        <!-- Permit Chat/Messaging -->
+        <section class="permit-messaging">
+          <PermitChat @permitId={{@model.permit.id}} />
+        </section>
+      </div>
+
+      <!-- Permit Details Grid -->
+      <div class="permit-details-grid">
+        <!-- Project Information -->
+        <section class="details-card">
+          <h3>Project Information</h3>
+          <div class="details-content">
+            <div class="detail-item">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">{{@model.permit.type}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Description:</span>
+              <span class="detail-value">{{@model.permit.description}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Estimated Value:</span>
+              <span class="detail-value">{{format-currency @model.permit.projectValue}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Municipality:</span>
+              <span class="detail-value">{{@model.permit.municipality}}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Application Information -->
+        <section class="details-card">
+          <h3>Application Information</h3>
+          <div class="details-content">
+            <div class="detail-item">
+              <span class="detail-label">Submitted:</span>
+              <span class="detail-value">{{format-date @model.permit.submittedDate}}</span>
+            </div>
+            {{#if @model.permit.approvedDate}}
+              <div class="detail-item">
+                <span class="detail-label">Approved:</span>
+                <span class="detail-value">{{format-date @model.permit.approvedDate}}</span>
+              </div>
+            {{/if}}
+            {{#if @model.permit.expiryDate}}
+              <div class="detail-item">
+                <span class="detail-label">Expires:</span>
+                <span class="detail-value">{{format-date @model.permit.expiryDate}}</span>
+              </div>
+            {{/if}}
+            <div class="detail-item">
+              <span class="detail-label">Application Fee:</span>
+              <span class="detail-value">{{format-currency @model.permit.fee}}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Property Information -->
+        {{#if @model.permit.property}}
+          <section class="details-card">
+            <h3>Property Information</h3>
+            <div class="details-content">
+              {{#if @model.permit.property.displayName}}
+                <div class="detail-item">
+                  <span class="detail-label">Property:</span>
+                  <span class="detail-value">{{@model.permit.property.displayName}}</span>
+                </div>
+              {{/if}}
+              {{#if @model.permit.property.address}}
+                <div class="detail-item">
+                  <span class="detail-label">Address:</span>
+                  <span class="detail-value">
+                    {{@model.permit.property.address.street}}<br>
+                    {{@model.permit.property.address.city}}, {{@model.permit.property.address.state}} {{@model.permit.property.address.zip}}
+                  </span>
+                </div>
+              {{/if}}
+            </div>
+          </section>
+        {{/if}}
+
+        <!-- Applicant Information -->
+        {{#if @model.permit.applicant}}
+          <section class="details-card">
+            <h3>Applicant Information</h3>
+            <div class="details-content">
+              <div class="detail-item">
+                <span class="detail-label">Name:</span>
+                <span class="detail-value">{{@model.permit.applicant.firstName}} {{@model.permit.applicant.lastName}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Email:</span>
+                <span class="detail-value">{{@model.permit.applicant.email}}</span>
+              </div>
+              {{#if @model.permit.applicant.phone}}
+                <div class="detail-item">
+                  <span class="detail-label">Phone:</span>
+                  <span class="detail-value">{{@model.permit.applicant.phone}}</span>
+                </div>
+              {{/if}}
+              <div class="detail-item">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">{{capitalize @model.permit.applicant.type}}</span>
+              </div>
+            </div>
+          </section>
+        {{/if}}
+
+        <!-- Contractor Information -->
+        {{#if @model.permit.contractor}}
+          <section class="details-card">
+            <h3>Contractor Information</h3>
+            <div class="details-content">
+              <div class="detail-item">
+                <span class="detail-label">Business:</span>
+                <span class="detail-value">{{@model.permit.contractor.businessName}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Contact:</span>
+                <span class="detail-value">{{@model.permit.contractor.firstName}} {{@model.permit.contractor.lastName}}</span>
+              </div>
+              {{#if @model.permit.contractor.licenseNumber}}
+                <div class="detail-item">
+                  <span class="detail-label">License:</span>
+                  <span class="detail-value">{{@model.permit.contractor.licenseNumber}}</span>
+                </div>
+              {{/if}}
+              {{#if @model.permit.contractor.phone}}
+                <div class="detail-item">
+                  <span class="detail-label">Phone:</span>
+                  <span class="detail-value">{{@model.permit.contractor.phone}}</span>
+                </div>
+              {{/if}}
+              {{#if @model.permit.contractor.email}}
+                <div class="detail-item">
+                  <span class="detail-label">Email:</span>
+                  <span class="detail-value">{{@model.permit.contractor.email}}</span>
+                </div>
+              {{/if}}
+            </div>
+          </section>
+        {{/if}}
+      </div>
+
+      <!-- Additional Information -->
+      {{#if @model.permit.customFields.additionalInfo}}
+        <section class="additional-info">
+          <h3>Additional Information</h3>
+          <div class="info-content">
+            <p>{{@model.permit.customFields.additionalInfo}}</p>
+          </div>
+        </section>
+      {{/if}}
+    </div>
+  {{else}}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading permit details...</p>
+    </div>
+  {{/if}}
+</div>

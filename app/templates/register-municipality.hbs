@@ -1,0 +1,46 @@
+{{page-title "Register New Municipality"}}
+
+<div class="municipality-registration-container">
+  <header class="registration-header">
+    <div class="header-content">
+      <h1>Register New Municipality</h1>
+      <p>Create a building permits portal for your municipality</p>
+      <a href="/" class="back-link">← Back to Home</a>
+    </div>
+  </header>
+
+  <main class="registration-main">
+    <div class="registration-card">
+      <div class="registration-intro">
+        <h2>Welcome, Building Inspector</h2>
+        <p>Set up your municipality's building permits portal in a few simple steps. This will create both your municipality's portal and your administrative account.</p>
+        
+        <div class="process-steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Municipality Information</h4>
+              <p>Basic details about your municipality</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Department Details</h4>
+              <p>Building department contact information</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Administrator Account</h4>
+              <p>Your building inspector login credentials</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <MunicipalityRegistrationForm @states={{@model.states}} />
+    </div>
+  </main>
+</div>

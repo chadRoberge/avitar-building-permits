@@ -14,6 +14,21 @@
 /testem.log
 /yarn-error.log
 
+# Server environment files
+server/.env
+server/.env.local
+server/.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
 # ember-try
 /.node_modules.ember-try/
 /npm-shrinkwrap.json.ember-try

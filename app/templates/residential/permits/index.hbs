@@ -1,0 +1,201 @@
+{{page-title "My Permits - Residential Portal"}}
+
+<div class="permits-page">
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header mb-4">
+      <div class="row items-center">
+        <div class="col-md-8">
+          <h1 class="text-primary mb-2">My Permits</h1>
+          <p class="text-muted">View and manage your building permit applications for {{@model.municipality.name}}</p>
+        </div>
+        <div class="col-md-4 text-right">
+          <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
+            Apply for New Permit
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permits Summary -->
+    <div class="permits-summary mb-5">
+      <div class="summary-cards">
+        <div class="summary-card">
+          <div class="card-icon pending">⏳</div>
+          <div class="card-content">
+            <h3>{{@model.permits.pending.length}}</h3>
+            <p>Pending Review</p>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="card-icon approved">✅</div>
+          <div class="card-content">
+            <h3>{{@model.permits.approved.length}}</h3>
+            <p>Approved</p>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="card-icon active">🔨</div>
+          <div class="card-content">
+            <h3>{{@model.permits.active.length}}</h3>
+            <p>Active</p>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="card-icon completed">🏁</div>
+          <div class="card-content">
+            <h3>{{@model.permits.completed.length}}</h3>
+            <p>Completed</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permits Sections -->
+    <div class="permits-sections">
+
+      <!-- Pending Permits -->
+      {{#if @model.permits.pending.length}}
+        <div class="permits-section mb-5">
+          <h2 class="section-title">Pending Review ({{@model.permits.pending.length}})</h2>
+          <div class="permits-grid">
+            {{#each @model.permits.pending as |permit|}}
+              <div class="permit-card pending" {{on "click" (fn this.viewPermit permit.id)}}>
+                <div class="permit-header">
+                  <span class="permit-type">{{permit.type}}</span>
+                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
+                </div>
+                <div class="permit-details">
+                  <div class="permit-id">{{permit.applicationId}}</div>
+                  <div class="permit-description">{{permit.description}}</div>
+                  <div class="permit-dates">
+                    <div class="date-item">
+                      <span class="date-label">Submitted:</span>
+                      <span class="date-value">{{format-date permit.submittedDate}}</span>
+                    </div>
+                  </div>
+                  <div class="permit-value">
+                    <span class="value-label">Project Value:</span>
+                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
+
+      <!-- Approved Permits -->
+      {{#if @model.permits.approved.length}}
+        <div class="permits-section mb-5">
+          <h2 class="section-title">Approved ({{@model.permits.approved.length}})</h2>
+          <div class="permits-grid">
+            {{#each @model.permits.approved as |permit|}}
+              <div class="permit-card approved" {{on "click" (fn this.viewPermit permit.id)}}>
+                <div class="permit-header">
+                  <span class="permit-type">{{permit.type}}</span>
+                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
+                </div>
+                <div class="permit-details">
+                  <div class="permit-id">{{permit.applicationId}}</div>
+                  <div class="permit-description">{{permit.description}}</div>
+                  <div class="permit-dates">
+                    <div class="date-item">
+                      <span class="date-label">Approved:</span>
+                      <span class="date-value">{{format-date permit.approvedDate}}</span>
+                    </div>
+                    {{#if permit.expiryDate}}
+                      <div class="date-item">
+                        <span class="date-label">Expires:</span>
+                        <span class="date-value">{{format-date permit.expiryDate}}</span>
+                      </div>
+                    {{/if}}
+                  </div>
+                  <div class="permit-value">
+                    <span class="value-label">Project Value:</span>
+                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
+
+      <!-- Active Permits -->
+      {{#if @model.permits.active.length}}
+        <div class="permits-section mb-5">
+          <h2 class="section-title">Active ({{@model.permits.active.length}})</h2>
+          <div class="permits-grid">
+            {{#each @model.permits.active as |permit|}}
+              <div class="permit-card active" {{on "click" (fn this.viewPermit permit.id)}}>
+                <div class="permit-header">
+                  <span class="permit-type">{{permit.type}}</span>
+                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
+                </div>
+                <div class="permit-details">
+                  <div class="permit-id">{{permit.applicationId}}</div>
+                  <div class="permit-description">{{permit.description}}</div>
+                  <div class="permit-dates">
+                    <div class="date-item">
+                      <span class="date-label">Started:</span>
+                      <span class="date-value">{{format-date permit.approvedDate}}</span>
+                    </div>
+                  </div>
+                  <div class="permit-value">
+                    <span class="value-label">Project Value:</span>
+                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
+
+      <!-- Completed Permits -->
+      {{#if @model.permits.completed.length}}
+        <div class="permits-section mb-5">
+          <h2 class="section-title">Completed ({{@model.permits.completed.length}})</h2>
+          <div class="permits-grid">
+            {{#each @model.permits.completed as |permit|}}
+              <div class="permit-card completed" {{on "click" (fn this.viewPermit permit.id)}}>
+                <div class="permit-header">
+                  <span class="permit-type">{{permit.type}}</span>
+                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
+                </div>
+                <div class="permit-details">
+                  <div class="permit-id">{{permit.applicationId}}</div>
+                  <div class="permit-description">{{permit.description}}</div>
+                  <div class="permit-dates">
+                    <div class="date-item">
+                      <span class="date-label">Completed:</span>
+                      <span class="date-value">{{format-date permit.completedDate}}</span>
+                    </div>
+                  </div>
+                  <div class="permit-value">
+                    <span class="value-label">Project Value:</span>
+                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
+
+      <!-- Empty State -->
+      {{#unless @model.permits.all.length}}
+        <div class="empty-state text-center p-5">
+          <div class="empty-icon mb-3">📋</div>
+          <h3 class="text-muted mb-3">No Permits Found</h3>
+          <p class="text-muted mb-4">You haven't applied for any permits for this property yet.</p>
+          <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
+            Apply for Your First Permit
+          </button>
+        </div>
+      {{/unless}}
+
+    </div>
+  </div>
+</div>

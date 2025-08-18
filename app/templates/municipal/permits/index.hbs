@@ -1,0 +1,289 @@
+{{page-title "Permits Management - Municipal Portal"}}
+
+<div class="permits-container">
+  <header class="permits-header">
+    <div class="header-content">
+      <h1>Permits Management</h1>
+      <p>View and manage all building permits</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary" {{on "click" this.exportPermits}}>
+        📊 Export Data
+      </button>
+      <button type="button" class="btn btn-primary" {{on "click" this.createNewPermit}}>
+        ➕ New Permit
+      </button>
+    </div>
+  </header>
+
+  <!-- Filters and Search -->
+  <div class="permits-filters">
+    <div class="filter-row">
+      <div class="search-filter">
+        <input
+          type="text"
+          placeholder="Search permits by number, applicant, or address..."
+          value={{this.searchTerm}}
+          {{on "input" this.updateSearchTerm}}
+          class="search-input"
+        />
+      </div>
+      
+      <div class="status-filter">
+        <select 
+          value={{this.selectedStatus}}
+          {{on "change" this.updateStatusFilter}}
+          class="filter-select"
+        >
+          <option value="">All Statuses</option>
+          <option value="submitted">Submitted</option>
+          <option value="under-review">Under Review</option>
+          <option value="additional-info">Additional Info Needed</option>
+          <option value="approved">Approved</option>
+          <option value="active">Active</option>
+          <option value="inspections">Pending Inspections</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="denied">Denied</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+
+      <div class="type-filter">
+        <select 
+          value={{this.selectedType}}
+          {{on "change" this.updateTypeFilter}}
+          class="filter-select"
+        >
+          <option value="">All Types</option>
+          {{#each this.permitTypes as |type|}}
+            <option value={{type._id}}>{{type.name}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <div class="date-filter">
+        <select 
+          value={{this.selectedDateRange}}
+          {{on "change" this.updateDateFilter}}
+          class="filter-select"
+        >
+          <option value="">All Dates</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+          <option value="year">This Year</option>
+          <option value="custom">Custom Range</option>
+        </select>
+      </div>
+
+      {{#if (eq this.selectedDateRange "custom")}}
+        <div class="custom-date-range">
+          <input
+            type="date"
+            value={{this.startDate}}
+            {{on "change" this.updateStartDate}}
+            class="date-input"
+          />
+          <span class="date-separator">to</span>
+          <input
+            type="date"
+            value={{this.endDate}}
+            {{on "change" this.updateEndDate}}
+            class="date-input"
+          />
+        </div>
+      {{/if}}
+    </div>
+
+    <div class="filter-actions">
+      <span class="results-count">
+        {{this.filteredPermits.length}} of {{this.allPermits.length}} permits
+      </span>
+      <button type="button" class="clear-filters" {{on "click" this.clearFilters}}>
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Permits Table -->
+  <div class="permits-table-container">
+    {{#if this.isLoading}}
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading permits...</p>
+      </div>
+    {{else if this.filteredPermits.length}}
+      <table class="permits-table">
+        <thead>
+          <tr>
+            <th>
+              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "permitNumber")}}>
+                Permit #
+                {{#if (eq this.sortField "permitNumber")}}
+                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
+                {{/if}}
+              </button>
+            </th>
+            <th>
+              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "permitType")}}>
+                Type
+                {{#if (eq this.sortField "permitType")}}
+                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
+                {{/if}}
+              </button>
+            </th>
+            <th>Applicant</th>
+            <th>Project Address</th>
+            <th>
+              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "status")}}>
+                Status
+                {{#if (eq this.sortField "status")}}
+                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
+                {{/if}}
+              </button>
+            </th>
+            <th>
+              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "applicationDate")}}>
+                Applied
+                {{#if (eq this.sortField "applicationDate")}}
+                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
+                {{/if}}
+              </button>
+            </th>
+            <th>
+              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "estimatedValue")}}>
+                Project Value
+                {{#if (eq this.sortField "estimatedValue")}}
+                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
+                {{/if}}
+              </button>
+            </th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each this.paginatedPermits as |permit|}}
+            <tr class="permit-row {{permit.status}}">
+              <td class="permit-number">
+                <LinkTo @route="municipal.permits.view" @model={{permit._id}} class="permit-link">
+                  {{permit.permitNumber}}
+                </LinkTo>
+              </td>
+              <td class="permit-type">
+                <span class="type-badge {{permit.permitType.category}}">
+                  {{permit.permitType.name}}
+                </span>
+              </td>
+              <td class="applicant">
+                <div class="applicant-name">{{permit.applicant.firstName}} {{permit.applicant.lastName}}</div>
+                <div class="applicant-email">{{permit.applicant.email}}</div>
+              </td>
+              <td class="project-address">
+                <div class="address-line">{{permit.projectAddress.street}}</div>
+                <div class="address-city">{{permit.projectAddress.city}}, {{permit.projectAddress.state}} {{permit.projectAddress.zip}}</div>
+              </td>
+              <td class="status">
+                <span class="status-badge {{permit.status}}">
+                  {{this.formatStatus permit.status}}
+                </span>
+                {{#if permit.isOverdue}}
+                  <span class="overdue-indicator">⚠️ Overdue</span>
+                {{/if}}
+              </td>
+              <td class="application-date">
+                {{this.formatDate permit.applicationDate}}
+                <div class="days-ago">{{this.getDaysAgo permit.applicationDate}} days ago</div>
+              </td>
+              <td class="project-value">
+                ${{this.formatCurrency permit.estimatedValue}}
+              </td>
+              <td class="actions">
+                <div class="action-buttons">
+                  <LinkTo @route="municipal.permits.view" @model={{permit._id}} class="action-btn view">
+                    👁️
+                  </LinkTo>
+                  {{#if permit.canEdit}}
+                    <button type="button" class="action-btn edit" {{on "click" (fn this.editPermit permit)}}>
+                      ✏️
+                    </button>
+                  {{/if}}
+                  {{#if permit.needsApproval}}
+                    <button type="button" class="action-btn approve" {{on "click" (fn this.approvePermit permit)}}>
+                      ✅
+                    </button>
+                  {{/if}}
+                  {{#if permit.needsInspection}}
+                    <button type="button" class="action-btn inspect" {{on "click" (fn this.scheduleInspection permit)}}>
+                      🔍
+                    </button>
+                  {{/if}}
+                </div>
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      {{#if this.showPagination}}
+        <div class="pagination">
+          <div class="pagination-info">
+            Showing {{this.startIndex}} - {{this.endIndex}} of {{this.filteredPermits.length}} permits
+          </div>
+          <div class="pagination-controls">
+            <button 
+              type="button" 
+              class="pagination-btn"
+              disabled={{this.isFirstPage}}
+              {{on "click" this.previousPage}}
+            >
+              ← Previous
+            </button>
+            
+            {{#each this.pageNumbers as |pageNum|}}
+              <button 
+                type="button" 
+                class="pagination-btn {{if (eq pageNum this.currentPage) 'active'}}"
+                {{on "click" (fn this.goToPage pageNum)}}
+              >
+                {{pageNum}}
+              </button>
+            {{/each}}
+            
+            <button 
+              type="button" 
+              class="pagination-btn"
+              disabled={{this.isLastPage}}
+              {{on "click" this.nextPage}}
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      {{/if}}
+    {{else}}
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>No permits found</h3>
+        <p>
+          {{#if this.hasActiveFilters}}
+            Try adjusting your filters or search terms.
+          {{else}}
+            No permits have been submitted yet.
+          {{/if}}
+        </p>
+        {{#if this.hasActiveFilters}}
+          <button type="button" class="btn btn-secondary" {{on "click" this.clearFilters}}>
+            Clear Filters
+          </button>
+        {{else}}
+          <button type="button" class="btn btn-primary" {{on "click" this.createNewPermit}}>
+            Create First Permit
+          </button>
+        {{/if}}
+      </div>
+    {{/if}}
+  </div>
+</div>

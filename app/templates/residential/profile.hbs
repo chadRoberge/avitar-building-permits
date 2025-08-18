@@ -1,0 +1,217 @@
+{{page-title "My Profile - Residential Portal"}}
+
+<div class="residential-profile-page">
+  <div class="page-header">
+    <h1>My Profile</h1>
+    <p class="page-description">
+      Manage your account information, properties, and view your subscription status.
+    </p>
+  </div>
+
+  {{#if @model.error}}
+    <div class="error-message">
+      {{@model.error}}
+    </div>
+  {{else if @model.user}}
+    <div class="profile-content">
+      <!-- Personal Information Section -->
+      <section class="profile-section">
+        <div class="section-header">
+          <h2>Personal Information</h2>
+          <button type="button" class="btn btn-outline btn-sm">
+            Edit Profile
+          </button>
+        </div>
+        
+        <div class="profile-card">
+          <div class="profile-grid">
+            <div class="profile-field">
+              <label>Full Name</label>
+              <div class="field-value">{{@model.user.firstName}} {{@model.user.lastName}}</div>
+            </div>
+            
+            <div class="profile-field">
+              <label>Email Address</label>
+              <div class="field-value">{{@model.user.email}}</div>
+            </div>
+            
+            <div class="profile-field">
+              <label>Phone Number</label>
+              <div class="field-value">{{or @model.user.phone "Not provided"}}</div>
+            </div>
+            
+            <div class="profile-field">
+              <label>Account Type</label>
+              <div class="field-value">
+                <span class="badge badge-residential">Residential</span>
+              </div>
+            </div>
+            
+            <div class="profile-field">
+              <label>Member Since</label>
+              <div class="field-value">{{format-date @model.user.createdAt}}</div>
+            </div>
+            
+            <div class="profile-field">
+              <label>Current Municipality</label>
+              <div class="field-value">
+                {{#if @model.municipality}}
+                  {{@model.municipality.name}}
+                {{else}}
+                  Not selected
+                {{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Properties Section -->
+      <section class="profile-section">
+        <div class="section-header">
+          <h2>My Properties</h2>
+          <span class="property-count">{{@model.properties.length}} {{if (eq @model.properties.length 1) "property" "properties"}}</span>
+        </div>
+        
+        <div class="properties-list">
+          {{#if @model.properties}}
+            {{#each @model.properties as |property|}}
+              <div class="property-card {{if property.isPrimary 'primary'}}">
+                {{#if property.isPrimary}}
+                  <span class="primary-badge">Primary</span>
+                {{/if}}
+                
+                <div class="property-info">
+                  <h4>{{or property.nickname property.address.street}}</h4>
+                  <p class="property-address">
+                    {{property.address.street}}<br>
+                    {{property.address.city}}, {{property.address.state}} {{property.address.zip}}
+                  </p>
+                  {{#if property.parcelId}}
+                    <p class="property-meta">
+                      <span class="meta-label">Parcel ID:</span> {{property.parcelId}}
+                    </p>
+                  {{/if}}
+                </div>
+                
+                <div class="property-actions">
+                  <button type="button" class="btn btn-sm btn-outline">
+                    View Details
+                  </button>
+                </div>
+              </div>
+            {{/each}}
+          {{else}}
+            <div class="empty-properties">
+              <p>No properties added yet.</p>
+              <button type="button" class="btn btn-primary">
+                Add Your First Property
+              </button>
+            </div>
+          {{/if}}
+        </div>
+      </section>
+
+      <!-- Billing & Subscription Section -->
+      <section class="profile-section billing-section">
+        <div class="section-header">
+          <h2>Billing & Subscription</h2>
+          <LinkTo @route="residential.billing" class="btn btn-outline btn-sm">
+            View Full Billing Details
+          </LinkTo>
+        </div>
+        
+        <div class="billing-summary">
+          <BillingManagement />
+        </div>
+      </section>
+
+      <!-- Security Settings Section -->
+      <section class="profile-section">
+        <div class="section-header">
+          <h2>Security Settings</h2>
+        </div>
+        
+        <div class="profile-card">
+          <div class="security-options">
+            <div class="security-item">
+              <div class="security-info">
+                <h4>Password</h4>
+                <p>Last changed {{or @model.user.passwordChangedAt "Never"}}</p>
+              </div>
+              <button type="button" class="btn btn-outline">
+                Change Password
+              </button>
+            </div>
+            
+            <div class="security-item">
+              <div class="security-info">
+                <h4>Two-Factor Authentication</h4>
+                <p class="text-muted">Add an extra layer of security to your account</p>
+              </div>
+              <button type="button" class="btn btn-outline">
+                {{if @model.user.twoFactorEnabled "Manage" "Enable"}}
+              </button>
+            </div>
+            
+            <div class="security-item">
+              <div class="security-info">
+                <h4>Active Sessions</h4>
+                <p class="text-muted">Manage devices where you're signed in</p>
+              </div>
+              <button type="button" class="btn btn-outline">
+                View Sessions
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notification Preferences Section -->
+      <section class="profile-section">
+        <div class="section-header">
+          <h2>Notification Preferences</h2>
+        </div>
+        
+        <div class="profile-card">
+          <div class="notification-options">
+            <label class="notification-item">
+              <input type="checkbox" checked>
+              <div class="notification-info">
+                <h4>Email Notifications</h4>
+                <p>Receive updates about your permit applications via email</p>
+              </div>
+            </label>
+            
+            <label class="notification-item">
+              <input type="checkbox" checked>
+              <div class="notification-info">
+                <h4>Status Updates</h4>
+                <p>Get notified when your permit status changes</p>
+              </div>
+            </label>
+            
+            <label class="notification-item">
+              <input type="checkbox">
+              <div class="notification-info">
+                <h4>Newsletter</h4>
+                <p>Receive monthly updates about building department news</p>
+              </div>
+            </label>
+          </div>
+          
+          <div class="notification-actions">
+            <button type="button" class="btn btn-primary">
+              Save Preferences
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  {{else}}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading profile information...</p>
+    </div>
+  {{/if}}
+</div>

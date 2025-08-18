@@ -1,0 +1,109 @@
+{{page-title "Residential Portal"}}
+
+<div class="residential-app">
+  <nav class="residential-nav">
+    <div class="nav-header">
+      <div class="nav-logo">
+        <span class="nav-logo-icon">🏠</span>
+        <div class="nav-logo-content">
+          <p class="nav-municipality">{{@model.municipality.name}}</p>
+          <h1 class="nav-title">Residential Portal</h1>
+        </div>
+      </div>
+    </div>
+
+    <!-- Property Selector -->
+    <div class="property-selector">
+      <div class="property-selector-header">
+        <span class="property-icon">🏘️</span>
+        <span class="property-label">Property</span>
+      </div>
+      
+      {{#if this.currentProperty.hasMultipleProperties}}
+        <div class="property-dropdown">
+          <button type="button" class="property-select-btn" {{on "click" this.togglePropertyDropdown}}>
+            <span class="property-current">{{this.currentProperty.currentPropertyShort}}</span>
+            <span class="property-arrow">{{if this.showPropertyDropdown "▲" "▼"}}</span>
+          </button>
+          
+          {{#if this.showPropertyDropdown}}
+            <div class="property-options">
+              {{#each this.currentProperty.userProperties as |property|}}
+                <button 
+                  type="button" 
+                  class="property-option {{if (eq property._id this.currentProperty.currentPropertyId) 'active'}}"
+                  {{on "click" (fn this.selectProperty property._id)}}
+                >
+                  <span class="property-name">{{property.displayName}}</span>
+                  <span class="property-address">{{property.shortAddress}}</span>
+                  {{#if property.isPrimary}}
+                    <span class="property-badge">Primary</span>
+                  {{/if}}
+                </button>
+              {{/each}}
+              
+              <div class="property-actions">
+                <button type="button" class="add-property-btn" {{on "click" this.showAddProperty}}>
+                  <span class="add-icon">➕</span>
+                  Add Property
+                </button>
+              </div>
+            </div>
+          {{/if}}
+        </div>
+      {{else}}
+        <div class="single-property">
+          <div class="property-current-info">
+            <span class="property-name">{{this.currentProperty.currentPropertyShort}}</span>
+            <span class="property-address">{{this.currentProperty.currentPropertyAddress}}</span>
+          </div>
+          <button type="button" class="add-property-btn small" {{on "click" this.showAddProperty}}>
+            <span class="add-icon">➕</span>
+          </button>
+        </div>
+      {{/if}}
+    </div>
+    
+    <div class="nav-menu">
+      <ul class="nav-list">
+        <li class="nav-item">
+          <LinkTo @route="residential.dashboard" class="nav-link {{if this.isDashboardActive 'active'}}">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Dashboard</span>
+          </LinkTo>
+        </li>
+        <li class="nav-item">
+          <LinkTo @route="residential.permits.index" class="nav-link {{if this.isPermitsActive 'active'}}">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">My Permits</span>
+          </LinkTo>
+        </li>
+        <li class="nav-item">
+          <LinkTo @route="residential.profile" class="nav-link {{if this.isProfileActive 'active'}}">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label">Profile</span>
+          </LinkTo>
+        </li>
+      </ul>
+    </div>
+
+    <div class="nav-footer">
+      <div class="user-info">
+        <span class="user-name">{{@model.user.firstName}} {{@model.user.lastName}}</span>
+        <span class="user-role">Property Owner</span>
+      </div>
+      <button type="button" class="logout-btn" {{on "click" this.logout}}>
+        <span class="logout-icon">🚪</span>
+        <span class="logout-text">Sign Out</span>
+      </button>
+    </div>
+  </nav>
+  
+  <main class="residential-main">
+    {{outlet}}
+  </main>
+
+  {{#if this.showAddPropertyModal}}
+    <AddPropertyModal @onClose={{this.closeAddPropertyModal}} @municipality={{@model.municipality}} />
+  {{/if}}
+</div>

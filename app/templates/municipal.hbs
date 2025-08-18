@@ -1,0 +1,12 @@
+{{page-title "Municipal Dashboard"}}
+
+<div class="municipal-app">
+  <MunicipalNavigation 
+    @municipality={{@model.municipality}} 
+    @user={{@model.user}} 
+  />
+  
+  <main class="municipal-main">
+    {{outlet}}
+  </main>
+</div>

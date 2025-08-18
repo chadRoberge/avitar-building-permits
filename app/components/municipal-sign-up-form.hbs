@@ -1,0 +1,159 @@
+<form class="auth-form municipal-signup-form" {{on "submit" this.handleSubmit}}>
+  <h2>Create Municipal Staff Account</h2>
+  <p class="form-subtitle">For {{@municipality.name}} staff members</p>
+  
+  {{#if this.errorMessage}}
+    <div class="error-message">{{this.errorMessage}}</div>
+  {{/if}}
+
+  <div class="form-section">
+    <h3>Personal Information</h3>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label for="municipal-firstname">First Name *</label>
+        <input
+          id="municipal-firstname"
+          type="text"
+          value={{this.firstName}}
+          {{on "input" (fn this.updateField "firstName")}}
+          placeholder="Enter your first name"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="municipal-lastname">Last Name *</label>
+        <input
+          id="municipal-lastname"
+          type="text"
+          value={{this.lastName}}
+          {{on "input" (fn this.updateField "lastName")}}
+          placeholder="Enter your last name"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="municipal-email">Work Email Address *</label>
+      <input
+        id="municipal-email"
+        type="email"
+        value={{this.email}}
+        {{on "input" (fn this.updateField "email")}}
+        placeholder="Enter your work email"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="municipal-phone">Work Phone Number</label>
+      <input
+        id="municipal-phone"
+        type="tel"
+        value={{this.phone}}
+        {{on "input" (fn this.updateField "phone")}}
+        placeholder="(603) 555-0123"
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="municipal-password">Password *</label>
+        <input
+          id="municipal-password"
+          type="password"
+          value={{this.password}}
+          {{on "input" (fn this.updateField "password")}}
+          placeholder="Enter password (min 6 characters)"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="municipal-confirm-password">Confirm Password *</label>
+        <input
+          id="municipal-confirm-password"
+          type="password"
+          value={{this.confirmPassword}}
+          {{on "input" (fn this.updateField "confirmPassword")}}
+          placeholder="Confirm your password"
+          required
+          disabled={{this.isLoading}}
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Municipal Employment Information</h3>
+    
+    <div class="form-group">
+      <label for="municipal-department">Department *</label>
+      <select
+        id="municipal-department"
+        value={{this.department}}
+        {{on "change" (fn this.updateField "department")}}
+        required
+        disabled={{this.isLoading}}
+      >
+        <option value="">Select Department</option>
+        <option value="building">Building Department</option>
+        <option value="planning">Planning Department</option>
+        <option value="zoning">Zoning Board</option>
+        <option value="public-works">Public Works</option>
+        <option value="fire">Fire Department</option>
+        <option value="health">Health Department</option>
+        <option value="administration">Administration</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="municipal-job-title">Job Title *</label>
+      <input
+        id="municipal-job-title"
+        type="text"
+        value={{this.jobTitle}}
+        {{on "input" (fn this.updateField "jobTitle")}}
+        placeholder="e.g., Building Inspector, Planner, Administrator"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="municipal-employee-id">Employee ID</label>
+      <input
+        id="municipal-employee-id"
+        type="text"
+        value={{this.employeeId}}
+        {{on "input" (fn this.updateField "employeeId")}}
+        placeholder="Optional employee ID number"
+        disabled={{this.isLoading}}
+      />
+    </div>
+  </div>
+
+  <button 
+    type="submit" 
+    class="submit-btn"
+    disabled={{this.isLoading}}
+  >
+    {{#if this.isLoading}}
+      Creating Municipal Account...
+    {{else}}
+      Create Municipal Account
+    {{/if}}
+  </button>
+
+  <div class="form-footer">
+    <p><small>* Required fields</small></p>
+    <p><small>This account will require approval by municipal administrators.</small></p>
+  </div>
+</form>

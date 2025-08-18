@@ -1,0 +1,336 @@
+{{page-title "Dashboard - Residential Portal"}}
+
+<div class="residential-dashboard">
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1>Welcome back, {{@model.user.firstName}}!</h1>
+      <p class="property-address">
+        <span class="address-icon">📍</span>
+        {{this.propertyAddress}}
+      </p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
+        <span class="btn-icon">➕</span>
+        Apply for Permit
+      </button>
+    </div>
+  </header>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card permits-card">
+      <div class="card-icon">📋</div>
+      <div class="card-content">
+        <h3>Total Permits</h3>
+        <div class="card-value">{{@model.summary.totalPermits}}</div>
+        <div class="card-subtitle">For this property</div>
+      </div>
+    </div>
+
+    <div class="summary-card active-card">
+      <div class="card-icon">🔄</div>
+      <div class="card-content">
+        <h3>Active Permits</h3>
+        <div class="card-value">{{@model.summary.activePermits}}</div>
+        <div class="card-subtitle">Currently in progress</div>
+      </div>
+    </div>
+
+    <div class="summary-card pending-card">
+      <div class="card-icon">⏳</div>
+      <div class="card-content">
+        <h3>Pending Review</h3>
+        <div class="card-value">{{@model.summary.pendingPermits}}</div>
+        <div class="card-subtitle">Awaiting approval</div>
+      </div>
+    </div>
+
+    <div class="summary-card contractors-card">
+      <div class="card-icon">🔨</div>
+      <div class="card-content">
+        <h3>Contractors</h3>
+        <div class="card-value">{{@model.summary.totalContractors}}</div>
+        <div class="card-subtitle">Who worked here</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="dashboard-tabs">
+    <div class="tab-navigation">
+      <button 
+        type="button" 
+        class="tab-btn {{if (eq this.activeTab 'overview') 'active'}}"
+        {{on "click" (fn this.setActiveTab 'overview')}}
+      >
+        Overview
+      </button>
+      <button 
+        type="button" 
+        class="tab-btn {{if (eq this.activeTab 'permits') 'active'}}"
+        {{on "click" (fn this.setActiveTab 'permits')}}
+      >
+        Permit History
+      </button>
+      <button 
+        type="button" 
+        class="tab-btn {{if (eq this.activeTab 'contractors') 'active'}}"
+        {{on "click" (fn this.setActiveTab 'contractors')}}
+      >
+        Contractors
+      </button>
+    </div>
+
+    <div class="tab-content">
+      {{#if (eq this.activeTab 'overview')}}
+        <div class="overview-tab">
+          <div class="overview-grid">
+            <!-- Recent Permits -->
+            <div class="overview-section recent-permits">
+              <div class="section-header">
+                <h3>Recent Permit Activity</h3>
+                <button type="button" class="view-all-link" {{on "click" this.viewAllPermits}}>
+                  View All →
+                </button>
+              </div>
+              
+              {{#if this.recentPermits.length}}
+                <div class="permits-list">
+                  {{#each this.recentPermits as |permit|}}
+                    <div class="permit-item" {{on "click" (fn this.viewPermit permit.id)}}>
+                      <div class="permit-icon">
+                        {{#if (eq permit.category 'building')}}🏗️{{/if}}
+                        {{#if (eq permit.category 'electrical')}}⚡{{/if}}
+                        {{#if (eq permit.category 'plumbing')}}🔧{{/if}}
+                        {{#if (eq permit.category 'mechanical')}}🌡️{{/if}}
+                        {{#unless permit.category}}📄{{/unless}}
+                      </div>
+                      <div class="permit-content">
+                        <div class="permit-title">{{if permit.type permit.type permit.name}}</div>
+                        <div class="permit-date">{{format-date permit.submittedDate}}</div>
+                      </div>
+                      <div class="permit-status">
+                        <span class="status-badge {{get-status-badge-class permit.status}}">
+                          {{permit.status}}
+                        </span>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              {{else}}
+                <div class="empty-state">
+                  <div class="empty-icon">📋</div>
+                  {{#if @model.property}}
+                    <h4>No Permits Yet</h4>
+                    <p>Start your first permit application for this property.</p>
+                    <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
+                      Apply for Permit
+                    </button>
+                  {{else}}
+                    <h4>No Property Added</h4>
+                    <p>Add a property in {{@model.municipality.name}} to start applying for permits.</p>
+                    <button type="button" class="btn btn-primary" {{on "click" this.addProperty}}>
+                      Add Property
+                    </button>
+                  {{/if}}
+                </div>
+              {{/if}}
+            </div>
+
+            <!-- Property Information -->
+            <div class="overview-section property-info">
+              <div class="section-header">
+                <h3>Property Information</h3>
+                <button type="button" class="edit-link" {{on "click" this.editProfile}}>
+                  Edit →
+                </button>
+              </div>
+              
+              <div class="property-details">
+                <div class="detail-item">
+                  <span class="detail-label">Address:</span>
+                  <span class="detail-value">{{this.propertyAddress}}</span>
+                </div>
+                {{#if @model.property}}
+                  <div class="detail-item">
+                    <span class="detail-label">Property Type:</span>
+                    <span class="detail-value">{{@model.property.info.type}}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Ownership:</span>
+                    <span class="detail-value">
+                      {{#if @model.property.info.isOwner}}
+                        Property Owner
+                      {{else}}
+                        Authorized Agent
+                      {{/if}}
+                    </span>
+                  </div>
+                {{else}}
+                  <div class="detail-item">
+                    <span class="detail-label">Property:</span>
+                    <span class="detail-value">No property in this municipality</span>
+                  </div>
+                {{/if}}
+                <div class="detail-item">
+                  <span class="detail-label">Municipality:</span>
+                  <span class="detail-value">{{@model.municipality.name}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if (eq this.activeTab 'permits')}}
+        <div class="permits-tab">
+          <div class="permits-sections">
+            <!-- Pending Permits -->
+            {{#if @model.permits.pending.length}}
+              <div class="permits-section">
+                <h3>Pending Review ({{@model.permits.pending.length}})</h3>
+                <div class="permits-grid">
+                  {{#each @model.permits.pending as |permit|}}
+                    <div class="permit-card pending" {{on "click" (fn this.viewPermit permit.id)}}>
+                      <div class="permit-header">
+                        <span class="permit-type">{{permit.type}}</span>
+                        <span class="status-badge warning">{{permit.status}}</span>
+                      </div>
+                      <div class="permit-details">
+                        <div class="permit-date">Applied: {{format-date permit.submittedDate}}</div>
+                        <div class="permit-fee">Fee: {{format-currency permit.fee}}</div>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              </div>
+            {{/if}}
+
+            <!-- Active Permits -->
+            {{#if @model.permits.current.length}}
+              <div class="permits-section">
+                <h3>Active Permits ({{@model.permits.current.length}})</h3>
+                <div class="permits-grid">
+                  {{#each @model.permits.current as |permit|}}
+                    <div class="permit-card active" {{on "click" (fn this.viewPermit permit.id)}}>
+                      <div class="permit-header">
+                        <span class="permit-type">{{permit.type}}</span>
+                        <span class="status-badge success">{{permit.status}}</span>
+                      </div>
+                      <div class="permit-details">
+                        <div class="permit-date">Approved: {{format-date permit.approvedDate}}</div>
+                        <div class="permit-expiry">Expires: {{format-date permit.expiryDate}}</div>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              </div>
+            {{/if}}
+
+            <!-- Completed Permits -->
+            {{#if @model.permits.completed.length}}
+              <div class="permits-section">
+                <h3>Completed Permits ({{@model.permits.completed.length}})</h3>
+                <div class="permits-grid">
+                  {{#each @model.permits.completed as |permit|}}
+                    <div class="permit-card completed" {{on "click" (fn this.viewPermit permit.id)}}>
+                      <div class="permit-header">
+                        <span class="permit-type">{{permit.type}}</span>
+                        <span class="status-badge secondary">{{permit.status}}</span>
+                      </div>
+                      <div class="permit-details">
+                        <div class="permit-date">Completed: {{format-date permit.completedDate}}</div>
+                        <div class="permit-value">Value: {{format-currency permit.projectValue}}</div>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              </div>
+            {{/if}}
+
+            {{#unless @model.permits.all.length}}
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                {{#if @model.property}}
+                  <h4>No Permits Found</h4>
+                  <p>You haven't applied for any permits for this property yet.</p>
+                  <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
+                    Apply for Your First Permit
+                  </button>
+                {{else}}
+                  <h4>No Property Added</h4>
+                  <p>Add a property in {{@model.municipality.name}} to start applying for permits.</p>
+                  <button type="button" class="btn btn-primary" {{on "click" this.addProperty}}>
+                    Add Property
+                  </button>
+                {{/if}}
+              </div>
+            {{/unless}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if (eq this.activeTab 'contractors')}}
+        <div class="contractors-tab">
+          {{#if @model.contractors.length}}
+            <div class="contractors-section">
+              <h3>Commercial Contractors Who Have Worked at This Property</h3>
+              <div class="contractors-grid">
+                {{#each @model.contractors as |contractor|}}
+                  <div class="contractor-card">
+                    <div class="contractor-header">
+                      <div class="contractor-info">
+                        <h4 class="contractor-name">{{contractor.businessName}}</h4>
+                        <p class="contractor-type">{{contractor.businessType}}</p>
+                      </div>
+                      <div class="contractor-rating">
+                        {{#if contractor.rating}}
+                          <span class="rating-stars">⭐ {{contractor.rating}}</span>
+                        {{/if}}
+                      </div>
+                    </div>
+                    
+                    <div class="contractor-details">
+                      <div class="detail-row">
+                        <span class="detail-label">License:</span>
+                        <span class="detail-value">{{contractor.licenseNumber}}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Last Worked:</span>
+                        <span class="detail-value">{{format-date contractor.lastWorked}}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Projects:</span>
+                        <span class="detail-value">{{contractor.projectCount}} permits</span>
+                      </div>
+                    </div>
+
+                    <div class="contractor-contact">
+                      {{#if contractor.phone}}
+                        <a href="tel:{{contractor.phone}}" class="contact-link">
+                          📞 {{contractor.phone}}
+                        </a>
+                      {{/if}}
+                      {{#if contractor.email}}
+                        <a href="mailto:{{contractor.email}}" class="contact-link">
+                          ✉️ {{contractor.email}}
+                        </a>
+                      {{/if}}
+                    </div>
+                  </div>
+                {{/each}}
+              </div>
+            </div>
+          {{else}}
+            <div class="empty-state">
+              <div class="empty-icon">🔨</div>
+              <h4>No Contractors Yet</h4>
+              <p>Commercial contractors who apply for permits at this property will be listed here.</p>
+            </div>
+          {{/if}}
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</div>

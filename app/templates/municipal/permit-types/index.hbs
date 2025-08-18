@@ -1,0 +1,147 @@
+{{page-title "Permit Types - Municipal Portal"}}
+
+<div class="permit-types-container">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Permit Types</h1>
+      <p>Configure and manage permit categories for your municipality</p>
+    </div>
+    <div class="header-actions">
+      <LinkTo @route="municipal.permit-types.new" class="btn btn-primary">
+        <span class="btn-icon">➕</span>
+        Add Permit Type
+      </LinkTo>
+    </div>
+  </header>
+
+  {{#if this.isLoading}}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading permit types...</p>
+    </div>
+  {{else if this.errorMessage}}
+    <div class="error-state">
+      <h3>Unable to Load Permit Types</h3>
+      <p>{{this.errorMessage}}</p>
+      <button type="button" class="btn btn-secondary" {{on "click" this.loadPermitTypes}}>
+        Try Again
+      </button>
+    </div>
+  {{else}}
+    {{#if this.permitTypes.length}}
+      <div class="permit-types-grid">
+        {{#each this.permitTypes as |permitType|}}
+          <div class="permit-type-card">
+            <div class="card-header">
+              <div class="permit-icon">{{permitType.icon}}</div>
+              <div class="permit-info">
+                <h3 class="permit-name">{{permitType.name}}</h3>
+                <p class="permit-description">{{permitType.description}}</p>
+              </div>
+              <div class="permit-status">
+                <span class="status-badge {{if permitType.isActive 'active' 'inactive'}}">
+                  {{if permitType.isActive 'Active' 'Inactive'}}
+                </span>
+              </div>
+            </div>
+
+            <div class="card-content">
+              <div class="permit-stats">
+                <div class="stat-item">
+                  <span class="stat-value">{{permitType.questionsCount}}</span>
+                  <span class="stat-label">Questions</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">{{permitType.applicationsCount}}</span>
+                  <span class="stat-label">Applications</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">${{this.formatCurrency permitType.baseFee}}</span>
+                  <span class="stat-label">Base Fee</span>
+                </div>
+              </div>
+
+              <div class="permit-preview">
+                <h4>Application Questions</h4>
+                {{#if permitType.formFields.length}}
+                  <ul class="questions-preview">
+                    {{#each permitType.previewFields as |field|}}
+                      <li class="question-item">
+                        <span class="question-type">{{field.type}}</span>
+                        <span class="question-label">{{field.label}}</span>
+                      </li>
+                    {{/each}}
+                    {{#if (gt permitType.additionalQuestionsCount 0)}}
+                      <li class="question-item more">
+                        +{{permitType.additionalQuestionsCount}} more questions
+                      </li>
+                    {{/if}}
+                  </ul>
+                {{else}}
+                  <p class="no-questions">No custom questions configured</p>
+                {{/if}}
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <LinkTo @route="municipal.permit-types.edit" @model={{permitType.id}} class="btn btn-outline">
+                <span class="btn-icon">✏️</span>
+                Edit
+              </LinkTo>
+              <button 
+                type="button" 
+                class="btn btn-outline {{if permitType.isActive 'warning' 'success'}}"
+                {{on "click" (fn this.togglePermitType permitType)}}
+              >
+                <span class="btn-icon">{{if permitType.isActive '🔒' '🔓'}}</span>
+                {{if permitType.isActive 'Deactivate' 'Activate'}}
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline danger"
+                {{on "click" (fn this.deletePermitType permitType)}}
+              >
+                <span class="btn-icon">🗑️</span>
+                Delete
+              </button>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h3>No Permit Types Configured</h3>
+        <p>Get started by adding your first permit type. We'll provide default questions to help you get set up quickly.</p>
+        <LinkTo @route="municipal.permit-types.new" class="btn btn-primary">
+          <span class="btn-icon">➕</span>
+          Add Your First Permit Type
+        </LinkTo>
+      </div>
+    {{/if}}
+  {{/if}}
+
+  {{#if this.showDeleteModal}}
+    <div class="modal-overlay" {{on "click" this.closeDeleteModal}}>
+      <div class="modal-content" {{on "click" (fn this.stopPropagation)}}>
+        <div class="modal-header">
+          <h3>Delete Permit Type</h3>
+          <button type="button" class="modal-close" {{on "click" this.closeDeleteModal}}>×</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete <strong>{{this.permitTypeToDelete.name}}</strong>?</p>
+          <p class="warning-text">This action cannot be undone. All associated applications and data will be permanently removed.</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" {{on "click" this.closeDeleteModal}}>
+            Cancel
+          </button>
+          <button type="button" class="btn btn-danger" {{on "click" this.confirmDelete}}>
+            <span class="btn-icon">🗑️</span>
+            Delete Permit Type
+          </button>
+        </div>
+      </div>
+    </div>
+  {{/if}}
+</div>

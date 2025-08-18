@@ -1,0 +1,287 @@
+<div class="billing-management">
+  {{#if this.isLoading}}
+    <div class="billing-loading">
+      <div class="loading-spinner"></div>
+      <p>Loading billing information...</p>
+    </div>
+  {{else}}
+    {{#if this.errorMessage}}
+      <div class="error-message billing-error">
+        {{this.errorMessage}}
+        <button type="button" class="btn btn-sm btn-primary" {{on "click" this.loadBillingData}}>
+          Retry
+        </button>
+      </div>
+    {{/if}}
+
+    {{#if this.billingData}}
+      <!-- Account Overview -->
+      <section class="billing-overview">
+        <div class="billing-header">
+          <h2>
+            {{#if this.isFreeUser}}
+              Account Information
+            {{else}}
+              Billing & Subscription
+            {{/if}}
+          </h2>
+          <div class="account-status">
+            <span class="status-badge {{if this.isSubscriptionActive 'active' 'inactive'}}">
+              {{#if this.isFreeUser}}
+                {{this.billingData.accountStatus}}
+              {{else}}
+                {{this.subscriptionStatus}}
+              {{/if}}
+            </span>
+          </div>
+        </div>
+
+        <div class="billing-cards">
+          <!-- Current Plan Card -->
+          <div class="billing-card plan-card">
+            <h3>Current Plan</h3>
+            <div class="plan-info">
+              <div class="plan-name">{{this.billingData.planName}}</div>
+              {{#if this.isMunicipalUser}}
+                <div class="plan-price">{{this.formattedPrice}}/year</div>
+                {{#if this.willCancelAtPeriodEnd}}
+                  <div class="plan-notice warning">
+                    ⚠️ Subscription will end on {{this.formattedRenewalDate}}
+                  </div>
+                {{else}}
+                  <div class="plan-renewal">
+                    Renews {{this.formattedRenewalDate}} ({{this.daysUntilRenewal}} days)
+                  </div>
+                {{/if}}
+              {{/if}}
+            </div>
+
+            {{#if this.isFreeUser}}
+              <div class="plan-benefits">
+                <h4>Your Benefits:</h4>
+                <ul>
+                  {{#each this.billingData.benefits as |benefit|}}
+                    <li>✅ {{benefit}}</li>
+                  {{/each}}
+                </ul>
+              </div>
+            {{/if}}
+
+            {{#if this.isMunicipalUser}}
+              <div class="plan-actions">
+                {{#if this.willCancelAtPeriodEnd}}
+                  <button type="button" class="btn btn-primary" {{on "click" this.reactivateSubscription}}>
+                    Reactivate Subscription
+                  </button>
+                {{else}}
+                  {{#if (or this.canUpgrade this.canDowngrade)}}
+                    <button type="button" class="btn btn-outline" {{on "click" this.togglePlanComparison}}>
+                      {{#if this.canUpgrade}}Upgrade Plan{{else}}Change Plan{{/if}}
+                    </button>
+                  {{/if}}
+                  <button type="button" class="btn btn-outline btn-danger" {{on "click" this.showCancelDialog}}>
+                    Cancel Subscription
+                  </button>
+                {{/if}}
+              </div>
+            {{/if}}
+          </div>
+
+          <!-- Usage Card (Municipal Only) -->
+          {{#if this.isMunicipalUser}}
+            <div class="billing-card usage-card">
+              <h3>Usage This Period</h3>
+              {{#if this.usageData}}
+                <div class="usage-metrics">
+                  <!-- Permits Usage -->
+                  <div class="usage-metric">
+                    <div class="usage-header">
+                      <span class="usage-label">Permits Processed</span>
+                      <span class="usage-count">
+                        {{this.usageData.permits.current}}{{#if this.usageData.permits.limit}} / {{this.usageData.permits.limit}}{{/if}}
+                      </span>
+                    </div>
+                    {{#if this.usageData.permits.limit}}
+                      <div class="usage-bar">
+                        <div class="usage-progress" style="width: {{this.usageData.permits.percentage}}%"></div>
+                      </div>
+                      <div class="usage-percentage">{{this.usageData.permits.percentage}}% used</div>
+                    {{else}}
+                      <div class="usage-unlimited">Unlimited</div>
+                    {{/if}}
+                  </div>
+
+                  <!-- Users Usage -->
+                  <div class="usage-metric">
+                    <div class="usage-header">
+                      <span class="usage-label">Active Users</span>
+                      <span class="usage-count">
+                        {{this.usageData.users.current}}{{#if this.usageData.users.limit}} / {{this.usageData.users.limit}}{{/if}}
+                      </span>
+                    </div>
+                    {{#if this.usageData.users.limit}}
+                      <div class="usage-bar">
+                        <div class="usage-progress" style="width: {{this.usageData.users.percentage}}%"></div>
+                      </div>
+                      <div class="usage-percentage">{{this.usageData.users.percentage}}% used</div>
+                    {{else}}
+                      <div class="usage-unlimited">Unlimited</div>
+                    {{/if}}
+                  </div>
+                </div>
+
+                {{#if this.isOverLimit}}
+                  <div class="usage-warning">
+                    ⚠️ You have exceeded your plan limits. Please upgrade your plan to continue service.
+                  </div>
+                {{/if}}
+              {{/if}}
+            </div>
+          {{/if}}
+        </div>
+      </section>
+
+      <!-- Billing History (Municipal Only) -->
+      {{#if this.isMunicipalUser}}
+        <section class="billing-history">
+          <h3>Billing History</h3>
+          {{#if this.billingHistory.length}}
+            <div class="history-table">
+              <div class="table-header">
+                <div class="col-date">Date</div>
+                <div class="col-plan">Plan</div>
+                <div class="col-period">Period</div>
+                <div class="col-amount">Amount</div>
+                <div class="col-status">Status</div>
+                <div class="col-actions">Actions</div>
+              </div>
+              {{#each this.billingHistory as |invoice|}}
+                <div class="table-row">
+                  <div class="col-date">{{format-date invoice.date}}</div>
+                  <div class="col-plan">{{invoice.plan}}</div>
+                  <div class="col-period">{{invoice.period}}</div>
+                  <div class="col-amount">${{mul invoice.amount 0.01}}</div>
+                  <div class="col-status">
+                    <span class="status-badge {{invoice.status}}">{{capitalize invoice.status}}</span>
+                  </div>
+                  <div class="col-actions">
+                    <a href="{{invoice.downloadUrl}}" class="btn btn-sm btn-outline" target="_blank">
+                      Download PDF
+                    </a>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <div class="empty-history">
+              <p>No billing history available yet.</p>
+            </div>
+          {{/if}}
+        </section>
+      {{/if}}
+
+      <!-- Plan Comparison Modal -->
+      {{#if this.showPlanComparison}}
+        <div class="modal-backdrop" {{on "click" this.togglePlanComparison}}>
+          <div class="modal-content plan-comparison-modal" {{on "click" (fn (mut false))}}>
+            <div class="modal-header">
+              <h2>Choose Your Plan</h2>
+              <button type="button" class="modal-close" {{on "click" this.togglePlanComparison}}>×</button>
+            </div>
+            
+            {{#if this.availablePlans}}
+              <div class="plans-grid">
+                {{#each-in this.availablePlans as |planKey plan|}}
+                  <div class="plan-option {{if (eq planKey this.currentPlan) 'current'}} {{if plan.popular 'popular'}}">
+                    {{#if plan.popular}}
+                      <div class="popular-badge">Most Popular</div>
+                    {{/if}}
+                    {{#if (eq planKey this.currentPlan)}}
+                      <div class="current-badge">Current Plan</div>
+                    {{/if}}
+                    
+                    <h3>{{plan.name}}</h3>
+                    <div class="plan-pricing">
+                      {{#if plan.price}}
+                        <span class="price">${{mul plan.price 0.01}}</span>
+                        <span class="period">/year</span>
+                      {{else}}
+                        <span class="price">Custom</span>
+                        <span class="period">pricing</span>
+                      {{/if}}
+                    </div>
+                    
+                    <div class="plan-limits">
+                      <div class="limit-item">
+                        <strong>{{#if (eq plan.permits "Unlimited")}}Unlimited{{else}}{{plan.permits}}{{/if}}</strong> permits/year
+                      </div>
+                      <div class="limit-item">
+                        <strong>{{#if (eq plan.users "Unlimited")}}Unlimited{{else}}{{plan.users}}{{/if}}</strong> users
+                      </div>
+                    </div>
+                    
+                    <ul class="plan-features">
+                      {{#each plan.features as |feature|}}
+                        <li>✅ {{feature}}</li>
+                      {{/each}}
+                    </ul>
+                    
+                    <div class="plan-action">
+                      {{#if (eq planKey this.currentPlan)}}
+                        <button type="button" class="btn btn-outline" disabled>Current Plan</button>
+                      {{else if (eq planKey "enterprise")}}
+                        <button type="button" class="btn btn-primary">Contact Sales</button>
+                      {{else}}
+                        <button 
+                          type="button" 
+                          class="btn btn-primary" 
+                          {{on "click" (fn this.updateSubscriptionPlan planKey)}}
+                          disabled={{this.isUpdatingPlan}}
+                        >
+                          {{#if this.isUpdatingPlan}}
+                            Updating...
+                          {{else}}
+                            Select {{plan.name}}
+                          {{/if}}
+                        </button>
+                      {{/if}}
+                    </div>
+                  </div>
+                {{/each-in}}
+              </div>
+            {{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      <!-- Cancel Confirmation Modal -->
+      {{#if this.showCancelConfirmation}}
+        <div class="modal-backdrop" {{on "click" this.hideCancelDialog}}>
+          <div class="modal-content cancel-confirmation-modal" {{on "click" (fn (mut false))}}>
+            <div class="modal-header">
+              <h2>Cancel Subscription</h2>
+              <button type="button" class="modal-close" {{on "click" this.hideCancelDialog}}>×</button>
+            </div>
+            
+            <div class="modal-body">
+              <p>Are you sure you want to cancel your subscription?</p>
+              <p class="text-muted">
+                Your subscription will remain active until {{this.formattedRenewalDate}}, 
+                and you'll continue to have access to all features during this time.
+              </p>
+            </div>
+            
+            <div class="modal-actions">
+              <button type="button" class="btn btn-outline" {{on "click" this.hideCancelDialog}}>
+                Keep Subscription
+              </button>
+              <button type="button" class="btn btn-danger" {{on "click" (fn this.cancelSubscription true)}}>
+                Cancel at Period End
+              </button>
+            </div>
+          </div>
+        </div>
+      {{/if}}
+    {{/if}}
+  {{/if}}
+</div>
