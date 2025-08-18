@@ -6,9 +6,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Ember build artifacts
+# Ember build artifacts - temp files only
 /tmp
-/dist
 
 # IDE files
 .vscode
