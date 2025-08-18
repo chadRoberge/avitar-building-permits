@@ -9,6 +9,11 @@
       }
     }
   ],
+  "build": {
+    "env": {
+      "NODE_ENV": "development"
+    }
+  },
   "functions": {
     "api/[...all].js": {
       "maxDuration": 60,

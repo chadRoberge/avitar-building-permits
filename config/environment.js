@@ -29,8 +29,8 @@ module.exports = function (environment) {
     // ENV.APP.LOG_VIEW_LOOKUPS = true;
 
     // Development API configuration
-    // FORCE EMPTY API_HOST FOR ALL NON-LOCALHOST ENVIRONMENTS
-    ENV.APP.API_HOST = 'http://localhost:3000';
+    // Use relative URLs for Vercel, localhost for local development
+    ENV.APP.API_HOST = process.env.VERCEL ? '' : 'http://localhost:3000';
   }
 
   if (environment === 'test') {
