@@ -1,0 +1,319 @@
+<div class="admin-municipal-manager">
+  <div class="manager-header">
+    <h2>Municipality Management</h2>
+    <p>Configure payment settings and manage municipalities</p>
+  </div>
+
+  {{! Search and Filters }}
+  <div class="manager-controls">
+    <div class="search-controls">
+      <input 
+        type="text" 
+        placeholder="Search municipalities..." 
+        value={{this.searchTerm}}
+        {{on "input" this.updateSearch}}
+        {{on "keyup" (fn (mut this.searchTerm) (target-value))}}
+        class="search-input"
+      />
+      <button type="button" class="btn btn-primary" {{on "click" this.performSearch}}>
+        Search
+      </button>
+    </div>
+    
+    <div class="filter-controls">
+      <select {{on "change" this.updateStatusFilter}} class="filter-select">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      
+      <select {{on "change" this.updatePlanFilter}} class="filter-select">
+        <option value="all">All Plans</option>
+        <option value="basic">Basic</option>
+        <option value="professional">Professional</option>
+        <option value="enterprise">Enterprise</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="manager-content">
+    {{#if this.isLoading}}
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading municipalities...</p>
+      </div>
+
+    {{else if this.error}}
+      <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <h3>Error Loading Municipalities</h3>
+        <p>{{this.error}}</p>
+        <button type="button" class="btn btn-primary" {{on "click" this.loadMunicipalities}}>
+          Retry
+        </button>
+      </div>
+
+    {{else}}
+      <div class="manager-layout">
+        {{! Municipalities List }}
+        <div class="municipalities-list">
+          <h3>Municipalities ({{this.municipalities.length}})</h3>
+          <div class="list-container">
+            {{#each this.filteredMunicipalities as |municipality|}}
+              <div 
+                class="municipality-item {{if (eq municipality._id this.selectedMunicipality.municipality._id) 'selected'}}"
+                {{on "click" (fn this.selectMunicipality municipality)}}
+              >
+                <div class="municipality-header">
+                  <h4>{{municipality.name}}</h4>
+                  <div class="municipality-status">
+                    <span class="status-badge {{if municipality.isActive 'active' 'inactive'}}">
+                      {{if municipality.isActive 'Active' 'Inactive'}}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="municipality-meta">
+                  <div class="meta-item">
+                    <span class="meta-label">Plan:</span>
+                    <span class="meta-value">{{this.formatSubscriptionPlan municipality.subscription.plan}}</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Users:</span>
+                    <span class="meta-value">{{municipality.userCount}}</span>
+                  </div>
+                  <div class="meta-item">
+                    <span class="meta-label">Location:</span>
+                    <span class="meta-value">{{municipality.address.city}}, {{municipality.address.state}}</span>
+                  </div>
+                </div>
+
+                <div class="municipality-actions">
+                  <button 
+                    type="button" 
+                    class="btn {{if municipality.isActive 'btn-warning' 'btn-success'}} btn-sm"
+                    {{on "click" (fn this.toggleMunicipalityStatus municipality)}}
+                  >
+                    {{if municipality.isActive 'Deactivate' 'Activate'}}
+                  </button>
+                </div>
+              </div>
+            {{else}}
+              <div class="empty-state">
+                <div class="empty-icon">🏛️</div>
+                <h4>No municipalities found</h4>
+                <p>No municipalities match your current filters.</p>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+
+        {{! Municipality Details }}
+        {{#if this.selectedMunicipality}}
+          <div class="municipality-details">
+            <div class="details-header">
+              <h3>{{this.selectedMunicipality.municipality.name}}</h3>
+              <button type="button" class="btn-close" {{on "click" this.closeDetails}}>✕</button>
+            </div>
+
+            <div class="details-content">
+              {{! Basic Information }}
+              <div class="details-section">
+                <h4>Basic Information</h4>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="status-badge {{if this.selectedMunicipality.municipality.isActive 'active' 'inactive'}}">
+                      {{if this.selectedMunicipality.municipality.isActive 'Active' 'Inactive'}}
+                    </span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Type:</span>
+                    <span class="info-value">{{this.selectedMunicipality.municipality.type}}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Population:</span>
+                    <span class="info-value">{{this.selectedMunicipality.municipality.population}}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Website:</span>
+                    <span class="info-value">{{this.selectedMunicipality.municipality.website}}</span>
+                  </div>
+                </div>
+              </div>
+
+              {{! Subscription Information }}
+              <div class="details-section">
+                <h4>Subscription</h4>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Plan:</span>
+                    <span class="info-value">{{this.formatSubscriptionPlan this.selectedMunicipality.municipality.subscription.plan}}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="status-badge subscription-{{this.selectedMunicipality.municipality.subscription.status}}">
+                      {{this.formatSubscriptionStatus this.selectedMunicipality.municipality.subscription.status}}
+                    </span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Period Start:</span>
+                    <span class="info-value">{{format-date this.selectedMunicipality.municipality.subscription.currentPeriodStart}}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Period End:</span>
+                    <span class="info-value">{{format-date this.selectedMunicipality.municipality.subscription.currentPeriodEnd}}</span>
+                  </div>
+                </div>
+              </div>
+
+              {{! Payment Configuration }}
+              <div class="details-section">
+                <div class="section-header">
+                  <h4>Payment Configuration</h4>
+                  <button type="button" class="btn btn-primary btn-sm" {{on "click" this.showPaymentConfiguration}}>
+                    Configure Payments
+                  </button>
+                </div>
+                
+                <div class="payment-config-status">
+                  <div class="config-item">
+                    <span class="config-label">InvoiceCloud:</span>
+                    <span class="status-badge {{if this.selectedMunicipality.municipality.paymentConfig.invoiceCloud.enabled 'active' 'inactive'}}">
+                      {{if this.selectedMunicipality.municipality.paymentConfig.invoiceCloud.enabled 'Enabled' 'Disabled'}}
+                    </span>
+                  </div>
+                  <div class="config-item">
+                    <span class="config-label">Test Mode:</span>
+                    <span class="config-value">
+                      {{if this.selectedMunicipality.municipality.paymentConfig.invoiceCloud.testMode 'Yes' 'No'}}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {{! Users }}
+              <div class="details-section">
+                <h4>Users ({{this.selectedMunicipality.users.length}})</h4>
+                <div class="users-list">
+                  {{#each this.selectedMunicipality.users as |user|}}
+                    <div class="user-item">
+                      <div class="user-avatar">{{user.firstName.0}}{{user.lastName.0}}</div>
+                      <div class="user-info">
+                        <div class="user-name">{{user.firstName}} {{user.lastName}}</div>
+                        <div class="user-email">{{user.email}}</div>
+                        <div class="user-meta">
+                          {{user.userType}} • {{if user.isActive 'Active' 'Inactive'}}
+                        </div>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              </div>
+            </div>
+          </div>
+        {{/if}}
+      </div>
+    {{/if}}
+  </div>
+
+  {{! Payment Configuration Modal }}
+  {{#if this.showPaymentConfig}}
+    <div class="modal-overlay" {{on "click" this.hidePaymentConfiguration}}>
+      <div class="modal-content payment-config-modal" {{on "click" (fn (mut) (event) (halt-event))}} >
+        <div class="modal-header">
+          <h3>Payment Configuration</h3>
+          <button type="button" class="btn-close" {{on "click" this.hidePaymentConfiguration}}>✕</button>
+        </div>
+        
+        <div class="modal-body">
+          {{! InvoiceCloud Configuration }}
+          <div class="config-section">
+            <h4>InvoiceCloud Settings</h4>
+            
+            <div class="form-group">
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={{this.paymentConfigForm.invoiceCloud.enabled}}
+                  {{on "change" (fn this.updatePaymentConfigBoolean "invoiceCloud" "enabled")}}
+                />
+                Enable InvoiceCloud Payments
+              </label>
+            </div>
+
+            {{#if this.paymentConfigForm.invoiceCloud.enabled}}
+              <div class="form-group">
+                <label for="ic-merchant-id">Merchant ID:</label>
+                <input 
+                  id="ic-merchant-id"
+                  type="text" 
+                  value={{this.paymentConfigForm.invoiceCloud.merchantId}}
+                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "merchantId")}}
+                  placeholder="InvoiceCloud Merchant ID"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="ic-api-key">API Key:</label>
+                <input 
+                  id="ic-api-key"
+                  type="password" 
+                  value={{this.paymentConfigForm.invoiceCloud.apiKey}}
+                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "apiKey")}}
+                  placeholder="InvoiceCloud API Key"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="ic-webhook-secret">Webhook Secret:</label>
+                <input 
+                  id="ic-webhook-secret"
+                  type="password" 
+                  value={{this.paymentConfigForm.invoiceCloud.webhookSecret}}
+                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "webhookSecret")}}
+                  placeholder="Webhook Secret for verification"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="ic-base-url">Base URL:</label>
+                <input 
+                  id="ic-base-url"
+                  type="url" 
+                  value={{this.paymentConfigForm.invoiceCloud.baseUrl}}
+                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "baseUrl")}}
+                  placeholder="https://api.invoicecloud.com"
+                  class="form-control"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input 
+                    type="checkbox" 
+                    checked={{this.paymentConfigForm.invoiceCloud.testMode}}
+                    {{on "change" (fn this.updatePaymentConfigBoolean "invoiceCloud" "testMode")}}
+                  />
+                  Test Mode (Use for development/testing)
+                </label>
+              </div>
+            {{/if}}
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" {{on "click" this.hidePaymentConfiguration}}>
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" {{on "click" this.savePaymentConfiguration}}>
+            Save Configuration
+          </button>
+        </div>
+      </div>
+    </div>
+  {{/if}}
+}</div>

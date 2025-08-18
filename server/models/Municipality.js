@@ -148,6 +148,47 @@ const municipalitySchema = new mongoose.Schema(
       },
     },
 
+    // Payment Configuration
+    paymentConfig: {
+      invoiceCloud: {
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+        apiKey: {
+          type: String,
+          select: false, // Don't include in queries by default for security
+        },
+        merchantId: {
+          type: String,
+        },
+        webhookSecret: {
+          type: String,
+          select: false, // Don't include in queries by default for security
+        },
+        baseUrl: {
+          type: String,
+          default: 'https://api.invoicecloud.com',
+        },
+        testMode: {
+          type: Boolean,
+          default: true,
+        },
+      },
+      // Future payment processors can be added here
+      stripe: {
+        enabled: {
+          type: Boolean,
+          default: false,
+        },
+        publishableKey: String,
+        secretKey: {
+          type: String,
+          select: false,
+        },
+      },
+    },
+
     // Usage tracking
     usage: {
       permits: {

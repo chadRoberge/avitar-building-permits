@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 const municipalityRoutes = require('./routes/municipalities');
 const dashboardRoutes = require('./routes/dashboard');
 const permitTypeRoutes = require('./routes/permit-types');
@@ -63,6 +64,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/municipalities', municipalityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/permit-types', permitTypeRoutes);
@@ -76,6 +78,7 @@ app.use('/api/stripe', stripeRoutes);
 // Debug: Log all registered routes
 console.log('Registered routes:');
 console.log('- /api/auth');
+console.log('- /api/admin');
 console.log('- /api/municipalities');
 console.log('- /api/dashboard');
 console.log('- /api/permit-types');

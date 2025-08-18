@@ -1,0 +1,178 @@
+<div class="admin-dashboard">
+  <div class="dashboard-header">
+    <h1>System Administration Dashboard</h1>
+    <p>Manage municipalities, users, and system-wide settings</p>
+  </div>
+
+  {{#if this.isLoading}}
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading dashboard data...</p>
+    </div>
+  
+  {{else if this.error}}
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Error Loading Dashboard</h3>
+      <p>{{this.error}}</p>
+      <button type="button" class="btn btn-primary" {{on "click" this.loadDashboardData}}>
+        Retry
+      </button>
+    </div>
+
+  {{else if this.dashboardData}}
+    {{! Overview Cards }}
+    <div class="overview-cards">
+      {{#each this.overviewCards as |card|}}
+        <div 
+          class="overview-card {{card.color}} {{if card.action 'clickable'}}"
+          {{on "click" card.action}}
+        >
+          <div class="card-icon">{{card.icon}}</div>
+          <div class="card-content">
+            <div class="card-value">{{card.value}}</div>
+            <div class="card-title">{{card.title}}</div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    <div class="dashboard-content">
+      {{! Analytics Section }}
+      <div class="analytics-section">
+        <div class="analytics-grid">
+          <div class="chart-container">
+            <h3>Users by Type</h3>
+            <div class="chart-content">
+              {{#each this.userTypeChart as |item|}}
+                <div class="chart-item">
+                  <div class="chart-bar">
+                    <div 
+                      class="chart-fill" 
+                      style="width: {{item.percentage}}%"
+                    ></div>
+                  </div>
+                  <div class="chart-label">
+                    <span class="label-text">{{item.label}}</span>
+                    <span class="label-value">{{item.value}} ({{item.percentage}}%)</span>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <h3>Permits by Status</h3>
+            <div class="chart-content">
+              {{#each this.permitStatusChart as |item|}}
+                <div class="chart-item">
+                  <div class="chart-bar">
+                    <div 
+                      class="chart-fill permit-status" 
+                      style="width: {{item.percentage}}%"
+                    ></div>
+                  </div>
+                  <div class="chart-label">
+                    <span class="label-text">{{item.label}}</span>
+                    <span class="label-value">{{item.value}} ({{item.percentage}}%)</span>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{! Recent Activity Section }}
+      <div class="recent-activity-section">
+        <div class="activity-grid">
+          <div class="activity-container">
+            <h3>Recent Users</h3>
+            <div class="activity-list">
+              {{#each this.dashboardData.recent.users as |user|}}
+                <div class="activity-item">
+                  <div class="activity-avatar">
+                    {{user.firstName.0}}{{user.lastName.0}}
+                  </div>
+                  <div class="activity-content">
+                    <div class="activity-title">
+                      {{user.firstName}} {{user.lastName}}
+                    </div>
+                    <div class="activity-meta">
+                      {{user.email}} • {{this.formatUserType user.userType}}
+                    </div>
+                    <div class="activity-date">
+                      {{format-datetime user.createdAt}}
+                    </div>
+                  </div>
+                </div>
+              {{else}}
+                <div class="empty-state">No recent users</div>
+              {{/each}}
+            </div>
+          </div>
+
+          <div class="activity-container">
+            <h3>Recent Permits</h3>
+            <div class="activity-list">
+              {{#each this.dashboardData.recent.permits as |permit|}}
+                <div class="activity-item">
+                  <div class="activity-icon">📋</div>
+                  <div class="activity-content">
+                    <div class="activity-title">
+                      {{permit.permitNumber}} - {{permit.type}}
+                    </div>
+                    <div class="activity-meta">
+                      {{#if permit.municipalityId}}
+                        {{permit.municipalityId.name}}
+                      {{/if}}
+                      • Status: {{permit.status}}
+                    </div>
+                    <div class="activity-date">
+                      {{format-datetime permit.createdAt}}
+                    </div>
+                  </div>
+                </div>
+              {{else}}
+                <div class="empty-state">No recent permits</div>
+              {{/each}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{! Quick Actions }}
+      <div class="quick-actions-section">
+        <h3>Quick Actions</h3>
+        <div class="quick-actions">
+          <button 
+            type="button" 
+            class="btn btn-outline-primary"
+            {{on "click" this.navigateToMunicipalities}}
+          >
+            <span class="btn-icon">🏛️</span>
+            Manage Municipalities
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn btn-outline-primary"
+            {{on "click" this.navigateToUsers}}
+          >
+            <span class="btn-icon">👥</span>
+            Manage Users
+          </button>
+          
+          <button 
+            type="button" 
+            class="btn btn-outline-primary"
+            {{on "click" this.navigateToSettings}}
+          >
+            <span class="btn-icon">⚙️</span>
+            System Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  {{/if}}
+}</div>

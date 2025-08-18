@@ -51,7 +51,7 @@ const userSchema = new mongoose.Schema(
     },
     userType: {
       type: String,
-      enum: ['municipal', 'residential', 'commercial'],
+      enum: ['municipal', 'residential', 'commercial', 'system_admin'],
       required: true,
     },
     // Municipal users have municipality data
