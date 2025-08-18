@@ -1,0 +1,99 @@
+<form {{on "submit" this.submitLogin}} class="admin-login-form">
+  {{#if this.errorMessage}}
+    <div class="alert alert-danger mb-4">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-content">
+        <strong>Login Failed</strong>
+        <p>{{this.errorMessage}}</p>
+      </div>
+    </div>
+  {{/if}}
+
+  <div class="form-group mb-3">
+    <label for="admin-email" class="form-label font-weight-medium">
+      Email Address
+    </label>
+    <input
+      id="admin-email"
+      type="email"
+      value={{this.email}}
+      {{on "input" this.updateEmail}}
+      placeholder="Enter admin email"
+      class="form-control"
+      required
+      autocomplete="username"
+    />
+  </div>
+
+  <div class="form-group mb-4">
+    <label for="admin-password" class="form-label font-weight-medium">
+      Password
+    </label>
+    <input
+      id="admin-password"
+      type="password"
+      value={{this.password}}
+      {{on "input" this.updatePassword}}
+      placeholder="Enter admin password"
+      class="form-control"
+      required
+      autocomplete="current-password"
+    />
+  </div>
+
+  <div class="form-actions mb-4">
+    <button 
+      type="submit" 
+      class="btn btn-primary btn-lg w-100"
+      disabled={{this.isLoading}}
+    >
+      {{#if this.isLoading}}
+        <span class="spinner"></span>
+        Signing In...
+      {{else}}
+        🔐 Sign In as Admin
+      {{/if}}
+    </button>
+  </div>
+
+  <div class="demo-credentials">
+    <div class="demo-header">
+      <hr class="demo-divider" />
+      <span class="demo-text">Demo Credentials</span>
+      <hr class="demo-divider" />
+    </div>
+    
+    <div class="demo-info">
+      <p class="demo-description">
+        Use these credentials for testing:
+      </p>
+      <div class="demo-creds">
+        <div class="demo-item">
+          <span class="demo-label">Email:</span>
+          <code class="demo-value">admin@avitarbuildingpermits.com</code>
+        </div>
+        <div class="demo-item">
+          <span class="demo-label">Password:</span>
+          <code class="demo-value">AdminPass123!</code>
+        </div>
+      </div>
+      
+      <button 
+        type="button" 
+        class="btn btn-outline-secondary btn-sm"
+        {{on "click" this.fillDemoCredentials}}
+      >
+        Fill Demo Credentials
+      </button>
+    </div>
+  </div>
+
+  <div class="security-notice">
+    <div class="notice-icon">🛡️</div>
+    <div class="notice-content">
+      <small class="text-muted">
+        This is a secure admin login. Only authorized system administrators can access these tools.
+      </small>
+    </div>
+  </div>
+</form>

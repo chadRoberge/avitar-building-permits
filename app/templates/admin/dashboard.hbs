@@ -1,0 +1,65 @@
+{{page-title "System Admin Dashboard"}}
+
+<div class="admin-dashboard-container">
+  <header class="admin-header">
+    <div class="container">
+      <div class="row items-center">
+        <div class="col-md-8">
+          <div class="header-brand d-flex items-center mb-2">
+            <div class="brand-icon">🛡️</div>
+            <div class="brand-content">
+              <h1 class="brand-title">System Administration</h1>
+              <p class="brand-subtitle">Welcome, {{@model.user.firstName}} {{@model.user.lastName}}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 text-right">
+          <div class="header-actions">
+            <button type="button" class="btn btn-outline-secondary btn-sm" {{on "click" this.logout}}>
+              🚪 Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <nav class="admin-nav mb-4">
+        <div class="nav-tabs">
+          <a href="#" class="nav-item active" {{on "click" this.showDashboard}}>
+            📊 Dashboard
+          </a>
+          <a href="#" class="nav-item" {{on "click" this.showMunicipalities}}>
+            🏛️ Municipalities
+          </a>
+          <a href="#" class="nav-item" {{on "click" this.showUsers}}>
+            👥 Users
+          </a>
+          <a href="#" class="nav-item" {{on "click" this.showSettings}}>
+            ⚙️ Settings
+          </a>
+        </div>
+      </nav>
+
+      <div class="admin-content">
+        {{#if this.showDashboardView}}
+          <AdminDashboard />
+        {{else if this.showMunicipalitiesView}}
+          <AdminMunicipalManager />
+        {{else if this.showUsersView}}
+          <div class="coming-soon">
+            <h3>👥 User Management</h3>
+            <p>User management interface coming soon...</p>
+          </div>
+        {{else if this.showSettingsView}}
+          <div class="coming-soon">
+            <h3>⚙️ System Settings</h3>
+            <p>System settings interface coming soon...</p>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+  </main>
+</div>

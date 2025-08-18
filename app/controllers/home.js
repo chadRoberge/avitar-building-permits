@@ -152,4 +152,10 @@ export default class HomeController extends Controller {
     // This would navigate to a municipality registration form
     this.router.transitionTo('register-municipality');
   }
+
+  @action
+  showAdminLogin() {
+    // Navigate to admin login page
+    this.router.transitionTo('admin.login');
+  }
 }
