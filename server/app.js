@@ -65,7 +65,13 @@ console.log('- /api/stripe');
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Building Permits API is running' });
+  res.json({ 
+    status: 'OK', 
+    message: 'Building Permits API is running',
+    environment: process.env.NODE_ENV,
+    vercel: !!process.env.VERCEL,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // List all routes endpoint
@@ -95,10 +101,12 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Building Permits API server running on port ${PORT}`);
-});
+// Only start server if not in Vercel environment
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Building Permits API server running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
