@@ -98,6 +98,7 @@ router.post('/register', async (req, res) => {
 // Get all municipalities (public endpoint for search)
 router.get('/', async (req, res) => {
   try {
+    console.log('Getting municipalities - DB connection state:', require('mongoose').connection.readyState);
     const { search, state, limit = 20 } = req.query;
     let query = { isActive: true };
 
@@ -119,10 +120,19 @@ router.get('/', async (req, res) => {
       .limit(parseInt(limit))
       .sort({ name: 1 });
 
+    console.log(`Found ${municipalities.length} municipalities`);
     res.json(municipalities);
   } catch (error) {
     console.error('Get municipalities error:', error);
-    res.status(500).json({ error: 'Server error retrieving municipalities' });
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Server error retrieving municipalities',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
