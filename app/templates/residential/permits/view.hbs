@@ -152,6 +152,11 @@
           </div>
         </section>
 
+        {{!-- Payment Information --}}
+        <section class="details-card">
+          <PermitPayment @permit={{@model.permit}} />
+        </section>
+
         {{!-- Property Information --}}
         {{#if @model.permit.property}}
           <section class="details-card">

@@ -476,6 +476,242 @@ router.get('/:permitId', authenticateToken, async (req, res) => {
   }
 });
 
+// ===== PAYMENT FUNCTIONALITY =====
+
+// Initiate payment for a permit
+router.post('/:id/payment/initiate', authenticateToken, async (req, res) => {
+  try {
+    const permitId = req.params.id;
+    const { paymentMethod, amount } = req.body;
+
+    // Find and validate permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Check user authorization
+    if (req.user.userType === 'residential' && 
+        permit.applicant.toString() !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Check if payment is already completed
+    if (permit.paymentStatus === 'paid') {
+      return res.status(400).json({ error: 'Payment already completed' });
+    }
+
+    // Validate amount matches permit fees
+    const expectedAmount = permit.totalFees || permit.fee || 0;
+    if (amount !== expectedAmount) {
+      return res.status(400).json({ error: 'Payment amount mismatch' });
+    }
+
+    // Create InvoiceCloud payment session
+    const invoiceCloudPayment = await createInvoiceCloudPayment({
+      permitId: permit._id,
+      municipalityId: permit.municipalityId,
+      amount: amount,
+      paymentMethod: paymentMethod,
+      applicant: {
+        firstName: permit.applicant.firstName,
+        lastName: permit.applicant.lastName,
+        email: permit.applicant.email
+      },
+      description: `${permit.type} Permit - ${permit.permitNumber}`,
+      returnUrl: `${process.env.CLIENT_URL || 'http://localhost:4200'}/residential/permits/${permitId}?payment=success`,
+      cancelUrl: `${process.env.CLIENT_URL || 'http://localhost:4200'}/residential/permits/${permitId}?payment=cancelled`
+    });
+
+    // Update permit with payment session info
+    permit.paymentStatus = 'pending';
+    permit.paymentSessionId = invoiceCloudPayment.sessionId;
+    await permit.save();
+
+    res.json({
+      paymentUrl: invoiceCloudPayment.paymentUrl,
+      sessionId: invoiceCloudPayment.sessionId
+    });
+
+  } catch (error) {
+    console.error('Error initiating payment:', error);
+    res.status(500).json({ 
+      error: 'Failed to initiate payment',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Handle payment webhook from InvoiceCloud
+router.post('/:id/payment/webhook', async (req, res) => {
+  try {
+    const permitId = req.params.id;
+    const { sessionId, status, transactionId, paymentMethod } = req.body;
+
+    // Validate webhook signature (implement based on InvoiceCloud docs)
+    if (!validateInvoiceCloudWebhook(req)) {
+      return res.status(400).json({ error: 'Invalid webhook signature' });
+    }
+
+    // Find permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Verify session ID matches
+    if (permit.paymentSessionId !== sessionId) {
+      return res.status(400).json({ error: 'Session ID mismatch' });
+    }
+
+    // Update payment status
+    if (status === 'completed') {
+      permit.paymentStatus = 'paid';
+      permit.paymentMethod = paymentMethod;
+      permit.transactionId = transactionId;
+      permit.paidAt = new Date();
+
+      // Auto-approve permit if configured
+      if (permit.status === 'pending' && permit.autoApproveOnPayment) {
+        permit.status = 'approved';
+        permit.approvedAt = new Date();
+      }
+    } else if (status === 'failed' || status === 'cancelled') {
+      permit.paymentStatus = 'failed';
+    }
+
+    await permit.save();
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error('Error processing payment webhook:', error);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
+// Get payment status for a permit
+router.get('/:id/payment/status', authenticateToken, async (req, res) => {
+  try {
+    const permitId = req.params.id;
+
+    const permit = await Permit.findById(permitId).select('paymentStatus paymentMethod transactionId paidAt');
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Check user authorization
+    if (req.user.userType === 'residential' && 
+        permit.applicant.toString() !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json({
+      paymentStatus: permit.paymentStatus,
+      paymentMethod: permit.paymentMethod,
+      transactionId: permit.transactionId,
+      paidAt: permit.paidAt
+    });
+
+  } catch (error) {
+    console.error('Error fetching payment status:', error);
+    res.status(500).json({ error: 'Failed to fetch payment status' });
+  }
+});
+
+// Helper function to create InvoiceCloud payment (mock for now)
+async function createInvoiceCloudPayment(paymentData) {
+  // TODO: Replace with actual InvoiceCloud API integration
+  // This is a mock implementation for development
+  
+  if (process.env.NODE_ENV === 'development') {
+    // Mock payment URL for development
+    return {
+      sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      paymentUrl: `${process.env.CLIENT_URL || 'http://localhost:4200'}/mock-payment?` + 
+                  `amount=${paymentData.amount}&` +
+                  `description=${encodeURIComponent(paymentData.description)}&` +
+                  `return_url=${encodeURIComponent(paymentData.returnUrl)}&` +
+                  `cancel_url=${encodeURIComponent(paymentData.cancelUrl)}`
+    };
+  }
+
+  // Production InvoiceCloud integration
+  const invoiceCloudConfig = {
+    apiKey: process.env.INVOICE_CLOUD_API_KEY,
+    baseUrl: process.env.INVOICE_CLOUD_BASE_URL || 'https://api.invoicecloud.com',
+    merchantId: process.env.INVOICE_CLOUD_MERCHANT_ID
+  };
+
+  if (!invoiceCloudConfig.apiKey) {
+    throw new Error('InvoiceCloud API key not configured');
+  }
+
+  // Make API call to InvoiceCloud
+  const response = await fetch(`${invoiceCloudConfig.baseUrl}/payments/create`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${invoiceCloudConfig.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      merchant_id: invoiceCloudConfig.merchantId,
+      amount: Math.round(paymentData.amount * 100), // Convert to cents
+      currency: 'USD',
+      description: paymentData.description,
+      customer: {
+        first_name: paymentData.applicant.firstName,
+        last_name: paymentData.applicant.lastName,
+        email: paymentData.applicant.email
+      },
+      metadata: {
+        permit_id: paymentData.permitId,
+        municipality_id: paymentData.municipalityId
+      },
+      return_url: paymentData.returnUrl,
+      cancel_url: paymentData.cancelUrl
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`InvoiceCloud API error: ${response.status}`);
+  }
+
+  const result = await response.json();
+  return {
+    sessionId: result.session_id,
+    paymentUrl: result.payment_url
+  };
+}
+
+// Helper function to validate InvoiceCloud webhook
+function validateInvoiceCloudWebhook(req) {
+  // TODO: Implement webhook signature validation based on InvoiceCloud docs
+  // This is a mock implementation for development
+  
+  if (process.env.NODE_ENV === 'development') {
+    return true; // Allow all webhooks in development
+  }
+
+  // Production webhook validation
+  const signature = req.headers['x-invoicecloud-signature'];
+  const webhookSecret = process.env.INVOICE_CLOUD_WEBHOOK_SECRET;
+  
+  if (!signature || !webhookSecret) {
+    return false;
+  }
+
+  // Validate signature (implement based on InvoiceCloud documentation)
+  // Example: HMAC-SHA256 validation
+  const crypto = require('crypto');
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(JSON.stringify(req.body))
+    .digest('hex');
+
+  return signature === expectedSignature;
+}
+
 // ===== FILE UPLOAD FUNCTIONALITY =====
 
 // Configure multer for file uploads - memory storage for Vercel serverless

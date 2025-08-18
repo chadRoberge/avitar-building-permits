@@ -1,0 +1,146 @@
+<div class="permit-payment">
+  <div class="payment-header">
+    <h3>Payment Information</h3>
+  </div>
+
+  {{#if this.isPaid}}
+    {{! Payment already completed }}
+    <div class="payment-status paid">
+      <div class="status-icon">✅</div>
+      <div class="status-content">
+        <h4>Payment Completed</h4>
+        <p>Your permit fee has been paid successfully.</p>
+        {{#if @permit.paymentMethod}}
+          <div class="payment-details">
+            <span class="detail-label">Payment Method:</span>
+            <span class="detail-value">{{@permit.paymentMethod}}</span>
+          </div>
+        {{/if}}
+        {{#if @permit.transactionId}}
+          <div class="payment-details">
+            <span class="detail-label">Transaction ID:</span>
+            <span class="detail-value">{{@permit.transactionId}}</span>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+  {{else if this.isPaymentRequired}}
+    {{! Payment required }}
+    <div class="payment-required">
+      <div class="fee-summary">
+        <div class="fee-breakdown">
+          {{#if @permit.fees}}
+            <h4>Fee Breakdown</h4>
+            {{#each @permit.fees as |fee|}}
+              <div class="fee-item">
+                <span class="fee-type">{{fee.type}}</span>
+                <span class="fee-amount">{{format-currency fee.amount}}</span>
+              </div>
+            {{/each}}
+            <div class="fee-total">
+              <span class="fee-type"><strong>Total</strong></span>
+              <span class="fee-amount"><strong>{{format-currency this.totalAmount}}</strong></span>
+            </div>
+          {{else}}
+            <div class="fee-item">
+              <span class="fee-type">Application Fee</span>
+              <span class="fee-amount">{{format-currency this.totalAmount}}</span>
+            </div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{#if this.paymentError}}
+        <div class="payment-error">
+          <div class="error-icon">⚠️</div>
+          <div class="error-content">
+            <h4>Payment Error</h4>
+            <p>{{this.paymentError}}</p>
+            <button type="button" class="btn btn-secondary" {{on "click" this.retryPayment}}>
+              Try Again
+            </button>
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if this.paymentSuccess}}
+        <div class="payment-success">
+          <div class="success-icon">✅</div>
+          <div class="success-content">
+            <h4>Payment Successful!</h4>
+            <p>Your payment has been processed. The page will refresh shortly.</p>
+          </div>
+        </div>
+      {{/if}}
+
+      {{#unless (or this.paymentError this.paymentSuccess)}}
+        <div class="payment-methods">
+          <h4>Select Payment Method</h4>
+          <div class="payment-options">
+            <label class="payment-option">
+              <input 
+                type="radio" 
+                name="paymentMethod" 
+                value="credit_card" 
+                checked={{eq this.selectedPaymentMethod "credit_card"}}
+                {{on "change" (fn this.selectPaymentMethod "credit_card")}}
+              />
+              <div class="option-content">
+                <span class="option-icon">💳</span>
+                <span class="option-label">Credit/Debit Card</span>
+              </div>
+            </label>
+            
+            <label class="payment-option">
+              <input 
+                type="radio" 
+                name="paymentMethod" 
+                value="bank_account" 
+                checked={{eq this.selectedPaymentMethod "bank_account"}}
+                {{on "change" (fn this.selectPaymentMethod "bank_account")}}
+              />
+              <div class="option-content">
+                <span class="option-icon">🏦</span>
+                <span class="option-label">Bank Account (ACH)</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="payment-actions">
+          <button 
+            type="button" 
+            class="btn btn-primary btn-large"
+            disabled={{this.isProcessingPayment}}
+            {{on "click" this.initiatePayment}}
+          >
+            {{#if this.isProcessingPayment}}
+              <span class="spinner"></span>
+              Processing...
+            {{else}}
+              Pay {{format-currency this.totalAmount}}
+            {{/if}}
+          </button>
+        </div>
+
+        <div class="payment-security">
+          <div class="security-notice">
+            <span class="security-icon">🔒</span>
+            <span class="security-text">Secure payment powered by InvoiceCloud</span>
+          </div>
+        </div>
+      {{/unless}}
+    </div>
+
+  {{else}}
+    {{! No payment required }}
+    <div class="no-payment">
+      <div class="status-icon">ℹ️</div>
+      <div class="status-content">
+        <h4>No Payment Required</h4>
+        <p>This permit does not require any fees at this time.</p>
+      </div>
+    </div>
+  {{/if}}
+}</div>

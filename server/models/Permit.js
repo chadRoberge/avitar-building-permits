@@ -231,6 +231,21 @@ const permitSchema = new mongoose.Schema(
       default: 0,
     },
 
+    // Payment Information
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'refunded'],
+      default: 'pending',
+    },
+    paymentMethod: String,
+    transactionId: String,
+    paymentSessionId: String,
+    paidAt: Date,
+    autoApproveOnPayment: {
+      type: Boolean,
+      default: false,
+    },
+
     // Inspections
     inspections: [inspectionSchema],
     requiredInspections: [String],

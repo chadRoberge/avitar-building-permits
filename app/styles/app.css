@@ -9143,3 +9143,250 @@ select:disabled {
     gap: 16px;
   }
 }
+
+/* Payment Component Styles */
+.permit-payment {
+  width: 100%;
+}
+
+.permit-payment .payment-header h3 {
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.payment-status {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.payment-status.paid {
+  background-color: #f0f9ff;
+  border: 1px solid #0ea5e9;
+}
+
+.payment-status .status-icon {
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
+}
+
+.payment-status .status-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.payment-status .status-content p {
+  margin: 0 0 0.75rem 0;
+  color: #666;
+}
+
+.payment-details {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.payment-details .detail-label {
+  font-weight: 500;
+  color: #555;
+}
+
+.payment-details .detail-value {
+  color: #333;
+  font-family: monospace;
+}
+
+.fee-summary {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.fee-summary h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.fee-breakdown {
+  width: 100%;
+}
+
+.fee-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fee-item:last-child {
+  border-bottom: none;
+}
+
+.fee-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0 0.5rem 0;
+  border-top: 2px solid #0ea5e9;
+  margin-top: 0.5rem;
+}
+
+.fee-type {
+  color: #555;
+}
+
+.fee-amount {
+  color: #333;
+  font-weight: 500;
+}
+
+.payment-methods {
+  margin-bottom: 2rem;
+}
+
+.payment-methods h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.payment-options {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-option:hover {
+  border-color: #0ea5e9;
+  background-color: #f8fafc;
+}
+
+.payment-option input[type="radio"] {
+  margin-right: 0.75rem;
+}
+
+.payment-option input[type="radio"]:checked + .option-content {
+  color: #0ea5e9;
+  font-weight: 500;
+}
+
+.option-content {
+  display: flex;
+  align-items: center;
+}
+
+.option-icon {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+.payment-actions {
+  margin-bottom: 1.5rem;
+}
+
+.btn-large {
+  padding: 0.875rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.payment-security {
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.security-notice {
+  display: inline-flex;
+  align-items: center;
+}
+
+.security-icon {
+  margin-right: 0.25rem;
+}
+
+.payment-error, .payment-success {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.payment-error {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+}
+
+.payment-success {
+  background-color: #f0fdf4;
+  border: 1px solid #86efac;
+}
+
+.error-icon, .success-icon {
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
+}
+
+.error-content h4, .success-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.error-content p, .success-content p {
+  margin: 0 0 0.75rem 0;
+  color: #666;
+}
+
+.no-payment {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.no-payment .status-icon {
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
+  color: #64748b;
+}
+
+.no-payment .status-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.no-payment .status-content p {
+  margin: 0;
+  color: #666;
+}
+
+/* Spinner animation */
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
