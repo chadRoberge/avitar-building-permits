@@ -29,14 +29,8 @@ module.exports = function (environment) {
     // ENV.APP.LOG_VIEW_LOOKUPS = true;
     
     // Development API configuration
-    // Force empty API_HOST for all Vercel deployments
-    if (process.env.VERCEL || process.env.VERCEL_URL || process.env.CI) {
-      ENV.APP.API_HOST = ''; // Use relative URLs on Vercel
-      console.log('Vercel detected - using relative API URLs');
-    } else {
-      ENV.APP.API_HOST = 'http://localhost:3000'; // Local development
-      console.log('Local development - using localhost API');
-    }
+    // FORCE EMPTY API_HOST FOR ALL NON-LOCALHOST ENVIRONMENTS
+    ENV.APP.API_HOST = 'http://localhost:3000';
   }
 
   if (environment === 'test') {
@@ -55,8 +49,8 @@ module.exports = function (environment) {
   }
 
   if (environment === 'production') {
-    // Production API configuration - Vercel deployment
-    ENV.APP.API_HOST = 'https://avitar-building-permits.vercel.app';
+    // Production API configuration - Use relative URLs for Vercel
+    ENV.APP.API_HOST = '';
     
     // Enable production optimizations
     ENV.APP.LOG_ACTIVE_GENERATION = false;

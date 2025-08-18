@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "ember build --environment=production",
-    "vercel-build": "ember build --environment=production",
+    "vercel-build": "NODE_ENV=production ember build --environment=production",
     "lint": "concurrently \"npm:lint:*(!fix)\" --names \"lint:\" --prefixColors auto",
     "lint:css": "stylelint \"**/*.css\"",
     "lint:css:fix": "concurrently \"npm:lint:css -- --fix\"",
