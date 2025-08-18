@@ -49,13 +49,18 @@ module.exports = function (environment) {
 
   if (environment === 'production') {
     // Production API configuration - Vercel deployment
-    ENV.APP.API_HOST = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://your-app.vercel.app';
+    ENV.APP.API_HOST = 'https://avitar-building-permits.vercel.app';
     
     // Enable production optimizations
     ENV.APP.LOG_ACTIVE_GENERATION = false;
     ENV.APP.LOG_VIEW_LOOKUPS = false;
     ENV.APP.LOG_TRANSITIONS = false;
     ENV.APP.LOG_TRANSITIONS_INTERNAL = false;
+  }
+  
+  // Special case for Vercel deployment (which runs as development but needs production settings)
+  if (process.env.VERCEL_URL || process.env.VERCEL) {
+    ENV.APP.API_HOST = `https://${process.env.VERCEL_URL || 'avitar-building-permits.vercel.app'}`;
   }
 
   return ENV;
