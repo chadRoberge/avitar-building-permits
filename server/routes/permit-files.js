@@ -7,23 +7,32 @@ const auth = require('../middleware/auth');
 const PermitFile = require('../models/PermitFile');
 const Permit = require('../models/Permit');
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../uploads/permit-files');
-fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
+// Configure multer for file uploads - memory storage for Vercel serverless
+let storage;
+let uploadsDir;
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename: timestamp-random-originalname
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
-    cb(null, `${name}-${uniqueSuffix}${ext}`);
-  },
-});
+if (process.env.VERCEL) {
+  // Use memory storage for serverless (files won't persist)
+  console.log('Using memory storage for Vercel serverless');
+  storage = multer.memoryStorage();
+} else {
+  // Use disk storage for local development
+  uploadsDir = path.join(__dirname, '../uploads/permit-files');
+  fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
+  
+  storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+      // Generate unique filename: timestamp-random-originalname
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname);
+      const name = path.basename(file.originalname, ext);
+      cb(null, `${name}-${uniqueSuffix}${ext}`);
+    },
+  });
+}
 
 // File filter for security
 const fileFilter = (req, file, cb) => {
