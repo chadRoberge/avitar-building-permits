@@ -1,0 +1,400 @@
+<div class="permit-file-upload">
+  <h3>Upload Files</h3>
+  
+  {{! File Type and Description }}
+  <div class="upload-options">
+    <div class="file-type-selector">
+      <label for="file-type">File Type:</label>
+      <select id="file-type" value={{this.selectedFileType}} {{on "change" this.updateFileType}}>
+        {{#each this.fileTypes as |type|}}
+          <option value={{type.value}}>{{type.label}}</option>
+        {{/each}}
+      </select>
+    </div>
+    
+    <div class="file-description">
+      <label for="file-description">Description (optional):</label>
+      <input 
+        type="text" 
+        id="file-description" 
+        placeholder="Brief description of the files"
+        value={{this.fileDescription}}
+        {{on "input" this.updateDescription}}
+      >
+    </div>
+  </div>
+
+  {{! Drag and Drop Area }}
+  <div class="file-drop-zone {{if this.isDragOver 'drag-over'}}"
+       {{on "dragover" this.handleDragOver}}
+       {{on "dragleave" this.handleDragLeave}}
+       {{on "drop" this.handleDrop}}>
+    
+    <div class="drop-zone-content">
+      <div class="upload-icon">📎</div>
+      <p class="drop-text">
+        Drag and drop files here
+      </p>
+      <div class="drop-zone-buttons">
+        <label class="btn btn-outline-primary file-input-label">
+          📁 Choose Files
+          <input 
+            type="file" 
+            multiple 
+            accept={{this.allowedExtensions}}
+            class="file-input"
+            {{on "change" this.handleFileSelect}}
+          >
+        </label>
+      </div>
+      <p class="upload-limits">
+        Maximum 5 files, 10MB each<br>
+        Allowed: Images, PDF, Word, Excel, Text, ZIP
+      </p>
+    </div>
+  </div>
+
+  {{! Selected Files List }}
+  {{#if this.hasSelectedFiles}}
+    <div class="selected-files">
+      <h4>Selected Files ({{this.files.length}}/5)</h4>
+      <ul class="file-list">
+        {{#each this.files as |fileObj|}}
+          <li class="file-item">
+            <div class="file-info">
+              <span class="file-name">{{fileObj.name}}</span>
+              <span class="file-size">{{this.formatFileSize fileObj.size}}</span>
+            </div>
+            <button 
+              type="button" 
+              class="remove-file-btn"
+              {{on "click" (fn this.removeFile fileObj.id)}}
+              disabled={{this.isUploading}}
+            >
+              ✕
+            </button>
+          </li>
+        {{/each}}
+      </ul>
+    </div>
+  {{/if}}
+
+  {{! Upload Controls }}
+  <div class="upload-controls">
+    <button 
+      type="button" 
+      class="btn btn-primary upload-btn"
+      {{on "click" this.uploadFiles}}
+      disabled={{(not this.canUpload)}}
+      title={{if this.hasSelectedFiles "Upload selected files" "Please select files first"}}
+    >
+      {{#if this.isUploading}}
+        <span class="loading-spinner"></span>
+        Uploading...
+      {{else if this.hasSelectedFiles}}
+        📤 Upload Files ({{this.files.length}})
+      {{else}}
+        📤 Upload Files
+      {{/if}}
+    </button>
+    
+    {{#if this.hasSelectedFiles}}
+      <button 
+        type="button" 
+        class="btn btn-secondary clear-btn"
+        {{on "click" this.clearFiles}}
+        disabled={{this.isUploading}}
+      >
+        🗑️ Clear All
+      </button>
+    {{/if}}
+  </div>
+
+  {{! Messages }}
+  {{#if this.uploadError}}
+    <div class="upload-message error">
+      <span class="message-icon">⚠️</span>
+      {{this.uploadError}}
+    </div>
+  {{/if}}
+
+  {{#if this.uploadSuccess}}
+    <div class="upload-message success">
+      <span class="message-icon">✅</span>
+      {{this.uploadSuccess}}
+    </div>
+  {{/if}}
+</div>
+
+<style>
+.permit-file-upload {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.permit-file-upload h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.upload-options {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.file-type-selector label,
+.file-description label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  color: #555;
+}
+
+.file-type-selector select,
+.file-description input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.file-drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  background: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-over {
+  border-color: var(--color-primary);
+  background: #f0f8ff;
+}
+
+.drop-zone-content {
+  pointer-events: none;
+}
+
+.upload-icon {
+  font-size: 3em;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.drop-text {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #666;
+}
+
+.drop-zone-buttons {
+  margin-bottom: 16px;
+}
+
+.file-input-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid var(--color-primary);
+  border-radius: 6px;
+  background: white;
+  color: var(--color-primary);
+  cursor: pointer;
+  pointer-events: all;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.file-input-label:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-limits {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+.selected-files {
+  margin: 20px 0;
+}
+
+.selected-files h4 {
+  margin: 0 0 12px 0;
+  color: #333;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #666;
+}
+
+.remove-file-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.remove-file-btn:hover {
+  background: #c82333;
+}
+
+.remove-file-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.upload-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.upload-btn,
+.clear-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.upload-btn {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.clear-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.clear-btn:hover:not(:disabled) {
+  background: #545b62;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.upload-message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.upload-message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message-icon {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .upload-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .upload-controls {
+    flex-direction: column;
+  }
+  
+  .file-drop-zone {
+    padding: 20px 16px;
+  }
+}
+</style>

@@ -80,6 +80,26 @@
         </section>
       </div>
 
+      <!-- File Management Section -->
+      <div class="file-management-container">
+        <!-- File Upload -->
+        <section class="file-upload-section">
+          <PermitFileUpload 
+            @permitId={{@model.permit.id}} 
+            @onUploadSuccess={{fn this.handleFileUploaded}}
+          />
+        </section>
+
+        <!-- File Display -->
+        <section class="file-display-section">
+          <PermitFilesDisplay 
+            @permitId={{@model.permit.id}}
+            @onFileDeleted={{fn this.handleFileDeleted}}
+            @onMount={{fn this.setFilesDisplayComponent}}
+          />
+        </section>
+      </div>
+
       <!-- Permit Details Grid -->
       <div class="permit-details-grid">
         <!-- Project Information -->
@@ -236,3 +256,24 @@
     </div>
   {{/if}}
 </div>
+
+<style>
+.file-management-container {
+  margin: 24px 0;
+  display: grid;
+  gap: 20px;
+}
+
+.file-upload-section,
+.file-display-section {
+  background: white;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .file-management-container {
+    margin: 16px 0;
+    gap: 16px;
+  }
+}
+</style>
