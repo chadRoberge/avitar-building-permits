@@ -3,7 +3,6 @@ const router = express.Router();
 const { stripe, MUNICIPAL_PLANS, stripeKeys } = require('../config/stripe');
 const Municipality = require('../models/Municipality');
 const auth = require('../middleware/auth');
-const config = require('../config/environment');
 
 // Create Stripe checkout session for municipal subscription
 router.post('/create-checkout-session', auth, async (req, res) => {

@@ -72,7 +72,7 @@ console.log('- /api/auth');
 console.log('- /api/municipalities');
 console.log('- /api/dashboard');
 console.log('- /api/permit-types');
-console.log('- /api/permits');
+console.log('- /api/permits (includes file upload endpoints)');
 console.log('- /api/contractors');
 console.log('- /api/properties');
 console.log('- /api/permit-messages');
