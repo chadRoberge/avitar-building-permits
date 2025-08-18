@@ -25,6 +25,8 @@
     "start": "ember serve",
     "server": "node server/app.js",
     "dev": "concurrently \"npm run server\" \"npm start\"",
+    "create-admin": "node server/scripts/create-admin.js",
+    "admin-credentials": "node server/scripts/admin-credentials.js",
     "test": "concurrently \"npm:lint\" \"npm:test:*\" --names \"lint,test:\" --prefixColors auto",
     "test:ember": "ember test"
   },
