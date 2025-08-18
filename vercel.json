@@ -7,11 +7,16 @@
       "config": {
         "distDir": "dist"
       }
+    },
+    {
+      "src": "server/app.js",
+      "use": "@vercel/node"
     }
   ],
   "functions": {
     "api/[...all].js": {
-      "maxDuration": 30
+      "maxDuration": 60,
+      "memory": 1024
     }
   },
   "routes": [
