@@ -2,7 +2,7 @@
 
 <div class="permit-application">
   <div class="container">
-    <!-- Header -->
+    {{!-- Header --}}
     <div class="application-header mb-4">
       <div class="row items-center">
         <div class="col-md-8">
@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <!-- Progress Bar -->
+    {{!-- Progress Bar --}}
     <div class="progress-section mb-5">
       <div class="progress-container">
         <div class="progress-bar">
@@ -39,7 +39,7 @@
       </div>
     </div>
 
-    <!-- Application Form -->
+    {{!-- Application Form --}}
     <div class="application-form card shadow-lg">
       <div class="card-body p-5">
         
@@ -49,7 +49,7 @@
           </div>
         {{/if}}
 
-        <!-- Step 1: Permit Type Selection -->
+        {{!-- Step 1: Permit Type Selection --}}
         {{#if (eq this.currentStep 1)}}
           <div class="form-step">
             <div class="step-header mb-4">
@@ -65,7 +65,7 @@
                       <div class="permit-type-header mb-3">
                         <h4 class="permit-type-name">{{permitType.name}}</h4>
                         <div class="permit-type-fee text-success font-weight-bold">
-                          {{format-currency permitType.fees.0.amount}}
+                          {{format-currency permitType.fees "0.amount"}}
                         </div>
                       </div>
                       
@@ -95,7 +95,7 @@
           </div>
         {{/if}}
 
-        <!-- Step 2: Project Details -->
+        {{!-- Step 2: Project Details --}}
         {{#if (eq this.currentStep 2)}}
           <div class="form-step">
             <div class="step-header mb-4">
@@ -173,7 +173,7 @@
           </div>
         {{/if}}
 
-        <!-- Step 3: Contractor Information -->
+        {{!-- Step 3: Contractor Information --}}
         {{#if (eq this.currentStep 3)}}
           <div class="form-step">
             <div class="step-header mb-4">
@@ -233,7 +233,7 @@
           </div>
         {{/if}}
 
-        <!-- Step 4: Review & Submit -->
+        {{!-- Step 4: Review & Submit --}}
         {{#if (eq this.currentStep 4)}}
           <div class="form-step">
             <div class="step-header mb-4">
@@ -321,7 +321,7 @@
           </div>
         {{/if}}
 
-        <!-- Navigation Buttons -->
+        {{!-- Navigation Buttons --}}
         <div class="form-navigation mt-5 pt-4 border-top">
           <div class="d-flex justify-between">
             <div>

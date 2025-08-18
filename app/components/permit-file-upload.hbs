@@ -85,7 +85,7 @@
       type="button" 
       class="btn btn-primary upload-btn"
       {{on "click" this.uploadFiles}}
-      disabled={{(not this.canUpload)}}
+      disabled={{not this.canUpload}}
       title={{if this.hasSelectedFiles "Upload selected files" "Please select files first"}}
     >
       {{#if this.isUploading}}

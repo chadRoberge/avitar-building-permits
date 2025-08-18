@@ -11,8 +11,8 @@ export default class MunicipalPortalController extends Controller {
     this.router.transitionTo('auth', {
       queryParams: {
         municipality_id: this.model.id,
-        user_type: userType
-      }
+        user_type: userType,
+      },
     });
   }
 
@@ -20,7 +20,7 @@ export default class MunicipalPortalController extends Controller {
   goToMunicipalStaffPortal() {
     // Store the selected municipality for the staff portal
     localStorage.setItem('selected_municipality_id', this.model.id);
-    
+
     // Navigate to admin portal
     this.router.transitionTo('admin');
   }

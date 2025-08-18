@@ -14,7 +14,7 @@ export default class ResidentialPermitsViewController extends Controller {
   handleFileUploaded(uploadedFiles) {
     // Files have been uploaded successfully
     console.log('Files uploaded:', uploadedFiles);
-    
+
     // Update the files display component with the new files
     if (this.filesDisplayComponent) {
       this.filesDisplayComponent.handleFileUploaded(uploadedFiles);
@@ -30,7 +30,7 @@ export default class ResidentialPermitsViewController extends Controller {
   handleFileDeleted(deletedFile) {
     // File has been deleted successfully
     console.log('File deleted:', deletedFile);
-    
+
     // The PermitFilesDisplay component handles removing the file from its local list
   }
 }

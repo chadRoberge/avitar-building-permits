@@ -5,27 +5,32 @@ import config from 'avitar-building-permits/config/environment';
 export default class ResidentialRoute extends Route {
   @service router;
   @service currentProperty;
-  
+
   beforeModel() {
     // Check for authentication token
     const token = localStorage.getItem('auth_token');
     const userType = localStorage.getItem('user_type');
-    
-    console.log('Residential route beforeModel - token exists:', !!token, 'userType:', userType);
-    
+
+    console.log(
+      'Residential route beforeModel - token exists:',
+      !!token,
+      'userType:',
+      userType,
+    );
+
     if (!token) {
       console.log('No auth token found, redirecting to home');
       this.router.transitionTo('home');
       return;
     }
-    
+
     // Ensure user is residential
     if (userType !== 'residential') {
       console.log('User is not residential type, redirecting to home');
       this.router.transitionTo('home');
       return;
     }
-    
+
     console.log('Auth token found for residential user, proceeding');
   }
 
@@ -42,8 +47,8 @@ export default class ResidentialRoute extends Route {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -76,12 +81,11 @@ export default class ResidentialRoute extends Route {
       return {
         user: user,
         municipality: municipality,
-        property: this.currentProperty.currentProperty
+        property: this.currentProperty.currentProperty,
       };
-
     } catch (error) {
       console.error('Error loading residential data:', error);
-      
+
       // Redirect to home on error
       localStorage.removeItem('auth_token');
       this.router.transitionTo('home');

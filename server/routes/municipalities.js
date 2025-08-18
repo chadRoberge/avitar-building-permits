@@ -7,34 +7,45 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET || 'fallback_secret_key', {
-    expiresIn: '7d'
-  });
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET || 'fallback_secret_key',
+    {
+      expiresIn: '7d',
+    },
+  );
 };
 
 // Register new municipality with admin user
 router.post('/register', async (req, res) => {
   try {
-    const { municipality: municipalityData, administrator: adminData } = req.body;
+    const { municipality: municipalityData, administrator: adminData } =
+      req.body;
 
     // Validate required data
     if (!municipalityData || !adminData) {
-      return res.status(400).json({ error: 'Municipality and administrator data are required' });
+      return res
+        .status(400)
+        .json({ error: 'Municipality and administrator data are required' });
     }
 
     // Check if municipality name already exists
-    const existingMunicipality = await Municipality.findOne({ 
-      name: { $regex: new RegExp(`^${municipalityData.name}$`, 'i') }
+    const existingMunicipality = await Municipality.findOne({
+      name: { $regex: new RegExp(`^${municipalityData.name}$`, 'i') },
     });
-    
+
     if (existingMunicipality) {
-      return res.status(400).json({ error: 'A municipality with this name already exists' });
+      return res
+        .status(400)
+        .json({ error: 'A municipality with this name already exists' });
     }
 
     // Check if admin email already exists
     const existingUser = await User.findOne({ email: adminData.email });
     if (existingUser) {
-      return res.status(400).json({ error: 'A user with this email already exists' });
+      return res
+        .status(400)
+        .json({ error: 'A user with this email already exists' });
     }
 
     // Create municipality
@@ -58,9 +69,9 @@ router.post('/register', async (req, res) => {
           city: municipality.address.city,
           state: municipality.address.state,
           zip: municipality.address.zip,
-          county: municipality.address.county
-        }
-      }
+          county: municipality.address.county,
+        },
+      },
     });
 
     await adminUser.save();
@@ -73,32 +84,38 @@ router.post('/register', async (req, res) => {
       municipality: municipality.toPublic(),
       admin: adminUser,
       token,
-      portalUrl: municipality.portalUrl
+      portalUrl: municipality.portalUrl,
     });
-
   } catch (error) {
     console.error('Municipality registration error:', error);
-    
+
     // Handle validation errors
     if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ error: `Validation error: ${messages.join(', ')}` });
+      const messages = Object.values(error.errors).map((err) => err.message);
+      return res
+        .status(400)
+        .json({ error: `Validation error: ${messages.join(', ')}` });
     }
-    
+
     // Handle duplicate key errors
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
       return res.status(400).json({ error: `${field} already exists` });
     }
 
-    res.status(500).json({ error: 'Server error during municipality registration' });
+    res
+      .status(500)
+      .json({ error: 'Server error during municipality registration' });
   }
 });
 
 // Get all municipalities (public endpoint for search)
 router.get('/', async (req, res) => {
   try {
-    console.log('Getting municipalities - DB connection state:', require('mongoose').connection.readyState);
+    console.log(
+      'Getting municipalities - DB connection state:',
+      require('mongoose').connection.readyState,
+    );
     const { search, state, limit = 20 } = req.query;
     let query = { isActive: true };
 
@@ -106,7 +123,7 @@ router.get('/', async (req, res) => {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { 'address.city': { $regex: search, $options: 'i' } },
-        { 'address.zip': search }
+        { 'address.zip': search },
       ];
     }
 
@@ -114,8 +131,7 @@ router.get('/', async (req, res) => {
       query['address.state'] = state;
     }
 
-    const municipalities = await Municipality
-      .find(query)
+    const municipalities = await Municipality.find(query)
       .select('name type address website population portalUrl')
       .limit(parseInt(limit))
       .sort({ name: 1 });
@@ -127,11 +143,12 @@ router.get('/', async (req, res) => {
     console.error('Error details:', {
       name: error.name,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server error retrieving municipalities',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details:
+        process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 });
@@ -150,13 +167,23 @@ router.get('/:identifier', async (req, res) => {
     } else {
       console.log('Searching by portalUrl');
       municipality = await Municipality.findByPortalUrl(identifier);
-      console.log('Found municipality by portalUrl:', municipality ? municipality.name : 'not found');
+      console.log(
+        'Found municipality by portalUrl:',
+        municipality ? municipality.name : 'not found',
+      );
     }
 
     if (!municipality) {
       console.log('Municipality not found, checking all municipalities...');
-      const allMunicipalities = await Municipality.find().select('name portalUrl');
-      console.log('Available municipalities:', allMunicipalities.map(m => ({ name: m.name, portalUrl: m.portalUrl })));
+      const allMunicipalities =
+        await Municipality.find().select('name portalUrl');
+      console.log(
+        'Available municipalities:',
+        allMunicipalities.map((m) => ({
+          name: m.name,
+          portalUrl: m.portalUrl,
+        })),
+      );
       return res.status(404).json({ error: 'Municipality not found' });
     }
 
@@ -176,7 +203,9 @@ router.put('/:id', auth, async (req, res) => {
 
     // Check if user is admin of this municipality
     if (req.user.userType !== 'municipal' || req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+      return res
+        .status(403)
+        .json({ error: 'Access denied. Admin privileges required.' });
     }
 
     const municipality = await Municipality.findById(id);
@@ -186,7 +215,9 @@ router.put('/:id', auth, async (req, res) => {
 
     // Verify user belongs to this municipality
     if (req.user.municipality.name !== municipality.name) {
-      return res.status(403).json({ error: 'Access denied. You can only update your own municipality.' });
+      return res.status(403).json({
+        error: 'Access denied. You can only update your own municipality.',
+      });
     }
 
     // Update municipality
@@ -196,7 +227,7 @@ router.put('/:id', auth, async (req, res) => {
 
     res.json({
       message: 'Municipality updated successfully',
-      municipality: municipality.toPublic()
+      municipality: municipality.toPublic(),
     });
   } catch (error) {
     console.error('Update municipality error:', error);
@@ -208,18 +239,18 @@ router.put('/:id', auth, async (req, res) => {
 router.post('/check-availability', async (req, res) => {
   try {
     const { name } = req.body;
-    
+
     if (!name) {
       return res.status(400).json({ error: 'Municipality name is required' });
     }
 
-    const existing = await Municipality.findOne({ 
-      name: { $regex: new RegExp(`^${name}$`, 'i') }
+    const existing = await Municipality.findOne({
+      name: { $regex: new RegExp(`^${name}$`, 'i') },
     });
 
-    res.json({ 
+    res.json({
       available: !existing,
-      suggested: existing ? `${name} (${new Date().getFullYear()})` : null
+      suggested: existing ? `${name} (${new Date().getFullYear()})` : null,
     });
   } catch (error) {
     console.error('Check availability error:', error);

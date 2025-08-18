@@ -23,24 +23,29 @@ app.use((req, res, next) => {
   // Set CORS headers manually for better control
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+  );
   res.header('Access-Control-Allow-Credentials', 'true');
-  
+
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-  
+
   next();
 });
 
 // Also use the cors middleware as backup
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }),
+);
 
 // Special webhook endpoint that needs raw body - must come before json parsing
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
@@ -81,12 +86,12 @@ console.log('- /api/stripe');
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Building Permits API is running',
     environment: process.env.NODE_ENV,
     vercel: !!process.env.VERCEL,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -101,8 +106,8 @@ app.get('/api/routes', (req, res) => {
       'POST /api/permit-types',
       'PUT /api/permit-types/:id',
       'DELETE /api/permit-types/:id',
-      'PATCH /api/permit-types/:id/toggle'
-    ]
+      'PATCH /api/permit-types/:id/toggle',
+    ],
   });
 });
 

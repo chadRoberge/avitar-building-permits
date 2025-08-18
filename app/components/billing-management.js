@@ -26,11 +26,11 @@ export default class BillingManagementComponent extends Component {
 
     try {
       const token = localStorage.getItem('auth_token');
-      
+
       const response = await fetch(`${config.APP.API_HOST}/api/billing`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -38,7 +38,6 @@ export default class BillingManagementComponent extends Component {
       }
 
       this.billingData = await response.json();
-      
     } catch (error) {
       console.error('Error loading billing data:', error);
       this.errorMessage = 'Failed to load billing information';
@@ -50,17 +49,16 @@ export default class BillingManagementComponent extends Component {
   async loadAvailablePlans() {
     try {
       const token = localStorage.getItem('auth_token');
-      
+
       const response = await fetch(`${config.APP.API_HOST}/api/billing/plans`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (response.ok) {
         this.availablePlans = await response.json();
       }
-      
     } catch (error) {
       console.error('Error loading available plans:', error);
     }
@@ -69,17 +67,19 @@ export default class BillingManagementComponent extends Component {
   async loadBillingHistory() {
     try {
       const token = localStorage.getItem('auth_token');
-      
-      const response = await fetch(`${config.APP.API_HOST}/api/billing/history`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/billing/history`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (response.ok) {
         this.billingHistory = await response.json();
       }
-      
     } catch (error) {
       console.error('Error loading billing history:', error);
     }
@@ -100,19 +100,22 @@ export default class BillingManagementComponent extends Component {
     try {
       const token = localStorage.getItem('auth_token');
       const municipalityId = this.billingData.municipalityId;
-      
+
       // Create Stripe checkout session for municipal users
-      const response = await fetch(`${config.APP.API_HOST}/api/stripe/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/stripe/create-checkout-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            planType: planName.toLowerCase(),
+            municipalityId: municipalityId,
+          }),
         },
-        body: JSON.stringify({
-          planType: planName.toLowerCase(),
-          municipalityId: municipalityId
-        })
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -120,10 +123,9 @@ export default class BillingManagementComponent extends Component {
       }
 
       const { url } = await response.json();
-      
+
       // Redirect to Stripe checkout
       window.location.href = url;
-      
     } catch (error) {
       console.error('Error creating checkout session:', error);
       this.errorMessage = error.message || 'Failed to start checkout process';
@@ -147,18 +149,21 @@ export default class BillingManagementComponent extends Component {
     try {
       const token = localStorage.getItem('auth_token');
       const municipalityId = this.billingData.municipalityId;
-      
+
       // Create Stripe customer portal session for subscription management
-      const response = await fetch(`${config.APP.API_HOST}/api/stripe/create-portal-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/stripe/create-portal-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            municipalityId: municipalityId,
+          }),
         },
-        body: JSON.stringify({
-          municipalityId: municipalityId
-        })
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -166,10 +171,9 @@ export default class BillingManagementComponent extends Component {
       }
 
       const { url } = await response.json();
-      
+
       // Redirect to Stripe customer portal
       window.location.href = url;
-      
     } catch (error) {
       console.error('Error opening billing portal:', error);
       this.errorMessage = error.message || 'Failed to open billing portal';
@@ -181,18 +185,21 @@ export default class BillingManagementComponent extends Component {
     try {
       const token = localStorage.getItem('auth_token');
       const municipalityId = this.billingData.municipalityId;
-      
+
       // Create Stripe customer portal session for subscription management
-      const response = await fetch(`${config.APP.API_HOST}/api/stripe/create-portal-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/stripe/create-portal-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            municipalityId: municipalityId,
+          }),
         },
-        body: JSON.stringify({
-          municipalityId: municipalityId
-        })
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -200,10 +207,9 @@ export default class BillingManagementComponent extends Component {
       }
 
       const { url } = await response.json();
-      
+
       // Redirect to Stripe customer portal
       window.location.href = url;
-      
     } catch (error) {
       console.error('Error opening billing portal:', error);
       this.errorMessage = error.message || 'Failed to open billing portal';
@@ -215,7 +221,10 @@ export default class BillingManagementComponent extends Component {
   }
 
   get isFreeUser() {
-    return this.billingData?.userType === 'residential' || this.billingData?.userType === 'commercial';
+    return (
+      this.billingData?.userType === 'residential' ||
+      this.billingData?.userType === 'commercial'
+    );
   }
 
   get currentPlan() {
@@ -240,7 +249,7 @@ export default class BillingManagementComponent extends Component {
     return this.renewalDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }
 

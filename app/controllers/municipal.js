@@ -9,7 +9,7 @@ export default class MunicipalController extends Controller {
   logout() {
     // Clear authentication
     localStorage.removeItem('auth_token');
-    
+
     // Redirect to home
     this.router.transitionTo('home');
   }

@@ -16,14 +16,18 @@ export default class ResidentialDashboardController extends Controller {
     if (!this.model.property || !this.model.property.address) {
       return 'No property selected for this municipality';
     }
-    
+
     const address = this.model.property.address;
     return `${address.street}, ${address.city}, ${address.state} ${address.zip}`;
   }
 
   get recentPermits() {
     return this.model.permits.all
-      .sort((a, b) => new Date(b.submittedDate || b.createdAt) - new Date(a.submittedDate || a.createdAt))
+      .sort(
+        (a, b) =>
+          new Date(b.submittedDate || b.createdAt) -
+          new Date(a.submittedDate || a.createdAt),
+      )
       .slice(0, 5);
   }
 
@@ -37,7 +41,6 @@ export default class ResidentialDashboardController extends Controller {
   setActiveTab(tab) {
     this.activeTab = tab;
   }
-
 
   @action
   viewPermit(permitId) {
@@ -76,9 +79,9 @@ export default class ResidentialDashboardController extends Controller {
     localStorage.removeItem('selected_municipality_id');
     localStorage.removeItem('remember_me');
     localStorage.removeItem('auth_expiration');
-    
+
     console.log('Residential user logged out');
-    
+
     // Redirect to home
     this.router.transitionTo('home');
   }

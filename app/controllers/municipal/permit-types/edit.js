@@ -14,11 +14,11 @@ export default class MunicipalPermitTypesEditController extends Controller {
   @tracked permitDescription = '';
   @tracked requiresInspection = true;
   @tracked isActive = true;
-  
+
   @tracked activeQuestionTab = 'default';
   @tracked defaultQuestions = [];
   @tracked customQuestions = [];
-  
+
   @tracked isSubmitting = false;
   @tracked errorMessage = '';
   @tracked originalCategory = '';
@@ -29,38 +29,38 @@ export default class MunicipalPermitTypesEditController extends Controller {
       id: 'building',
       name: 'Building Permit',
       icon: '🏗️',
-      description: 'New construction, additions, and structural modifications'
+      description: 'New construction, additions, and structural modifications',
     },
     {
       id: 'zoning',
       name: 'Zoning Permit',
       icon: '📋',
-      description: 'Land use compliance and zoning variances'
+      description: 'Land use compliance and zoning variances',
     },
     {
       id: 'electrical',
       name: 'Electrical Permit',
       icon: '⚡',
-      description: 'Electrical installations and modifications'
+      description: 'Electrical installations and modifications',
     },
     {
       id: 'plumbing',
       name: 'Plumbing Permit',
       icon: '🔧',
-      description: 'Plumbing installations and repairs'
+      description: 'Plumbing installations and repairs',
     },
     {
       id: 'mechanical',
       name: 'Mechanical Permit',
       icon: '🌡️',
-      description: 'HVAC and mechanical systems'
+      description: 'HVAC and mechanical systems',
     },
     {
       id: 'specialized',
       name: 'Specialized Permits',
       icon: '🛠️',
-      description: 'Special purpose permits and unique requirements'
-    }
+      description: 'Special purpose permits and unique requirements',
+    },
   ];
 
   // Initialize form with existing permit type data
@@ -69,13 +69,18 @@ export default class MunicipalPermitTypesEditController extends Controller {
       console.error('initializeForm called with undefined permitType');
       return;
     }
-    
+
     this.permitName = permitType.name || '';
     this.permitCode = permitType.code || '';
     this.permitDescription = permitType.description || '';
-    this.baseFee = permitType.fees && permitType.fees[0] ? permitType.fees[0].amount.toString() : '';
+    this.baseFee =
+      permitType.fees && permitType.fees[0]
+        ? permitType.fees[0].amount.toString()
+        : '';
     this.processingTime = permitType.estimatedProcessingTime || 14;
-    this.requiresInspection = permitType.requiredInspections && permitType.requiredInspections.length > 0;
+    this.requiresInspection =
+      permitType.requiredInspections &&
+      permitType.requiredInspections.length > 0;
     this.isActive = permitType.isActive !== false;
     this.originalCategory = permitType.category;
 
@@ -88,7 +93,7 @@ export default class MunicipalPermitTypesEditController extends Controller {
     this.defaultQuestions = [];
     this.customQuestions = [];
 
-    applicationFields.forEach(field => {
+    applicationFields.forEach((field) => {
       if (field.isDefault) {
         this.defaultQuestions.push({
           id: field.id,
@@ -97,7 +102,9 @@ export default class MunicipalPermitTypesEditController extends Controller {
           description: field.description,
           isRequired: field.required,
           isIncluded: true,
-          options: field.options ? field.options.map(opt => opt.label || opt.value) : []
+          options: field.options
+            ? field.options.map((opt) => opt.label || opt.value)
+            : [],
         });
       } else {
         this.customQuestions.push({
@@ -105,19 +112,25 @@ export default class MunicipalPermitTypesEditController extends Controller {
           label: field.label,
           description: field.description,
           isRequired: field.required,
-          options: field.options ? field.options.map(opt => opt.label || opt.value) : []
+          options: field.options
+            ? field.options.map((opt) => opt.label || opt.value)
+            : [],
         });
       }
     });
   }
 
   get selectedCategoryInfo() {
-    return this.predefinedCategories.find(cat => cat.id === this.originalCategory) || {
-      id: 'other',
-      name: 'Custom',
-      icon: '🔧',
-      description: 'Custom permit type'
-    };
+    return (
+      this.predefinedCategories.find(
+        (cat) => cat.id === this.originalCategory,
+      ) || {
+        id: 'other',
+        name: 'Custom',
+        icon: '🔧',
+        description: 'Custom permit type',
+      }
+    );
   }
 
   @action
@@ -137,7 +150,7 @@ export default class MunicipalPermitTypesEditController extends Controller {
       label: '',
       description: '',
       isRequired: false,
-      options: []
+      options: [],
     };
     this.customQuestions = [...this.customQuestions, newQuestion];
   }
@@ -151,12 +164,15 @@ export default class MunicipalPermitTypesEditController extends Controller {
   updateQuestionType(index, event) {
     const questions = [...this.customQuestions];
     questions[index].type = event.target.value;
-    
+
     // Initialize options for select/radio/checkbox types
-    if (['select', 'radio', 'checkbox'].includes(event.target.value) && !questions[index].options.length) {
+    if (
+      ['select', 'radio', 'checkbox'].includes(event.target.value) &&
+      !questions[index].options.length
+    ) {
       questions[index].options = ['Option 1', 'Option 2'];
     }
-    
+
     this.customQuestions = questions;
   }
 
@@ -184,14 +200,19 @@ export default class MunicipalPermitTypesEditController extends Controller {
   @action
   addQuestionOption(index) {
     const questions = [...this.customQuestions];
-    questions[index].options = [...questions[index].options, `Option ${questions[index].options.length + 1}`];
+    questions[index].options = [
+      ...questions[index].options,
+      `Option ${questions[index].options.length + 1}`,
+    ];
     this.customQuestions = questions;
   }
 
   @action
   removeQuestionOption(questionIndex, optionIndex) {
     const questions = [...this.customQuestions];
-    questions[questionIndex].options = questions[questionIndex].options.filter((_, i) => i !== optionIndex);
+    questions[questionIndex].options = questions[questionIndex].options.filter(
+      (_, i) => i !== optionIndex,
+    );
     this.customQuestions = questions;
   }
 
@@ -210,9 +231,9 @@ export default class MunicipalPermitTypesEditController extends Controller {
   @action
   async updatePermitType(event) {
     event.preventDefault();
-    
+
     if (this.isSubmitting) return;
-    
+
     this.isSubmitting = true;
     this.errorMessage = '';
 
@@ -224,24 +245,32 @@ export default class MunicipalPermitTypesEditController extends Controller {
         description: this.permitDescription,
         estimatedProcessingTime: parseInt(this.processingTime) || 14,
         isActive: this.isActive,
-        
+
         // Update form fields
         applicationFields: this.buildFormFields(),
-        
+
         // Update fee structure if baseFee is provided
-        fees: this.baseFee ? [{
-          name: 'Application Fee',
-          type: 'fixed',
-          amount: parseFloat(this.baseFee),
-          description: 'Standard application fee'
-        }] : [],
-        
+        fees: this.baseFee
+          ? [
+              {
+                name: 'Application Fee',
+                type: 'fixed',
+                amount: parseFloat(this.baseFee),
+                description: 'Standard application fee',
+              },
+            ]
+          : [],
+
         // Set inspection requirement
-        requiredInspections: this.requiresInspection ? [{
-          name: 'Standard Inspection',
-          description: 'Required inspection for this permit type',
-          triggerCondition: 'approval'
-        }] : []
+        requiredInspections: this.requiresInspection
+          ? [
+              {
+                name: 'Standard Inspection',
+                description: 'Required inspection for this permit type',
+                triggerCondition: 'approval',
+              },
+            ]
+          : [],
       };
 
       // Get auth token
@@ -251,14 +280,17 @@ export default class MunicipalPermitTypesEditController extends Controller {
       }
 
       // Submit to API
-      const response = await fetch(`${config.APP.API_HOST}/api/permit-types/${this.model.permitType._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permit-types/${this.model.permitType._id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(permitTypeData),
         },
-        body: JSON.stringify(permitTypeData)
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -267,10 +299,10 @@ export default class MunicipalPermitTypesEditController extends Controller {
 
       // Success - redirect to permit types list
       this.router.transitionTo('municipal.permit-types.index');
-      
     } catch (error) {
       console.error('Error updating permit type:', error);
-      this.errorMessage = error.message || 'An error occurred while updating the permit type';
+      this.errorMessage =
+        error.message || 'An error occurred while updating the permit type';
     } finally {
       this.isSubmitting = false;
     }
@@ -280,19 +312,23 @@ export default class MunicipalPermitTypesEditController extends Controller {
     const fields = [];
 
     // Add included default questions
-    const includedDefaults = this.defaultQuestions.filter(q => q.isIncluded);
-    fields.push(...includedDefaults.map((q, index) => ({
-      name: q.id || `default_field_${index}`,
-      label: q.label,
-      type: q.type,
-      required: q.isRequired || false,
-      helpText: q.description,
-      options: q.options ? q.options.map(opt => ({
-        value: opt,
-        label: opt
-      })) : [],
-      order: index
-    })));
+    const includedDefaults = this.defaultQuestions.filter((q) => q.isIncluded);
+    fields.push(
+      ...includedDefaults.map((q, index) => ({
+        name: q.id || `default_field_${index}`,
+        label: q.label,
+        type: q.type,
+        required: q.isRequired || false,
+        helpText: q.description,
+        options: q.options
+          ? q.options.map((opt) => ({
+              value: opt,
+              label: opt,
+            }))
+          : [],
+        order: index,
+      })),
+    );
 
     // Add custom questions
     this.customQuestions.forEach((q, index) => {
@@ -303,11 +339,13 @@ export default class MunicipalPermitTypesEditController extends Controller {
           type: q.type,
           required: q.isRequired || false,
           helpText: q.description,
-          options: q.options ? q.options.map(opt => ({
-            value: opt,
-            label: opt
-          })) : [],
-          order: includedDefaults.length + index
+          options: q.options
+            ? q.options.map((opt) => ({
+                value: opt,
+                label: opt,
+              }))
+            : [],
+          order: includedDefaults.length + index,
         });
       }
     });

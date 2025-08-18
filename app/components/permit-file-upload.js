@@ -21,12 +21,15 @@ export default class PermitFileUploadComponent extends Component {
     { value: 'correspondence', label: 'Correspondence' },
     { value: 'certificates', label: 'Certificates' },
     { value: 'surveys', label: 'Surveys' },
-    { value: 'other', label: 'Other' }
+    { value: 'other', label: 'Other' },
   ];
 
   get allowedFileTypes() {
     return [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -34,7 +37,7 @@ export default class PermitFileUploadComponent extends Component {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'text/plain',
       'application/zip',
-      'application/x-zip-compressed'
+      'application/x-zip-compressed',
     ];
   }
 
@@ -72,7 +75,7 @@ export default class PermitFileUploadComponent extends Component {
   handleDrop(event) {
     event.preventDefault();
     this.isDragOver = false;
-    
+
     const droppedFiles = Array.from(event.dataTransfer.files);
     this.validateAndAddFiles(droppedFiles);
   }
@@ -103,7 +106,9 @@ export default class PermitFileUploadComponent extends Component {
       }
 
       // Check for duplicates
-      if (this.files.find(f => f.name === file.name && f.size === file.size)) {
+      if (
+        this.files.find((f) => f.name === file.name && f.size === file.size)
+      ) {
         errors.push(`${file.name}: File already selected`);
         continue;
       }
@@ -113,7 +118,7 @@ export default class PermitFileUploadComponent extends Component {
         name: file.name,
         size: file.size,
         type: file.type,
-        id: Math.random().toString(36).substr(2, 9)
+        id: Math.random().toString(36).substr(2, 9),
       });
     }
 
@@ -126,7 +131,7 @@ export default class PermitFileUploadComponent extends Component {
 
   @action
   removeFile(fileId) {
-    this.files = this.files.filter(f => f.id !== fileId);
+    this.files = this.files.filter((f) => f.id !== fileId);
     this.uploadError = null;
   }
 
@@ -161,7 +166,7 @@ export default class PermitFileUploadComponent extends Component {
       const formData = new FormData();
 
       // Add files to form data
-      this.files.forEach(fileObj => {
+      this.files.forEach((fileObj) => {
         formData.append('files', fileObj.file);
       });
 
@@ -169,13 +174,16 @@ export default class PermitFileUploadComponent extends Component {
       formData.append('fileType', this.selectedFileType);
       formData.append('description', this.fileDescription);
 
-      const response = await fetch(`${config.APP.API_HOST}/api/permits/${this.args.permitId}/files/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permits/${this.args.permitId}/files/upload`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
         },
-        body: formData
-      });
+      );
 
       const result = await response.json();
 
@@ -190,7 +198,6 @@ export default class PermitFileUploadComponent extends Component {
       if (this.args.onUploadSuccess) {
         this.args.onUploadSuccess(result.files);
       }
-
     } catch (error) {
       console.error('Upload error:', error);
       this.uploadError = error.message;

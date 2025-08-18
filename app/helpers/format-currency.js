@@ -7,7 +7,7 @@ export default helper(function formatCurrency([amount]) {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(amount);
   } catch (error) {
     console.error('Error in format-currency helper:', error, 'amount:', amount);

@@ -6,7 +6,7 @@ export default helper(function formatDate([date]) {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   } catch (error) {
     console.error('Error in format-date helper:', error, 'date:', date);

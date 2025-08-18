@@ -10,7 +10,7 @@ export default class ResidentialProfileRoute extends Route {
     // Verify authentication and user type
     const token = localStorage.getItem('auth_token');
     const userType = localStorage.getItem('user_type');
-    
+
     if (!token || userType !== 'residential') {
       this.router.transitionTo('auth');
       return;
@@ -20,8 +20,8 @@ export default class ResidentialProfileRoute extends Route {
       // Verify token is still valid
       const response = await fetch(`${config.APP.API_HOST}/api/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -33,7 +33,6 @@ export default class ResidentialProfileRoute extends Route {
         this.router.transitionTo('auth');
         return;
       }
-
     } catch (error) {
       console.error('Authentication check failed:', error);
       localStorage.removeItem('auth_token');
@@ -44,13 +43,13 @@ export default class ResidentialProfileRoute extends Route {
 
   async model() {
     const token = localStorage.getItem('auth_token');
-    
+
     try {
       // Fetch user profile data
       const userResponse = await fetch(`${config.APP.API_HOST}/api/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!userResponse.ok) {
@@ -61,20 +60,19 @@ export default class ResidentialProfileRoute extends Route {
 
       // Also fetch properties for the profile
       const properties = this.currentProperty.userProperties || [];
-      
+
       return {
         user: user,
         properties: properties,
-        municipality: this.currentProperty.currentMunicipality
+        municipality: this.currentProperty.currentMunicipality,
       };
-
     } catch (error) {
       console.error('Error loading profile data:', error);
       return {
         user: null,
         properties: [],
         municipality: null,
-        error: error.message
+        error: error.message,
       };
     }
   }

@@ -7,7 +7,12 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('Contractors auth middleware - header exists:', !!authHeader, 'token exists:', !!token);
+  console.log(
+    'Contractors auth middleware - header exists:',
+    !!authHeader,
+    'token exists:',
+    !!token,
+  );
 
   if (!token) {
     console.log('Contractors - No token provided');
@@ -19,7 +24,12 @@ const authenticateToken = (req, res, next) => {
       console.log('Contractors JWT verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
-    console.log('Contractors JWT verified successfully for user:', user.userId, 'type:', user.userType);
+    console.log(
+      'Contractors JWT verified successfully for user:',
+      user.userId,
+      'type:',
+      user.userType,
+    );
     req.user = user;
     next();
   });
@@ -29,12 +39,21 @@ const authenticateToken = (req, res, next) => {
 router.get('/property/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    console.log('Contractors request - JWT user:', req.user.userId, 'Requested userId:', userId, 'User type:', req.user.userType);
-    
+
+    console.log(
+      'Contractors request - JWT user:',
+      req.user.userId,
+      'Requested userId:',
+      userId,
+      'User type:',
+      req.user.userType,
+    );
+
     // Verify the requesting user matches the userId or is authorized
     if (req.user.userId !== userId && req.user.userType !== 'municipal') {
-      console.log('Access denied - JWT user ID does not match requested user ID');
+      console.log(
+        'Access denied - JWT user ID does not match requested user ID',
+      );
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -51,7 +70,7 @@ router.get('/property/:userId', authenticateToken, async (req, res) => {
         projectCount: 3,
         phone: '(603) 555-0123',
         email: 'contact@superiorhomebuilders.com',
-        specialties: ['Residential Construction', 'Renovations', 'Additions']
+        specialties: ['Residential Construction', 'Renovations', 'Additions'],
       },
       {
         id: '2',
@@ -63,7 +82,7 @@ router.get('/property/:userId', authenticateToken, async (req, res) => {
         projectCount: 2,
         phone: '(603) 555-0456',
         email: 'info@lightningelectric.com',
-        specialties: ['Residential Electrical', 'Panel Upgrades', 'Smart Home']
+        specialties: ['Residential Electrical', 'Panel Upgrades', 'Smart Home'],
       },
       {
         id: '3',
@@ -75,13 +94,18 @@ router.get('/property/:userId', authenticateToken, async (req, res) => {
         projectCount: 1,
         phone: '(603) 555-0789',
         email: 'service@granitestatepl.com',
-        specialties: ['Bathroom Renovation', 'Fixture Installation', 'Water Heaters']
-      }
+        specialties: [
+          'Bathroom Renovation',
+          'Fixture Installation',
+          'Water Heaters',
+        ],
+      },
     ];
 
-    console.log(`Fetching contractors for property (user ${userId}), returning ${mockContractors.length} contractors`);
+    console.log(
+      `Fetching contractors for property (user ${userId}), returning ${mockContractors.length} contractors`,
+    );
     res.json(mockContractors);
-
   } catch (error) {
     console.error('Error fetching contractors:', error);
     res.status(500).json({ error: 'Failed to fetch contractors' });
@@ -103,19 +127,18 @@ router.get('/', authenticateToken, async (req, res) => {
         businessName: 'Superior Home Builders',
         businessType: 'General Contractor',
         licenseNumber: 'NH-GC-12345',
-        status: 'active'
+        status: 'active',
       },
       {
         id: '2',
         businessName: 'Lightning Electric LLC',
-        businessType: 'Electrical Contractor', 
+        businessType: 'Electrical Contractor',
         licenseNumber: 'NH-EL-67890',
-        status: 'active'
-      }
+        status: 'active',
+      },
     ];
 
     res.json(mockContractors);
-
   } catch (error) {
     console.error('Error fetching all contractors:', error);
     res.status(500).json({ error: 'Failed to fetch contractors' });

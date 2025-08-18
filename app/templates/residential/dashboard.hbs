@@ -17,7 +17,7 @@
     </div>
   </header>
 
-  <!-- Summary Cards -->
+  {{!-- Summary Cards --}}
   <div class="summary-grid">
     <div class="summary-card permits-card">
       <div class="card-icon">📋</div>
@@ -56,7 +56,7 @@
     </div>
   </div>
 
-  <!-- Tab Navigation -->
+  {{!-- Tab Navigation --}}
   <div class="dashboard-tabs">
     <div class="tab-navigation">
       <button 
@@ -86,7 +86,7 @@
       {{#if (eq this.activeTab 'overview')}}
         <div class="overview-tab">
           <div class="overview-grid">
-            <!-- Recent Permits -->
+            {{!-- Recent Permits --}}
             <div class="overview-section recent-permits">
               <div class="section-header">
                 <h3>Recent Permit Activity</h3>
@@ -138,7 +138,7 @@
               {{/if}}
             </div>
 
-            <!-- Property Information -->
+            {{!-- Property Information --}}
             <div class="overview-section property-info">
               <div class="section-header">
                 <h3>Property Information</h3>
@@ -186,7 +186,7 @@
       {{#if (eq this.activeTab 'permits')}}
         <div class="permits-tab">
           <div class="permits-sections">
-            <!-- Pending Permits -->
+            {{!-- Pending Permits --}}
             {{#if @model.permits.pending.length}}
               <div class="permits-section">
                 <h3>Pending Review ({{@model.permits.pending.length}})</h3>
@@ -207,7 +207,7 @@
               </div>
             {{/if}}
 
-            <!-- Active Permits -->
+            {{!-- Active Permits --}}
             {{#if @model.permits.current.length}}
               <div class="permits-section">
                 <h3>Active Permits ({{@model.permits.current.length}})</h3>
@@ -228,7 +228,7 @@
               </div>
             {{/if}}
 
-            <!-- Completed Permits -->
+            {{!-- Completed Permits --}}
             {{#if @model.permits.completed.length}}
               <div class="permits-section">
                 <h3>Completed Permits ({{@model.permits.completed.length}})</h3>

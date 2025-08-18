@@ -81,8 +81,8 @@ export default class AdminController extends Controller {
         body: JSON.stringify({
           email: this.email,
           password: this.password,
-          userType: 'municipal' // Specify we want municipal user login
-        })
+          userType: 'municipal', // Specify we want municipal user login
+        }),
       });
 
       const result = await response.json();
@@ -93,7 +93,9 @@ export default class AdminController extends Controller {
 
       // Verify user is municipal staff
       if (result.user.userType !== 'municipal') {
-        throw new Error('This portal is for municipal staff only. Please use the public portal.');
+        throw new Error(
+          'This portal is for municipal staff only. Please use the public portal.',
+        );
       }
 
       // Store authentication data
@@ -101,14 +103,19 @@ export default class AdminController extends Controller {
       localStorage.setItem('user_type', result.user.userType);
       localStorage.setItem('user_id', result.user._id);
       localStorage.setItem('municipality_id', result.user.municipality._id);
-      
+
       // Check if there's a selected municipality from the portal flow
-      const selectedMunicipalityId = localStorage.getItem('selected_municipality_id');
+      const selectedMunicipalityId = localStorage.getItem(
+        'selected_municipality_id',
+      );
       if (selectedMunicipalityId) {
         localStorage.setItem('current_municipality_id', selectedMunicipalityId);
         localStorage.removeItem('selected_municipality_id'); // Clear temporary storage
       } else {
-        localStorage.setItem('current_municipality_id', result.user.municipality._id);
+        localStorage.setItem(
+          'current_municipality_id',
+          result.user.municipality._id,
+        );
       }
 
       if (this.rememberMe) {
@@ -125,10 +132,11 @@ export default class AdminController extends Controller {
       setTimeout(() => {
         this.router.transitionTo('municipal.dashboard');
       }, 1000);
-
     } catch (error) {
       console.error('Sign in error:', error);
-      this.errorMessage = error.message || 'Sign in failed. Please check your credentials and try again.';
+      this.errorMessage =
+        error.message ||
+        'Sign in failed. Please check your credentials and try again.';
     } finally {
       this.isLoading = false;
     }
@@ -153,16 +161,19 @@ export default class AdminController extends Controller {
     this.successMessage = '';
 
     try {
-      const response = await fetch(`${config.APP.API_HOST}/api/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/auth/forgot-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: this.resetEmail,
+            userType: 'municipal',
+          }),
         },
-        body: JSON.stringify({
-          email: this.resetEmail,
-          userType: 'municipal'
-        })
-      });
+      );
 
       const result = await response.json();
 
@@ -170,13 +181,15 @@ export default class AdminController extends Controller {
         throw new Error(result.error || 'Password reset failed');
       }
 
-      this.successMessage = 'Password reset instructions have been sent to your email address.';
+      this.successMessage =
+        'Password reset instructions have been sent to your email address.';
       this.showForgotPasswordForm = false;
       this.resetEmail = '';
-
     } catch (error) {
       console.error('Password reset error:', error);
-      this.errorMessage = error.message || 'Password reset failed. Please try again or contact your IT administrator.';
+      this.errorMessage =
+        error.message ||
+        'Password reset failed. Please try again or contact your IT administrator.';
     } finally {
       this.isResetting = false;
     }

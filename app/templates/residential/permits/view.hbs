@@ -6,15 +6,15 @@
       <div class="error-icon">⚠️</div>
       <h2>Error Loading Permit</h2>
       <p>{{@model.error}}</p>
-      <button type="button" class="btn btn-primary" {{on "click" (fn this.goBack)}}>
+      <button type="button" class="btn btn-primary" {{on "click" this.goBack}}>
         ← Back to My Permits
       </button>
     </div>
   {{else if @model.permit}}
-    <!-- Header -->
+    {{!-- Header --}}
     <header class="permit-header">
       <div class="header-content">
-        <button type="button" class="back-btn" {{on "click" (fn this.goBack)}}>
+        <button type="button" class="back-btn" {{on "click" this.goBack}}>
           ← Back to My Permits
         </button>
         <div class="permit-title">
@@ -32,9 +32,9 @@
     </header>
 
     <div class="permit-content">
-      <!-- Review Process and Chat Side by Side -->
+      {{!-- Review Process and Chat Side by Side --}}
       <div class="review-and-chat-container">
-        <!-- Review Process Status -->
+        {{!-- Review Process Status --}}
         <section class="review-process">
           <h2>Review Process</h2>
           <div class="process-timeline">
@@ -74,35 +74,35 @@
           </div>
         </section>
 
-        <!-- Permit Chat/Messaging -->
+        {{!-- Permit Chat/Messaging --}}
         <section class="permit-messaging">
           <PermitChat @permitId={{@model.permit.id}} />
         </section>
       </div>
 
-      <!-- File Management Section -->
+      {{!-- File Management Section --}}
       <div class="file-management-container">
-        <!-- File Upload -->
+        {{!-- File Upload --}}
         <section class="file-upload-section">
           <PermitFileUpload 
             @permitId={{@model.permit.id}} 
-            @onUploadSuccess={{fn this.handleFileUploaded}}
+            @onUploadSuccess={{this.handleFileUploaded}}
           />
         </section>
 
-        <!-- File Display -->
+        {{!-- File Display --}}
         <section class="file-display-section">
           <PermitFilesDisplay 
             @permitId={{@model.permit.id}}
-            @onFileDeleted={{fn this.handleFileDeleted}}
-            @onMount={{fn this.setFilesDisplayComponent}}
+            @onFileDeleted={{this.handleFileDeleted}}
+            @onMount={{this.setFilesDisplayComponent}}
           />
         </section>
       </div>
 
-      <!-- Permit Details Grid -->
+      {{!-- Permit Details Grid --}}
       <div class="permit-details-grid">
-        <!-- Project Information -->
+        {{!-- Project Information --}}
         <section class="details-card">
           <h3>Project Information</h3>
           <div class="details-content">
@@ -125,7 +125,7 @@
           </div>
         </section>
 
-        <!-- Application Information -->
+        {{!-- Application Information --}}
         <section class="details-card">
           <h3>Application Information</h3>
           <div class="details-content">
@@ -152,7 +152,7 @@
           </div>
         </section>
 
-        <!-- Property Information -->
+        {{!-- Property Information --}}
         {{#if @model.permit.property}}
           <section class="details-card">
             <h3>Property Information</h3>
@@ -176,7 +176,7 @@
           </section>
         {{/if}}
 
-        <!-- Applicant Information -->
+        {{!-- Applicant Information --}}
         {{#if @model.permit.applicant}}
           <section class="details-card">
             <h3>Applicant Information</h3>
@@ -203,7 +203,7 @@
           </section>
         {{/if}}
 
-        <!-- Contractor Information -->
+        {{!-- Contractor Information --}}
         {{#if @model.permit.contractor}}
           <section class="details-card">
             <h3>Contractor Information</h3>
@@ -239,7 +239,7 @@
         {{/if}}
       </div>
 
-      <!-- Additional Information -->
+      {{!-- Additional Information --}}
       {{#if @model.permit.customFields.additionalInfo}}
         <section class="additional-info">
           <h3>Additional Information</h3>
@@ -256,24 +256,3 @@
     </div>
   {{/if}}
 </div>
-
-<style>
-.file-management-container {
-  margin: 24px 0;
-  display: grid;
-  gap: 20px;
-}
-
-.file-upload-section,
-.file-display-section {
-  background: white;
-  border-radius: 8px;
-}
-
-@media (max-width: 768px) {
-  .file-management-container {
-    margin: 16px 0;
-    gap: 16px;
-  }
-}
-</style>

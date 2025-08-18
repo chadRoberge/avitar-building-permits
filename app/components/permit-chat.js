@@ -33,22 +33,24 @@ export default class PermitChatComponent extends Component {
 
     try {
       const token = localStorage.getItem('auth_token');
-      
-      const response = await fetch(`${config.APP.API_HOST}/api/permit-messages/permit/${this.args.permitId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permit-messages/permit/${this.args.permitId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
         throw new Error('Failed to load messages');
       }
 
       this.messages = await response.json();
-      
+
       // Scroll to bottom after loading messages
       setTimeout(() => this.scrollToBottom(), 100);
-      
     } catch (error) {
       console.error('Error loading messages:', error);
       this.errorMessage = 'Failed to load messages';
@@ -62,12 +64,15 @@ export default class PermitChatComponent extends Component {
 
     try {
       const token = localStorage.getItem('auth_token');
-      
-      const response = await fetch(`${config.APP.API_HOST}/api/permit-messages/permit/${this.args.permitId}/unread`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permit-messages/permit/${this.args.permitId}/unread`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -104,18 +109,21 @@ export default class PermitChatComponent extends Component {
 
     try {
       const token = localStorage.getItem('auth_token');
-      
-      const response = await fetch(`${config.APP.API_HOST}/api/permit-messages/permit/${this.args.permitId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permit-messages/permit/${this.args.permitId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: this.newMessage.trim(),
+            messageType: 'general',
+          }),
         },
-        body: JSON.stringify({
-          message: this.newMessage.trim(),
-          messageType: 'general'
-        })
-      });
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -125,7 +133,6 @@ export default class PermitChatComponent extends Component {
       // Clear the input and reload messages
       this.newMessage = '';
       await this.loadMessages();
-      
     } catch (error) {
       console.error('Error sending message:', error);
       this.errorMessage = error.message || 'Failed to send message';
@@ -145,7 +152,7 @@ export default class PermitChatComponent extends Component {
   @action
   toggleExpanded() {
     this.isExpanded = !this.isExpanded;
-    
+
     if (this.isExpanded) {
       this.loadMessages();
       this.unreadCount = 0;

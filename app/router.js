@@ -11,18 +11,18 @@ Router.map(function () {
   this.route('municipal-portal', { path: '/municipality/:municipality_id' });
   this.route('register-municipality');
   this.route('auth');
-  
+
   // Municipal admin sign-in
   this.route('admin');
-  
+
   // Municipal admin routes
-  this.route('municipal', function() {
+  this.route('municipal', function () {
     this.route('dashboard');
-    this.route('permits', function() {
+    this.route('permits', function () {
       this.route('index', { path: '/' });
       this.route('view', { path: '/:permit_id' });
     });
-    this.route('permit-types', function() {
+    this.route('permit-types', function () {
       this.route('index', { path: '/' });
       this.route('new');
       this.route('edit', { path: '/:permit_type_id/edit' });
@@ -32,9 +32,9 @@ Router.map(function () {
   });
 
   // Residential user routes
-  this.route('residential', function() {
+  this.route('residential', function () {
     this.route('dashboard');
-    this.route('permits', function() {
+    this.route('permits', function () {
       this.route('index', { path: '/' });
       this.route('new');
       this.route('view', { path: '/:permit_id' });
@@ -44,9 +44,9 @@ Router.map(function () {
   });
 
   // Commercial user routes
-  this.route('commercial', function() {
+  this.route('commercial', function () {
     this.route('dashboard');
-    this.route('permits', function() {
+    this.route('permits', function () {
       this.route('index', { path: '/' });
       this.route('new');
       this.route('view', { path: '/:permit_id' });

@@ -11,18 +11,18 @@ export default class MunicipalPermitTypesNewController extends Controller {
   @tracked isCustomCategory = false;
   @tracked customCategoryName = '';
   @tracked customCategoryDescription = '';
-  
+
   @tracked permitName = '';
   @tracked permitCode = '';
   @tracked baseFee = '';
   @tracked processingTime = 14;
   @tracked permitDescription = '';
   @tracked requiresInspection = true;
-  
+
   @tracked activeQuestionTab = 'default';
   @tracked defaultQuestions = [];
   @tracked customQuestions = [];
-  
+
   @tracked isSubmitting = false;
   @tracked errorMessage = '';
 
@@ -33,7 +33,12 @@ export default class MunicipalPermitTypesNewController extends Controller {
       name: 'Building Permit',
       icon: '🏗️',
       description: 'New construction, additions, and structural modifications',
-      examples: ['New Construction', 'Additions', 'Renovations', 'Structural Changes'],
+      examples: [
+        'New Construction',
+        'Additions',
+        'Renovations',
+        'Structural Changes',
+      ],
       code: 'BP',
       defaultQuestions: [
         {
@@ -43,7 +48,13 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select the primary type of construction work',
           isRequired: true,
           isIncluded: true,
-          options: ['New Construction', 'Addition', 'Renovation', 'Alteration', 'Repair']
+          options: [
+            'New Construction',
+            'Addition',
+            'Renovation',
+            'Alteration',
+            'Repair',
+          ],
         },
         {
           id: 'square-footage',
@@ -51,15 +62,16 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Total Square Footage',
           description: 'Enter the total square footage of the project',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'construction-value',
           type: 'number',
           label: 'Estimated Construction Value ($)',
-          description: 'Total estimated cost of construction including materials and labor',
+          description:
+            'Total estimated cost of construction including materials and labor',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'occupancy-type',
@@ -68,7 +80,13 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select the intended use of the building',
           isRequired: true,
           isIncluded: true,
-          options: ['Residential - Single Family', 'Residential - Multi-Family', 'Commercial', 'Industrial', 'Mixed Use']
+          options: [
+            'Residential - Single Family',
+            'Residential - Multi-Family',
+            'Commercial',
+            'Industrial',
+            'Mixed Use',
+          ],
         },
         {
           id: 'contractor-info',
@@ -76,7 +94,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'General Contractor',
           description: 'Name and license number of the general contractor',
           isRequired: false,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'architect-info',
@@ -84,7 +102,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Architect/Engineer',
           description: 'Name and license number of the architect or engineer',
           isRequired: false,
-          isIncluded: false
+          isIncluded: false,
         },
         {
           id: 'construction-drawings',
@@ -92,9 +110,9 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Construction Plans',
           description: 'Upload architectural and engineering drawings',
           isRequired: true,
-          isIncluded: true
-        }
-      ]
+          isIncluded: true,
+        },
+      ],
     },
     {
       id: 'zoning',
@@ -111,7 +129,14 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select the current zoning classification',
           isRequired: true,
           isIncluded: true,
-          options: ['Residential R-1', 'Residential R-2', 'Commercial C-1', 'Commercial C-2', 'Industrial I-1', 'Mixed Use']
+          options: [
+            'Residential R-1',
+            'Residential R-2',
+            'Commercial C-1',
+            'Commercial C-2',
+            'Industrial I-1',
+            'Mixed Use',
+          ],
         },
         {
           id: 'proposed-use',
@@ -119,7 +144,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Proposed Use',
           description: 'Describe the intended use of the property',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'variance-required',
@@ -128,7 +153,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Indicate if you are requesting any zoning variances',
           isRequired: true,
           isIncluded: true,
-          options: ['Yes', 'No']
+          options: ['Yes', 'No'],
         },
         {
           id: 'setback-requirements',
@@ -136,7 +161,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Setback Distances',
           description: 'Front, side, and rear setback measurements',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'parking-spaces',
@@ -144,17 +169,18 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Number of Parking Spaces',
           description: 'Total parking spaces provided',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'site-plan',
           type: 'file',
           label: 'Site Plan',
-          description: 'Upload detailed site plan showing proposed improvements',
+          description:
+            'Upload detailed site plan showing proposed improvements',
           isRequired: true,
-          isIncluded: true
-        }
-      ]
+          isIncluded: true,
+        },
+      ],
     },
     {
       id: 'electrical',
@@ -171,7 +197,15 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select all types of work being performed',
           isRequired: true,
           isIncluded: true,
-          options: ['New Service Installation', 'Service Upgrade', 'Panel Replacement', 'Wiring Installation', 'Outlet Installation', 'Lighting Installation', 'HVAC Electrical']
+          options: [
+            'New Service Installation',
+            'Service Upgrade',
+            'Panel Replacement',
+            'Wiring Installation',
+            'Outlet Installation',
+            'Lighting Installation',
+            'HVAC Electrical',
+          ],
         },
         {
           id: 'service-amperage',
@@ -180,7 +214,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select the electrical service amperage',
           isRequired: true,
           isIncluded: true,
-          options: ['100 Amp', '150 Amp', '200 Amp', '400 Amp', 'Other']
+          options: ['100 Amp', '150 Amp', '200 Amp', '400 Amp', 'Other'],
         },
         {
           id: 'electrician-license',
@@ -188,7 +222,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Licensed Electrician',
           description: 'Name and license number of the electrician',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'electrical-load',
@@ -196,7 +230,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Estimated Electrical Load (Watts)',
           description: 'Total estimated electrical load for the project',
           isRequired: false,
-          isIncluded: false
+          isIncluded: false,
         },
         {
           id: 'electrical-drawings',
@@ -204,9 +238,9 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Electrical Plans',
           description: 'Upload electrical drawings and load calculations',
           isRequired: true,
-          isIncluded: true
-        }
-      ]
+          isIncluded: true,
+        },
+      ],
     },
     {
       id: 'plumbing',
@@ -223,7 +257,15 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select all types of work being performed',
           isRequired: true,
           isIncluded: true,
-          options: ['New Installation', 'Repair', 'Replacement', 'Water Service', 'Sewer Connection', 'Gas Line', 'Fixture Installation']
+          options: [
+            'New Installation',
+            'Repair',
+            'Replacement',
+            'Water Service',
+            'Sewer Connection',
+            'Gas Line',
+            'Fixture Installation',
+          ],
         },
         {
           id: 'fixture-count',
@@ -231,7 +273,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Number of Fixtures',
           description: 'Total number of plumbing fixtures',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'plumber-license',
@@ -239,7 +281,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Licensed Plumber',
           description: 'Name and license number of the plumber',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'water-pressure',
@@ -247,7 +289,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Water Pressure (PSI)',
           description: 'Available water pressure at the property',
           isRequired: false,
-          isIncluded: false
+          isIncluded: false,
         },
         {
           id: 'septic-connection',
@@ -256,7 +298,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select the type of waste water connection',
           isRequired: true,
           isIncluded: true,
-          options: ['Municipal Sewer', 'Septic System', 'Other']
+          options: ['Municipal Sewer', 'Septic System', 'Other'],
         },
         {
           id: 'plumbing-drawings',
@@ -264,9 +306,9 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Plumbing Plans',
           description: 'Upload plumbing drawings and specifications',
           isRequired: false,
-          isIncluded: false
-        }
-      ]
+          isIncluded: false,
+        },
+      ],
     },
     {
       id: 'mechanical',
@@ -283,7 +325,15 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select all systems being installed or modified',
           isRequired: true,
           isIncluded: true,
-          options: ['Central Air Conditioning', 'Heating System', 'Ventilation', 'Boiler', 'Heat Pump', 'Ductwork', 'Exhaust Fans']
+          options: [
+            'Central Air Conditioning',
+            'Heating System',
+            'Ventilation',
+            'Boiler',
+            'Heat Pump',
+            'Ductwork',
+            'Exhaust Fans',
+          ],
         },
         {
           id: 'btu-capacity',
@@ -291,7 +341,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'System Capacity (BTU)',
           description: 'Total BTU capacity of the mechanical system',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'hvac-contractor',
@@ -299,7 +349,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'HVAC Contractor',
           description: 'Name and license number of the HVAC contractor',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'energy-efficiency',
@@ -307,7 +357,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Energy Efficiency Rating',
           description: 'SEER rating or efficiency specifications',
           isRequired: false,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'ductwork-modification',
@@ -316,7 +366,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Will existing ductwork be modified or replaced?',
           isRequired: true,
           isIncluded: true,
-          options: ['Yes', 'No', 'New Installation']
+          options: ['Yes', 'No', 'New Installation'],
         },
         {
           id: 'mechanical-drawings',
@@ -324,9 +374,9 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Mechanical Plans',
           description: 'Upload HVAC drawings and specifications',
           isRequired: false,
-          isIncluded: false
-        }
-      ]
+          isIncluded: false,
+        },
+      ],
     },
     {
       id: 'specialized',
@@ -343,7 +393,15 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: 'Select the specific type of permit needed',
           isRequired: true,
           isIncluded: true,
-          options: ['Sign Permit', 'Pool/Spa Permit', 'Demolition Permit', 'Temporary Structure', 'Fence Permit', 'Deck Permit', 'Other']
+          options: [
+            'Sign Permit',
+            'Pool/Spa Permit',
+            'Demolition Permit',
+            'Temporary Structure',
+            'Fence Permit',
+            'Deck Permit',
+            'Other',
+          ],
         },
         {
           id: 'project-description',
@@ -351,7 +409,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Project Description',
           description: 'Provide detailed description of the proposed work',
           isRequired: true,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'contractor-info',
@@ -359,7 +417,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Contractor Information',
           description: 'Name and license number of the contractor',
           isRequired: false,
-          isIncluded: true
+          isIncluded: true,
         },
         {
           id: 'compliance-standards',
@@ -367,23 +425,26 @@ export default class MunicipalPermitTypesNewController extends Controller {
           label: 'Applicable Standards',
           description: 'List any specific codes or standards that apply',
           isRequired: false,
-          isIncluded: false
+          isIncluded: false,
         },
         {
           id: 'supporting-docs',
           type: 'file',
           label: 'Supporting Documentation',
-          description: 'Upload plans, specifications, or other required documents',
+          description:
+            'Upload plans, specifications, or other required documents',
           isRequired: true,
-          isIncluded: true
-        }
-      ]
-    }
+          isIncluded: true,
+        },
+      ],
+    },
   ];
 
   get suggestedCode() {
     if (this.isCustomCategory) {
-      return this.customCategoryName ? this.customCategoryName.substring(0, 2).toUpperCase() : '';
+      return this.customCategoryName
+        ? this.customCategoryName.substring(0, 2).toUpperCase()
+        : '';
     }
     return this.selectedCategory?.code || '';
   }
@@ -411,7 +472,9 @@ export default class MunicipalPermitTypesNewController extends Controller {
   @action
   loadDefaultQuestions() {
     if (this.selectedCategory?.defaultQuestions) {
-      this.defaultQuestions = this.selectedCategory.defaultQuestions.map(q => ({ ...q }));
+      this.defaultQuestions = this.selectedCategory.defaultQuestions.map(
+        (q) => ({ ...q }),
+      );
     } else {
       this.defaultQuestions = [];
     }
@@ -434,7 +497,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
       label: '',
       description: '',
       isRequired: false,
-      options: []
+      options: [],
     };
     this.customQuestions = [...this.customQuestions, newQuestion];
   }
@@ -448,12 +511,15 @@ export default class MunicipalPermitTypesNewController extends Controller {
   updateQuestionType(index, event) {
     const questions = [...this.customQuestions];
     questions[index].type = event.target.value;
-    
+
     // Initialize options for select/radio/checkbox types
-    if (['select', 'radio', 'checkbox'].includes(event.target.value) && !questions[index].options.length) {
+    if (
+      ['select', 'radio', 'checkbox'].includes(event.target.value) &&
+      !questions[index].options.length
+    ) {
       questions[index].options = ['Option 1', 'Option 2'];
     }
-    
+
     this.customQuestions = questions;
   }
 
@@ -481,14 +547,19 @@ export default class MunicipalPermitTypesNewController extends Controller {
   @action
   addQuestionOption(index) {
     const questions = [...this.customQuestions];
-    questions[index].options = [...questions[index].options, `Option ${questions[index].options.length + 1}`];
+    questions[index].options = [
+      ...questions[index].options,
+      `Option ${questions[index].options.length + 1}`,
+    ];
     this.customQuestions = questions;
   }
 
   @action
   removeQuestionOption(questionIndex, optionIndex) {
     const questions = [...this.customQuestions];
-    questions[questionIndex].options = questions[questionIndex].options.filter((_, i) => i !== optionIndex);
+    questions[questionIndex].options = questions[questionIndex].options.filter(
+      (_, i) => i !== optionIndex,
+    );
     this.customQuestions = questions;
   }
 
@@ -507,9 +578,9 @@ export default class MunicipalPermitTypesNewController extends Controller {
   @action
   async createPermitType(event) {
     event.preventDefault();
-    
+
     if (this.isSubmitting) return;
-    
+
     this.isSubmitting = true;
     this.errorMessage = '';
 
@@ -520,15 +591,17 @@ export default class MunicipalPermitTypesNewController extends Controller {
         code: this.permitCode,
         description: this.permitDescription,
         category: this.isCustomCategory ? 'custom' : this.selectedCategory.id,
-        customCategory: this.isCustomCategory ? {
-          name: this.customCategoryName,
-          description: this.customCategoryDescription
-        } : null,
+        customCategory: this.isCustomCategory
+          ? {
+              name: this.customCategoryName,
+              description: this.customCategoryDescription,
+            }
+          : null,
         baseFee: parseFloat(this.baseFee) || 0,
         processingTime: parseInt(this.processingTime) || 14,
         requiresInspection: this.requiresInspection,
         formFields: this.buildFormFields(),
-        isActive: true
+        isActive: true,
       };
 
       // Get auth token
@@ -542,9 +615,9 @@ export default class MunicipalPermitTypesNewController extends Controller {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(permitTypeData)
+        body: JSON.stringify(permitTypeData),
       });
 
       if (!response.ok) {
@@ -554,10 +627,10 @@ export default class MunicipalPermitTypesNewController extends Controller {
 
       // Success - redirect to permit types list
       this.router.transitionTo('municipal.permit-types.index');
-      
     } catch (error) {
       console.error('Error creating permit type:', error);
-      this.errorMessage = error.message || 'An error occurred while creating the permit type';
+      this.errorMessage =
+        error.message || 'An error occurred while creating the permit type';
     } finally {
       this.isSubmitting = false;
     }
@@ -567,16 +640,18 @@ export default class MunicipalPermitTypesNewController extends Controller {
     const fields = [];
 
     // Add included default questions
-    const includedDefaults = this.defaultQuestions.filter(q => q.isIncluded);
-    fields.push(...includedDefaults.map(q => ({
-      id: q.id,
-      type: q.type,
-      label: q.label,
-      description: q.description,
-      isRequired: q.isRequired,
-      options: q.options || [],
-      isDefault: true
-    })));
+    const includedDefaults = this.defaultQuestions.filter((q) => q.isIncluded);
+    fields.push(
+      ...includedDefaults.map((q) => ({
+        id: q.id,
+        type: q.type,
+        label: q.label,
+        description: q.description,
+        isRequired: q.isRequired,
+        options: q.options || [],
+        isDefault: true,
+      })),
+    );
 
     // Add custom questions
     this.customQuestions.forEach((q, index) => {
@@ -588,7 +663,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           description: q.description,
           isRequired: q.isRequired,
           options: q.options || [],
-          isDefault: false
+          isDefault: false,
         });
       }
     });

@@ -15,7 +15,7 @@
     {{/if}}
 
     {{#if this.billingData}}
-      <!-- Account Overview -->
+      {{!-- Account Overview --}}
       <section class="billing-overview">
         <div class="billing-header">
           <h2>
@@ -37,7 +37,7 @@
         </div>
 
         <div class="billing-cards">
-          <!-- Current Plan Card -->
+          {{!-- Current Plan Card --}}
           <div class="billing-card plan-card">
             <h3>Current Plan</h3>
             <div class="plan-info">
@@ -87,13 +87,13 @@
             {{/if}}
           </div>
 
-          <!-- Usage Card (Municipal Only) -->
+          {{!-- Usage Card (Municipal Only) --}}
           {{#if this.isMunicipalUser}}
             <div class="billing-card usage-card">
               <h3>Usage This Period</h3>
               {{#if this.usageData}}
                 <div class="usage-metrics">
-                  <!-- Permits Usage -->
+                  {{!-- Permits Usage --}}
                   <div class="usage-metric">
                     <div class="usage-header">
                       <span class="usage-label">Permits Processed</span>
@@ -111,7 +111,7 @@
                     {{/if}}
                   </div>
 
-                  <!-- Users Usage -->
+                  {{!-- Users Usage --}}
                   <div class="usage-metric">
                     <div class="usage-header">
                       <span class="usage-label">Active Users</span>
@@ -141,7 +141,7 @@
         </div>
       </section>
 
-      <!-- Billing History (Municipal Only) -->
+      {{!-- Billing History (Municipal Only) --}}
       {{#if this.isMunicipalUser}}
         <section class="billing-history">
           <h3>Billing History</h3>
@@ -165,7 +165,7 @@
                     <span class="status-badge {{invoice.status}}">{{capitalize invoice.status}}</span>
                   </div>
                   <div class="col-actions">
-                    <a href="{{invoice.downloadUrl}}" class="btn btn-sm btn-outline" target="_blank">
+                    <a href="{{invoice.downloadUrl}}" class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">
                       Download PDF
                     </a>
                   </div>
@@ -180,7 +180,7 @@
         </section>
       {{/if}}
 
-      <!-- Plan Comparison Modal -->
+      {{!-- Plan Comparison Modal --}}
       {{#if this.showPlanComparison}}
         <div class="modal-backdrop" {{on "click" this.togglePlanComparison}}>
           <div class="modal-content plan-comparison-modal" {{on "click" (fn (mut false))}}>
@@ -254,7 +254,7 @@
         </div>
       {{/if}}
 
-      <!-- Cancel Confirmation Modal -->
+      {{!-- Cancel Confirmation Modal --}}
       {{#if this.showCancelConfirmation}}
         <div class="modal-backdrop" {{on "click" this.hideCancelDialog}}>
           <div class="modal-content cancel-confirmation-modal" {{on "click" (fn (mut false))}}>

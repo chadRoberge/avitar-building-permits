@@ -6,13 +6,17 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 const generateToken = (user) => {
-  return jwt.sign({ 
-    userId: user._id,
-    userType: user.userType,
-    email: user.email
-  }, process.env.JWT_SECRET || 'fallback_secret_key', {
-    expiresIn: '7d'
-  });
+  return jwt.sign(
+    {
+      userId: user._id,
+      userType: user.userType,
+      email: user.email,
+    },
+    process.env.JWT_SECRET || 'fallback_secret_key',
+    {
+      expiresIn: '7d',
+    },
+  );
 };
 
 // Register
@@ -22,7 +26,7 @@ router.post('/register', async (req, res) => {
   console.log('Headers:', req.headers);
   console.log('Body exists:', !!req.body);
   console.log('Body keys:', Object.keys(req.body || {}));
-  
+
   try {
     const {
       email,
@@ -34,22 +38,27 @@ router.post('/register', async (req, res) => {
       municipality,
       propertyAddress,
       propertyInfo,
-      businessInfo
+      businessInfo,
     } = req.body;
 
-    console.log('Registration request body:', JSON.stringify(req.body, null, 2));
-    console.log('Extracted registration data:', { 
-      email, 
-      userType, 
+    console.log(
+      'Registration request body:',
+      JSON.stringify(req.body, null, 2),
+    );
+    console.log('Extracted registration data:', {
+      email,
+      userType,
       municipality: municipality?.name || municipality,
       propertyAddress,
-      businessInfo 
+      businessInfo,
     });
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ error: 'User with this email already exists' });
+      return res
+        .status(400)
+        .json({ error: 'User with this email already exists' });
     }
 
     // Validate required fields
@@ -64,55 +73,61 @@ router.post('/register', async (req, res) => {
       firstName,
       lastName,
       phone,
-      userType
+      userType,
     };
 
     // Handle municipality data for different user types
     if (userType === 'municipal') {
       if (!municipality?.name) {
-        return res.status(400).json({ error: 'Municipality is required for municipal users' });
+        return res
+          .status(400)
+          .json({ error: 'Municipality is required for municipal users' });
       }
       userData.municipality = municipality;
     } else if (userType === 'residential') {
       if (!municipality?.id && !municipality?._id) {
-        return res.status(400).json({ error: 'Municipality is required for residential users' });
+        return res
+          .status(400)
+          .json({ error: 'Municipality is required for residential users' });
       }
-      
+
       // Validate that property city matches municipality city
       if (propertyAddress?.city && municipality?.city) {
         const municipalityCity = municipality.city.toLowerCase().trim();
         const propertyCity = propertyAddress.city.toLowerCase().trim();
-        
+
         if (municipalityCity !== propertyCity) {
-          return res.status(400).json({ 
-            error: `Property must be located in ${municipality.city}. You entered "${propertyAddress.city}".` 
+          return res.status(400).json({
+            error: `Property must be located in ${municipality.city}. You entered "${propertyAddress.city}".`,
           });
         }
       }
-      
+
       // For residential users, store municipality ID and property address
       userData.municipality = {
         _id: municipality.id || municipality._id,
-        name: municipality.name
+        name: municipality.name,
       };
-      
+
       if (propertyAddress) {
         userData.propertyAddress = propertyAddress;
       }
-      
+
       if (propertyInfo) {
         userData.propertyInfo = propertyInfo;
       }
     } else if (userType === 'commercial') {
       if (!municipality?.id && !municipality?._id) {
-        return res.status(400).json({ error: 'Municipality is required for commercial users' });
+        return res
+          .status(400)
+          .json({ error: 'Municipality is required for commercial users' });
       }
-      
+
       userData.municipality = {
         _id: municipality.id || municipality._id,
-        name: municipality.name
+        name: municipality.name,
       };
-      
+
       if (businessInfo) {
         userData.businessInfo = businessInfo;
       }
@@ -130,7 +145,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json({
       message: 'User created successfully',
       token,
-      user
+      user,
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -156,9 +171,14 @@ router.post('/login', async (req, res) => {
     // Check if user type matches requested login type
     if (userType && user.userType !== userType) {
       if (userType === 'municipal') {
-        return res.status(401).json({ error: 'This portal is for municipal staff only. Please use the public portal.' });
+        return res.status(401).json({
+          error:
+            'This portal is for municipal staff only. Please use the public portal.',
+        });
       } else {
-        return res.status(401).json({ error: 'Invalid user type for this portal' });
+        return res
+          .status(401)
+          .json({ error: 'Invalid user type for this portal' });
       }
     }
 
@@ -174,7 +194,7 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
-      user
+      user,
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -214,45 +234,49 @@ router.post('/forgot-password', async (req, res) => {
 
     // Find user
     const user = await User.findOne({ email, isActive: true });
-    
+
     // Always return success for security (don't reveal if email exists)
     if (!user) {
-      return res.json({ 
-        message: 'If an account with that email exists, you will receive password reset instructions.' 
+      return res.json({
+        message:
+          'If an account with that email exists, you will receive password reset instructions.',
       });
     }
 
     // Check user type if specified
     if (userType && user.userType !== userType) {
-      return res.json({ 
-        message: 'If an account with that email exists, you will receive password reset instructions.' 
+      return res.json({
+        message:
+          'If an account with that email exists, you will receive password reset instructions.',
       });
     }
 
     // Generate reset token (in production, use crypto.randomBytes)
     const resetToken = jwt.sign(
-      { id: user._id, purpose: 'password-reset' }, 
+      { id: user._id, purpose: 'password-reset' },
       process.env.JWT_SECRET || 'fallback_secret_key',
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // TODO: In production, send actual email
     // For now, just log the reset link
     console.log(`Password reset link for ${email}:`);
     console.log(`http://localhost:4200/reset-password?token=${resetToken}`);
-    
+
     // Store reset token (in production, you might want to store this in database)
     // For now, just return success
-    
-    res.json({ 
-      message: 'If an account with that email exists, you will receive password reset instructions.',
-      // TODO: Remove this in production
-      resetToken: resetToken
-    });
 
+    res.json({
+      message:
+        'If an account with that email exists, you will receive password reset instructions.',
+      // TODO: Remove this in production
+      resetToken: resetToken,
+    });
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ error: 'Server error processing password reset request' });
+    res
+      .status(500)
+      .json({ error: 'Server error processing password reset request' });
   }
 });
 
@@ -262,17 +286,24 @@ router.post('/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
 
     if (!token || !newPassword) {
-      return res.status(400).json({ error: 'Reset token and new password are required' });
+      return res
+        .status(400)
+        .json({ error: 'Reset token and new password are required' });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+      return res
+        .status(400)
+        .json({ error: 'Password must be at least 6 characters long' });
     }
 
     // Verify reset token
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+      decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || 'fallback_secret_key',
+      );
     } catch (error) {
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
@@ -292,7 +323,6 @@ router.post('/reset-password', async (req, res) => {
     await user.save();
 
     res.json({ message: 'Password has been reset successfully' });
-
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(500).json({ error: 'Server error during password reset' });

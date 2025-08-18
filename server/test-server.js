@@ -4,10 +4,12 @@ const cors = require('cors');
 const app = express();
 
 // Enable CORS
-app.use(cors({
-  origin: ['http://localhost:4200', 'http://localhost:4201'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: ['http://localhost:4200', 'http://localhost:4201'],
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 

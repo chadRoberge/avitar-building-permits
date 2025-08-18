@@ -26,7 +26,7 @@ export default class SignInFormComponent extends Component {
   @action
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     if (!this.email || !this.password) {
       this.errorMessage = 'Please fill in all fields';
       return;
@@ -36,10 +36,10 @@ export default class SignInFormComponent extends Component {
     this.errorMessage = '';
 
     try {
-      console.log('Sign in attempt:', { 
-        email: this.email, 
+      console.log('Sign in attempt:', {
+        email: this.email,
         userType: this.args.userType,
-        municipality: this.args.municipality.name 
+        municipality: this.args.municipality.name,
       });
 
       const response = await fetch(`${config.APP.API_HOST}/api/auth/login`, {
@@ -51,8 +51,8 @@ export default class SignInFormComponent extends Component {
           email: this.email,
           password: this.password,
           userType: this.args.userType,
-          municipality: this.args.municipality.id || this.args.municipality._id
-        })
+          municipality: this.args.municipality.id || this.args.municipality._id,
+        }),
       });
 
       const result = await response.json();
@@ -63,20 +63,27 @@ export default class SignInFormComponent extends Component {
 
       // Verify user type matches
       if (result.user.userType !== this.args.userType) {
-        throw new Error(`This account is not registered as a ${this.args.userType} user.`);
+        throw new Error(
+          `This account is not registered as a ${this.args.userType} user.`,
+        );
       }
 
       // Store authentication data
       localStorage.setItem('auth_token', result.token);
       localStorage.setItem('user_type', result.user.userType);
       localStorage.setItem('user_id', result.user._id);
-      localStorage.setItem('municipality_id', result.user.municipality._id || result.user.municipality);
+      localStorage.setItem(
+        'municipality_id',
+        result.user.municipality._id || result.user.municipality,
+      );
 
       console.log('Sign in successful:', result);
 
       // Redirect to appropriate dashboard based on user type
-      alert(`Welcome back ${result.user.firstName}! You are now signed in to the ${this.args.municipality.name} portal.`);
-      
+      alert(
+        `Welcome back ${result.user.firstName}! You are now signed in to the ${this.args.municipality.name} portal.`,
+      );
+
       if (result.user.userType === 'residential') {
         this.router.transitionTo('residential.dashboard');
       } else if (result.user.userType === 'municipal') {
@@ -85,10 +92,11 @@ export default class SignInFormComponent extends Component {
         // For commercial or other types, redirect to home for now
         this.router.transitionTo('home');
       }
-      
     } catch (error) {
       console.error('Sign in error:', error);
-      this.errorMessage = error.message || 'Failed to sign in. Please check your credentials and try again.';
+      this.errorMessage =
+        error.message ||
+        'Failed to sign in. Please check your credentials and try again.';
     } finally {
       this.isLoading = false;
     }

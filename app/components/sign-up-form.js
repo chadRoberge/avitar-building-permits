@@ -9,7 +9,7 @@ export default class SignUpFormComponent extends Component {
   @tracked firstName = '';
   @tracked lastName = '';
   @tracked phone = '';
-  
+
   // Municipality data
   @tracked municipalityName = '';
   @tracked municipalityAddress = '';
@@ -20,7 +20,7 @@ export default class SignUpFormComponent extends Component {
   @tracked municipalityPhone = '';
   @tracked municipalityEmail = '';
   @tracked municipalityWebsite = '';
-  
+
   @tracked isLoading = false;
   @tracked errorMessage = '';
 
@@ -33,7 +33,7 @@ export default class SignUpFormComponent extends Component {
   @action
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     if (!this.validateForm()) {
       return;
     }
@@ -57,15 +57,15 @@ export default class SignUpFormComponent extends Component {
           county: this.municipalityCounty,
           phone: this.municipalityPhone,
           email: this.municipalityEmail,
-          website: this.municipalityWebsite
-        }
+          website: this.municipalityWebsite,
+        },
       };
 
       // TODO: Implement actual user registration with MongoDB
       console.log('User registration data:', userData);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       // For now, just show success message
       alert('Account created successfully! Backend integration pending.');
     } catch (error) {
@@ -76,8 +76,14 @@ export default class SignUpFormComponent extends Component {
   }
 
   validateForm() {
-    if (!this.email || !this.password || !this.confirmPassword || 
-        !this.firstName || !this.lastName || !this.municipalityName) {
+    if (
+      !this.email ||
+      !this.password ||
+      !this.confirmPassword ||
+      !this.firstName ||
+      !this.lastName ||
+      !this.municipalityName
+    ) {
       this.errorMessage = 'Please fill in all required fields';
       return false;
     }

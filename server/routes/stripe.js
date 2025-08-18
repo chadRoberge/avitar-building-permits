@@ -8,45 +8,45 @@ const auth = require('../middleware/auth');
 router.post('/create-checkout-session', auth, async (req, res) => {
   try {
     const { planType, municipalityId } = req.body;
-    
+
     // Validate user is municipal admin
     if (req.user.userType !== 'municipal') {
       return res.status(403).json({ error: 'Access denied' });
     }
-    
+
     // Validate plan type
     if (!MUNICIPAL_PLANS[planType]) {
       return res.status(400).json({ error: 'Invalid plan type' });
     }
-    
+
     const plan = MUNICIPAL_PLANS[planType];
-    
+
     // Get municipality
     const municipality = await Municipality.findById(municipalityId);
     if (!municipality) {
       return res.status(404).json({ error: 'Municipality not found' });
     }
-    
+
     // Create or get Stripe customer
     let customerId = municipality.subscription.stripeCustomerId;
-    
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: req.user.email,
         name: municipality.name,
         metadata: {
           municipalityId: municipality._id.toString(),
-          planType: planType
-        }
+          planType: planType,
+        },
       });
-      
+
       customerId = customer.id;
-      
+
       // Update municipality with customer ID
       municipality.subscription.stripeCustomerId = customerId;
       await municipality.save();
     }
-    
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -60,16 +60,16 @@ router.post('/create-checkout-session', auth, async (req, res) => {
               description: plan.description,
               metadata: {
                 planType: planType,
-                municipalityId: municipality._id.toString()
-              }
+                municipalityId: municipality._id.toString(),
+              },
             },
             unit_amount: plan.price,
             recurring: {
-              interval: plan.interval
-            }
+              interval: plan.interval,
+            },
           },
-          quantity: 1
-        }
+          quantity: 1,
+        },
       ],
       mode: 'subscription',
       success_url: `${process.env.CLIENT_URL}/municipal/billing?session_id={CHECKOUT_SESSION_ID}&success=true`,
@@ -77,26 +77,25 @@ router.post('/create-checkout-session', auth, async (req, res) => {
       metadata: {
         municipalityId: municipality._id.toString(),
         planType: planType,
-        userId: req.user._id.toString()
+        userId: req.user._id.toString(),
       },
       subscription_data: {
         metadata: {
           municipalityId: municipality._id.toString(),
-          planType: planType
-        }
-      }
+          planType: planType,
+        },
+      },
     });
-    
+
     res.json({
       sessionId: session.id,
-      url: session.url
+      url: session.url,
     });
-    
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to create checkout session',
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -104,21 +103,22 @@ router.post('/create-checkout-session', auth, async (req, res) => {
 // Get checkout session details
 router.get('/checkout-session/:sessionId', auth, async (req, res) => {
   try {
-    const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
-    
+    const session = await stripe.checkout.sessions.retrieve(
+      req.params.sessionId,
+    );
+
     res.json({
       id: session.id,
       payment_status: session.payment_status,
       customer_email: session.customer_details?.email,
       amount_total: session.amount_total,
-      subscription_id: session.subscription
+      subscription_id: session.subscription,
     });
-    
   } catch (error) {
     console.error('Error retrieving checkout session:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to retrieve checkout session',
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -127,33 +127,34 @@ router.get('/checkout-session/:sessionId', auth, async (req, res) => {
 router.post('/create-portal-session', auth, async (req, res) => {
   try {
     const { municipalityId } = req.body;
-    
+
     // Validate user is municipal admin
     if (req.user.userType !== 'municipal') {
       return res.status(403).json({ error: 'Access denied' });
     }
-    
+
     // Get municipality
     const municipality = await Municipality.findById(municipalityId);
     if (!municipality || !municipality.subscription.stripeCustomerId) {
-      return res.status(404).json({ error: 'Municipality or customer not found' });
+      return res
+        .status(404)
+        .json({ error: 'Municipality or customer not found' });
     }
-    
+
     // Create portal session
     const session = await stripe.billingPortal.sessions.create({
       customer: municipality.subscription.stripeCustomerId,
-      return_url: `${process.env.CLIENT_URL}/municipal/billing`
+      return_url: `${process.env.CLIENT_URL}/municipal/billing`,
     });
-    
+
     res.json({
-      url: session.url
+      url: session.url,
     });
-    
   } catch (error) {
     console.error('Error creating portal session:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to create portal session',
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -162,52 +163,58 @@ router.post('/create-portal-session', auth, async (req, res) => {
 router.get('/subscription/:municipalityId', auth, async (req, res) => {
   try {
     const { municipalityId } = req.params;
-    
+
     // Validate user is municipal admin
     if (req.user.userType !== 'municipal') {
       return res.status(403).json({ error: 'Access denied' });
     }
-    
+
     // Get municipality
     const municipality = await Municipality.findById(municipalityId);
     if (!municipality) {
       return res.status(404).json({ error: 'Municipality not found' });
     }
-    
+
     let subscriptionData = {
       plan: municipality.subscription.plan,
       status: municipality.subscription.status,
       currentPeriodStart: municipality.subscription.currentPeriodStart,
       currentPeriodEnd: municipality.subscription.currentPeriodEnd,
-      cancelAtPeriodEnd: municipality.subscription.cancelAtPeriodEnd
+      cancelAtPeriodEnd: municipality.subscription.cancelAtPeriodEnd,
     };
-    
+
     // If there's a Stripe subscription, get the latest data
     if (municipality.subscription.stripeSubscriptionId) {
       try {
         const stripeSubscription = await stripe.subscriptions.retrieve(
-          municipality.subscription.stripeSubscriptionId
+          municipality.subscription.stripeSubscriptionId,
         );
-        
+
         subscriptionData = {
           ...subscriptionData,
           stripeStatus: stripeSubscription.status,
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end
+          currentPeriodStart: new Date(
+            stripeSubscription.current_period_start * 1000,
+          ),
+          currentPeriodEnd: new Date(
+            stripeSubscription.current_period_end * 1000,
+          ),
+          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
         };
       } catch (stripeError) {
-        console.warn('Could not retrieve Stripe subscription:', stripeError.message);
+        console.warn(
+          'Could not retrieve Stripe subscription:',
+          stripeError.message,
+        );
       }
     }
-    
+
     res.json(subscriptionData);
-    
   } catch (error) {
     console.error('Error getting subscription details:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to get subscription details',
-      details: error.message 
+      details: error.message,
     });
   }
 });
@@ -218,7 +225,11 @@ router.post('/webhook', async (req, res) => {
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, stripeKeys.webhookSecret);
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      stripeKeys.webhookSecret,
+    );
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -231,33 +242,32 @@ router.post('/webhook', async (req, res) => {
       case 'customer.subscription.created':
         await handleSubscriptionCreated(event.data.object);
         break;
-        
+
       case 'customer.subscription.updated':
         await handleSubscriptionUpdated(event.data.object);
         break;
-        
+
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object);
         break;
-        
+
       case 'invoice.payment_succeeded':
         await handlePaymentSucceeded(event.data.object);
         break;
-        
+
       case 'invoice.payment_failed':
         await handlePaymentFailed(event.data.object);
         break;
-        
+
       case 'checkout.session.completed':
         await handleCheckoutCompleted(event.data.object);
         break;
-        
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
 
     res.json({ received: true });
-    
   } catch (error) {
     console.error('Error processing webhook:', error);
     res.status(500).json({ error: 'Webhook processing failed' });
@@ -269,28 +279,32 @@ async function handleSubscriptionCreated(subscription) {
   try {
     const municipalityId = subscription.metadata.municipalityId;
     const planType = subscription.metadata.planType;
-    
+
     if (!municipalityId) {
       console.warn('No municipalityId in subscription metadata');
       return;
     }
-    
+
     const municipality = await Municipality.findById(municipalityId);
     if (!municipality) {
       console.error('Municipality not found for subscription:', municipalityId);
       return;
     }
-    
+
     municipality.subscription.stripeSubscriptionId = subscription.id;
     municipality.subscription.plan = planType;
     municipality.subscription.status = subscription.status;
-    municipality.subscription.currentPeriodStart = new Date(subscription.current_period_start * 1000);
-    municipality.subscription.currentPeriodEnd = new Date(subscription.current_period_end * 1000);
-    municipality.subscription.cancelAtPeriodEnd = subscription.cancel_at_period_end;
-    
+    municipality.subscription.currentPeriodStart = new Date(
+      subscription.current_period_start * 1000,
+    );
+    municipality.subscription.currentPeriodEnd = new Date(
+      subscription.current_period_end * 1000,
+    );
+    municipality.subscription.cancelAtPeriodEnd =
+      subscription.cancel_at_period_end;
+
     await municipality.save();
     console.log('Subscription created for municipality:', municipality.name);
-    
   } catch (error) {
     console.error('Error handling subscription created:', error);
   }
@@ -299,27 +313,34 @@ async function handleSubscriptionCreated(subscription) {
 async function handleSubscriptionUpdated(subscription) {
   try {
     const municipality = await Municipality.findOne({
-      'subscription.stripeSubscriptionId': subscription.id
+      'subscription.stripeSubscriptionId': subscription.id,
     });
-    
+
     if (!municipality) {
-      console.warn('Municipality not found for subscription update:', subscription.id);
+      console.warn(
+        'Municipality not found for subscription update:',
+        subscription.id,
+      );
       return;
     }
-    
+
     municipality.subscription.status = subscription.status;
-    municipality.subscription.currentPeriodStart = new Date(subscription.current_period_start * 1000);
-    municipality.subscription.currentPeriodEnd = new Date(subscription.current_period_end * 1000);
-    municipality.subscription.cancelAtPeriodEnd = subscription.cancel_at_period_end;
-    
+    municipality.subscription.currentPeriodStart = new Date(
+      subscription.current_period_start * 1000,
+    );
+    municipality.subscription.currentPeriodEnd = new Date(
+      subscription.current_period_end * 1000,
+    );
+    municipality.subscription.cancelAtPeriodEnd =
+      subscription.cancel_at_period_end;
+
     // If plan changed, update it
     if (subscription.metadata.planType) {
       municipality.subscription.plan = subscription.metadata.planType;
     }
-    
+
     await municipality.save();
     console.log('Subscription updated for municipality:', municipality.name);
-    
   } catch (error) {
     console.error('Error handling subscription updated:', error);
   }
@@ -328,22 +349,24 @@ async function handleSubscriptionUpdated(subscription) {
 async function handleSubscriptionDeleted(subscription) {
   try {
     const municipality = await Municipality.findOne({
-      'subscription.stripeSubscriptionId': subscription.id
+      'subscription.stripeSubscriptionId': subscription.id,
     });
-    
+
     if (!municipality) {
-      console.warn('Municipality not found for subscription deletion:', subscription.id);
+      console.warn(
+        'Municipality not found for subscription deletion:',
+        subscription.id,
+      );
       return;
     }
-    
+
     municipality.subscription.status = 'canceled';
     municipality.subscription.stripeSubscriptionId = null;
     municipality.subscription.stripePriceId = null;
     municipality.subscription.stripeProductId = null;
-    
+
     await municipality.save();
     console.log('Subscription canceled for municipality:', municipality.name);
-    
   } catch (error) {
     console.error('Error handling subscription deleted:', error);
   }
@@ -351,22 +374,27 @@ async function handleSubscriptionDeleted(subscription) {
 
 async function handlePaymentSucceeded(invoice) {
   try {
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+    const subscription = await stripe.subscriptions.retrieve(
+      invoice.subscription,
+    );
     const municipality = await Municipality.findOne({
-      'subscription.stripeSubscriptionId': subscription.id
+      'subscription.stripeSubscriptionId': subscription.id,
     });
-    
+
     if (!municipality) {
-      console.warn('Municipality not found for payment succeeded:', subscription.id);
+      console.warn(
+        'Municipality not found for payment succeeded:',
+        subscription.id,
+      );
       return;
     }
-    
+
     // Update subscription status if it was past_due
     if (municipality.subscription.status === 'past_due') {
       municipality.subscription.status = 'active';
       await municipality.save();
     }
-    
+
     // Reset usage counters at the start of a new billing period
     const periodStart = new Date(subscription.current_period_start * 1000);
     if (municipality.usage.permits.lastResetDate < periodStart) {
@@ -374,9 +402,8 @@ async function handlePaymentSucceeded(invoice) {
       municipality.usage.permits.lastResetDate = periodStart;
       await municipality.save();
     }
-    
+
     console.log('Payment succeeded for municipality:', municipality.name);
-    
   } catch (error) {
     console.error('Error handling payment succeeded:', error);
   }
@@ -384,21 +411,25 @@ async function handlePaymentSucceeded(invoice) {
 
 async function handlePaymentFailed(invoice) {
   try {
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+    const subscription = await stripe.subscriptions.retrieve(
+      invoice.subscription,
+    );
     const municipality = await Municipality.findOne({
-      'subscription.stripeSubscriptionId': subscription.id
+      'subscription.stripeSubscriptionId': subscription.id,
     });
-    
+
     if (!municipality) {
-      console.warn('Municipality not found for payment failed:', subscription.id);
+      console.warn(
+        'Municipality not found for payment failed:',
+        subscription.id,
+      );
       return;
     }
-    
+
     municipality.subscription.status = 'past_due';
     await municipality.save();
-    
+
     console.log('Payment failed for municipality:', municipality.name);
-    
   } catch (error) {
     console.error('Error handling payment failed:', error);
   }
@@ -408,22 +439,29 @@ async function handleCheckoutCompleted(session) {
   try {
     const municipalityId = session.metadata.municipalityId;
     const planType = session.metadata.planType;
-    
+
     if (!municipalityId || !session.subscription) {
       console.warn('Missing required metadata in checkout session');
       return;
     }
-    
+
     const municipality = await Municipality.findById(municipalityId);
     if (!municipality) {
-      console.error('Municipality not found for checkout completion:', municipalityId);
+      console.error(
+        'Municipality not found for checkout completion:',
+        municipalityId,
+      );
       return;
     }
-    
+
     // The subscription will be handled by the subscription.created event
     // Here we just log the successful checkout
-    console.log('Checkout completed for municipality:', municipality.name, 'Plan:', planType);
-    
+    console.log(
+      'Checkout completed for municipality:',
+      municipality.name,
+      'Plan:',
+      planType,
+    );
   } catch (error) {
     console.error('Error handling checkout completed:', error);
   }

@@ -1,5 +1,5 @@
 <form class="municipality-registration-form" {{on "submit" this.submitRegistration}}>
-  <!-- Progress Bar -->
+  {{!-- Progress Bar --}}
   <div class="progress-container">
     <div class="progress-bar">
       <div class="progress-fill" style="width: {{this.progressPercentage}}%"></div>
@@ -15,7 +15,7 @@
     <div class="success-message">{{this.successMessage}}</div>
   {{/if}}
 
-  <!-- Step 1: Municipality Information -->
+  {{!-- Step 1: Municipality Information --}}
   {{#if (eq this.currentStep 1)}}
     <div class="form-step">
       <h3>Municipality Information</h3>
@@ -164,7 +164,7 @@
     </div>
   {{/if}}
 
-  <!-- Step 2: Department Information -->
+  {{!-- Step 2: Department Information --}}
   {{#if (eq this.currentStep 2)}}
     <div class="form-step">
       <h3>Building Department Information</h3>
@@ -276,7 +276,7 @@
     </div>
   {{/if}}
 
-  <!-- Step 3: Administrator Account -->
+  {{!-- Step 3: Administrator Account --}}
   {{#if (eq this.currentStep 3)}}
     <div class="form-step">
       <h3>Administrator Account</h3>

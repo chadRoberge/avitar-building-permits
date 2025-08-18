@@ -25,8 +25,8 @@ export default class MunicipalPermitTypesIndexController extends Controller {
 
       const response = await fetch(`${config.APP.API_HOST}/api/permit-types`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -35,9 +35,9 @@ export default class MunicipalPermitTypesIndexController extends Controller {
       }
 
       const permitTypes = await response.json();
-      
+
       // Transform data for display
-      this.permitTypes = permitTypes.map(permitType => {
+      this.permitTypes = permitTypes.map((permitType) => {
         const formFields = permitType.applicationFields || [];
         return {
           id: permitType._id,
@@ -45,10 +45,15 @@ export default class MunicipalPermitTypesIndexController extends Controller {
           code: permitType.code,
           description: permitType.description,
           category: permitType.category,
-          baseFee: (permitType.fees && permitType.fees.length > 0) ? permitType.fees[0].amount : 0,
+          baseFee:
+            permitType.fees && permitType.fees.length > 0
+              ? permitType.fees[0].amount
+              : 0,
           processingTime: permitType.estimatedProcessingTime || 14,
           isActive: permitType.isActive,
-          requiresInspection: permitType.requiredInspections && permitType.requiredInspections.length > 0,
+          requiresInspection:
+            permitType.requiredInspections &&
+            permitType.requiredInspections.length > 0,
           formFields: formFields,
           previewFields: formFields.slice(0, 3),
           questionsCount: formFields.length,
@@ -56,13 +61,13 @@ export default class MunicipalPermitTypesIndexController extends Controller {
           applicationsCount: permitType.applicationsCount || 0,
           icon: this.getCategoryIcon(permitType.category),
           createdAt: permitType.createdAt,
-          updatedAt: permitType.updatedAt
+          updatedAt: permitType.updatedAt,
         };
       });
-
     } catch (error) {
       console.error('Error loading permit types:', error);
-      this.errorMessage = error.message || 'An error occurred while loading permit types';
+      this.errorMessage =
+        error.message || 'An error occurred while loading permit types';
     } finally {
       this.isLoading = false;
     }
@@ -70,13 +75,13 @@ export default class MunicipalPermitTypesIndexController extends Controller {
 
   getCategoryIcon(category) {
     const iconMap = {
-      'building': '🏗️',
-      'zoning': '📋',
-      'electrical': '⚡',
-      'plumbing': '🔧',
-      'mechanical': '🌡️',
-      'specialized': '🛠️',
-      'custom': '🔧'
+      building: '🏗️',
+      zoning: '📋',
+      electrical: '⚡',
+      plumbing: '🔧',
+      mechanical: '🌡️',
+      specialized: '🛠️',
+      custom: '🔧',
     };
     return iconMap[category] || '📄';
   }
@@ -85,7 +90,7 @@ export default class MunicipalPermitTypesIndexController extends Controller {
   formatCurrency(amount) {
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(amount || 0);
   }
 
@@ -97,13 +102,16 @@ export default class MunicipalPermitTypesIndexController extends Controller {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`${config.APP.API_HOST}/api/permit-types/${permitType.id}/toggle`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permit-types/${permitType.id}/toggle`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -112,10 +120,10 @@ export default class MunicipalPermitTypesIndexController extends Controller {
 
       // Update local state
       permitType.isActive = !permitType.isActive;
-      
     } catch (error) {
       console.error('Error toggling permit type:', error);
-      this.errorMessage = error.message || 'An error occurred while updating the permit type';
+      this.errorMessage =
+        error.message || 'An error occurred while updating the permit type';
     }
   }
 
@@ -146,12 +154,15 @@ export default class MunicipalPermitTypesIndexController extends Controller {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`${config.APP.API_HOST}/api/permit-types/${this.permitTypeToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permit-types/${this.permitTypeToDelete.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -159,12 +170,14 @@ export default class MunicipalPermitTypesIndexController extends Controller {
       }
 
       // Remove from local state
-      this.permitTypes = this.permitTypes.filter(pt => pt.id !== this.permitTypeToDelete.id);
+      this.permitTypes = this.permitTypes.filter(
+        (pt) => pt.id !== this.permitTypeToDelete.id,
+      );
       this.closeDeleteModal();
-      
     } catch (error) {
       console.error('Error deleting permit type:', error);
-      this.errorMessage = error.message || 'An error occurred while deleting the permit type';
+      this.errorMessage =
+        error.message || 'An error occurred while deleting the permit type';
       this.closeDeleteModal();
     }
   }

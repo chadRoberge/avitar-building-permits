@@ -6,7 +6,7 @@ import { tracked } from '@glimmer/tracking';
 export default class ResidentialController extends Controller {
   @service router;
   @service currentProperty;
-  
+
   @tracked showPropertyDropdown = false;
   @tracked showAddPropertyModal = false;
 
@@ -32,7 +32,7 @@ export default class ResidentialController extends Controller {
   async selectProperty(propertyId) {
     this.showPropertyDropdown = false;
     await this.currentProperty.switchProperty(propertyId);
-    
+
     // Refresh the current route to update data with new property
     this.router.refresh();
   }
@@ -60,9 +60,9 @@ export default class ResidentialController extends Controller {
     localStorage.removeItem('current_property_id');
     localStorage.removeItem('remember_me');
     localStorage.removeItem('auth_expiration');
-    
+
     console.log('Residential user logged out');
-    
+
     // Redirect to home
     this.router.transitionTo('home');
   }

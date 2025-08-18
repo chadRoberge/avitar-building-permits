@@ -24,7 +24,7 @@ export default class MunicipalSignUpFormComponent extends Component {
   @action
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     if (!this.validateForm()) {
       return;
     }
@@ -44,14 +44,14 @@ export default class MunicipalSignUpFormComponent extends Component {
         municipalInfo: {
           department: this.department,
           jobTitle: this.jobTitle,
-          employeeId: this.employeeId
-        }
+          employeeId: this.employeeId,
+        },
       };
 
       // TODO: Implement actual API call
       console.log('Municipal user registration data:', userData);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       alert('Municipal account created successfully!');
     } catch (error) {
       this.errorMessage = 'Failed to create account. Please try again.';
@@ -61,8 +61,15 @@ export default class MunicipalSignUpFormComponent extends Component {
   }
 
   validateForm() {
-    if (!this.email || !this.password || !this.confirmPassword || 
-        !this.firstName || !this.lastName || !this.department || !this.jobTitle) {
+    if (
+      !this.email ||
+      !this.password ||
+      !this.confirmPassword ||
+      !this.firstName ||
+      !this.lastName ||
+      !this.department ||
+      !this.jobTitle
+    ) {
       this.errorMessage = 'Please fill in all required fields';
       return false;
     }

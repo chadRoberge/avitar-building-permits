@@ -9,7 +9,7 @@ export default helper(function formatDateTime([date]) {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
   } catch (error) {
     console.error('Error in format-datetime helper:', error, 'date:', date);

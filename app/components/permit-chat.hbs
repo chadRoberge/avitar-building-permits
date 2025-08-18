@@ -1,5 +1,5 @@
 <div class="permit-chat">
-  <!-- Chat Header -->
+  {{!-- Chat Header --}}
   <div class="chat-header" {{on "click" this.toggleExpanded}}>
     <div class="chat-title">
       <span class="chat-icon">💬</span>
@@ -22,7 +22,7 @@
 
   {{#if this.isExpanded}}
     <div class="chat-content">
-      <!-- Messages Container -->
+      {{!-- Messages Container --}}
       <div class="messages-container">
         {{#if this.isLoading}}
           <div class="loading-messages">
@@ -65,7 +65,7 @@
         {{/if}}
       </div>
 
-      <!-- Message Input -->
+      {{!-- Message Input --}}
       <div class="message-input-container">
         {{#if this.errorMessage}}
           <div class="error-message">

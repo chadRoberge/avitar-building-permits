@@ -4,18 +4,18 @@ import config from 'avitar-building-permits/config/environment';
 
 export default class MunicipalRoute extends Route {
   @service router;
-  
+
   beforeModel() {
     // Check for authentication token
     const token = localStorage.getItem('auth_token');
     console.log('Municipal route beforeModel - token exists:', !!token);
-    
+
     if (!token) {
       console.log('No auth token found, redirecting to admin login');
       this.router.transitionTo('admin');
       return;
     }
-    
+
     console.log('Auth token found, proceeding to municipal portal');
   }
 
@@ -32,8 +32,8 @@ export default class MunicipalRoute extends Route {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -55,23 +55,33 @@ export default class MunicipalRoute extends Route {
       }
 
       // Check if we have a selected municipality (from portal flow)
-      const currentMunicipalityId = localStorage.getItem('current_municipality_id');
+      const currentMunicipalityId = localStorage.getItem(
+        'current_municipality_id',
+      );
       let municipality = user.municipality;
 
-      if (currentMunicipalityId && currentMunicipalityId !== user.municipality._id) {
+      if (
+        currentMunicipalityId &&
+        currentMunicipalityId !== user.municipality._id
+      ) {
         // Fetch the selected municipality data
         try {
-          const municipalityResponse = await fetch(`${config.APP.API_HOST}/api/municipalities/${currentMunicipalityId}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
+          const municipalityResponse = await fetch(
+            `${config.APP.API_HOST}/api/municipalities/${currentMunicipalityId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
 
           if (municipalityResponse.ok) {
             municipality = await municipalityResponse.json();
             console.log('Using selected municipality:', municipality.name);
           } else {
-            console.warn('Failed to fetch selected municipality, using user default');
+            console.warn(
+              'Failed to fetch selected municipality, using user default',
+            );
           }
         } catch (error) {
           console.warn('Error fetching selected municipality:', error);
@@ -80,12 +90,11 @@ export default class MunicipalRoute extends Route {
 
       return {
         user: user,
-        municipality: municipality
+        municipality: municipality,
       };
-
     } catch (error) {
       console.error('Error loading municipal data:', error);
-      
+
       // Redirect to login on error
       localStorage.removeItem('auth_token');
       this.router.transitionTo('admin');

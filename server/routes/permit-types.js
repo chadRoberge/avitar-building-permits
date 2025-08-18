@@ -8,17 +8,24 @@ router.get('/', auth, async (req, res) => {
   try {
     // Get municipality ID from authenticated user
     const municipalityId = req.user.municipality._id || req.user.municipality;
-    
+
     if (!municipalityId) {
-      return res.status(400).json({ message: 'Municipality not found for user' });
+      return res
+        .status(400)
+        .json({ message: 'Municipality not found for user' });
     }
 
-    const permitTypes = await PermitType.getByMunicipality(municipalityId, true); // Include inactive
+    const permitTypes = await PermitType.getByMunicipality(
+      municipalityId,
+      true,
+    ); // Include inactive
 
     res.json(permitTypes);
   } catch (error) {
     console.error('Error fetching permit types:', error);
-    res.status(500).json({ message: 'Error fetching permit types', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error fetching permit types', error: error.message });
   }
 });
 
@@ -26,14 +33,15 @@ router.get('/', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   try {
     const permitType = await PermitType.findById(req.params.id);
-    
+
     if (!permitType) {
       return res.status(404).json({ message: 'Permit type not found' });
     }
 
     // Check if user belongs to the same municipality
-    const userMunicipalityId = req.user.municipality._id || req.user.municipality;
-    
+    const userMunicipalityId =
+      req.user.municipality._id || req.user.municipality;
+
     if (permitType.municipality.toString() !== userMunicipalityId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
@@ -41,7 +49,9 @@ router.get('/:id', auth, async (req, res) => {
     res.json(permitType);
   } catch (error) {
     console.error('Error fetching permit type:', error);
-    res.status(500).json({ message: 'Error fetching permit type', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error fetching permit type', error: error.message });
   }
 });
 
@@ -49,9 +59,11 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const municipalityId = req.user.municipality;
-    
+
     if (!municipalityId) {
-      return res.status(400).json({ message: 'Municipality not found for user' });
+      return res
+        .status(400)
+        .json({ message: 'Municipality not found for user' });
     }
 
     // Map frontend data to backend model structure
@@ -63,7 +75,7 @@ router.post('/', auth, async (req, res) => {
       municipality: municipalityId,
       isActive: req.body.isActive !== undefined ? req.body.isActive : true,
       estimatedProcessingTime: req.body.processingTime || 14,
-      
+
       // Convert frontend formFields to backend applicationFields
       applicationFields: (req.body.formFields || []).map((field, index) => ({
         name: field.id || `field_${index}`,
@@ -71,33 +83,46 @@ router.post('/', auth, async (req, res) => {
         type: field.type,
         required: field.isRequired || false,
         helpText: field.description,
-        options: field.options ? field.options.map(opt => ({
-          value: opt,
-          label: opt
-        })) : [],
-        order: index
+        options: field.options
+          ? field.options.map((opt) => ({
+              value: opt,
+              label: opt,
+            }))
+          : [],
+        order: index,
       })),
-      
+
       // Create basic fee structure if baseFee is provided
-      fees: req.body.baseFee ? [{
-        name: 'Application Fee',
-        type: 'fixed',
-        amount: parseFloat(req.body.baseFee),
-        description: 'Standard application fee'
-      }] : [],
-      
+      fees: req.body.baseFee
+        ? [
+            {
+              name: 'Application Fee',
+              type: 'fixed',
+              amount: parseFloat(req.body.baseFee),
+              description: 'Standard application fee',
+            },
+          ]
+        : [],
+
       // Set inspection requirement
-      requiredInspections: req.body.requiresInspection ? [{
-        name: 'Standard Inspection',
-        description: 'Required inspection for this permit type',
-        triggerCondition: 'approval'
-      }] : [],
-      
+      requiredInspections: req.body.requiresInspection
+        ? [
+            {
+              name: 'Standard Inspection',
+              description: 'Required inspection for this permit type',
+              triggerCondition: 'approval',
+            },
+          ]
+        : [],
+
       // Custom category handling
-      ...(req.body.category === 'custom' && req.body.customCategory ? {
-        name: req.body.customCategory.name || req.body.name,
-        description: req.body.customCategory.description || req.body.description
-      } : {})
+      ...(req.body.category === 'custom' && req.body.customCategory
+        ? {
+            name: req.body.customCategory.name || req.body.name,
+            description:
+              req.body.customCategory.description || req.body.description,
+          }
+        : {}),
     };
 
     // Create the permit type
@@ -107,15 +132,18 @@ router.post('/', auth, async (req, res) => {
     res.status(201).json(permitType);
   } catch (error) {
     console.error('Error creating permit type:', error);
-    
+
     // Handle specific MongoDB errors
     if (error.code === 11000) {
-      return res.status(400).json({ 
-        message: 'A permit type with this code already exists for your municipality' 
+      return res.status(400).json({
+        message:
+          'A permit type with this code already exists for your municipality',
       });
     }
-    
-    res.status(500).json({ message: 'Error creating permit type', error: error.message });
+
+    res
+      .status(500)
+      .json({ message: 'Error creating permit type', error: error.message });
   }
 });
 
@@ -123,19 +151,20 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const permitType = await PermitType.findById(req.params.id);
-    
+
     if (!permitType) {
       return res.status(404).json({ message: 'Permit type not found' });
     }
 
     // Check if user belongs to the same municipality
-    const userMunicipalityId = req.user.municipality._id || req.user.municipality;
+    const userMunicipalityId =
+      req.user.municipality._id || req.user.municipality;
     if (permitType.municipality.toString() !== userMunicipalityId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     // Update fields
-    Object.keys(req.body).forEach(key => {
+    Object.keys(req.body).forEach((key) => {
       if (req.body[key] !== undefined) {
         permitType[key] = req.body[key];
       }
@@ -145,7 +174,9 @@ router.put('/:id', auth, async (req, res) => {
     res.json(permitType);
   } catch (error) {
     console.error('Error updating permit type:', error);
-    res.status(500).json({ message: 'Error updating permit type', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error updating permit type', error: error.message });
   }
 });
 
@@ -153,13 +184,14 @@ router.put('/:id', auth, async (req, res) => {
 router.patch('/:id/toggle', auth, async (req, res) => {
   try {
     const permitType = await PermitType.findById(req.params.id);
-    
+
     if (!permitType) {
       return res.status(404).json({ message: 'Permit type not found' });
     }
 
     // Check if user belongs to the same municipality
-    const userMunicipalityId = req.user.municipality._id || req.user.municipality;
+    const userMunicipalityId =
+      req.user.municipality._id || req.user.municipality;
     if (permitType.municipality.toString() !== userMunicipalityId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
@@ -170,7 +202,9 @@ router.patch('/:id/toggle', auth, async (req, res) => {
     res.json({ isActive: permitType.isActive });
   } catch (error) {
     console.error('Error toggling permit type:', error);
-    res.status(500).json({ message: 'Error toggling permit type', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error toggling permit type', error: error.message });
   }
 });
 
@@ -178,13 +212,14 @@ router.patch('/:id/toggle', auth, async (req, res) => {
 router.delete('/:id', auth, async (req, res) => {
   try {
     const permitType = await PermitType.findById(req.params.id);
-    
+
     if (!permitType) {
       return res.status(404).json({ message: 'Permit type not found' });
     }
 
     // Check if user belongs to the same municipality
-    const userMunicipalityId = req.user.municipality._id || req.user.municipality;
+    const userMunicipalityId =
+      req.user.municipality._id || req.user.municipality;
     if (permitType.municipality.toString() !== userMunicipalityId.toString()) {
       return res.status(403).json({ message: 'Access denied' });
     }
@@ -193,7 +228,9 @@ router.delete('/:id', auth, async (req, res) => {
     res.json({ message: 'Permit type deleted successfully' });
   } catch (error) {
     console.error('Error deleting permit type:', error);
-    res.status(500).json({ message: 'Error deleting permit type', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error deleting permit type', error: error.message });
   }
 });
 
@@ -203,11 +240,16 @@ router.get('/category/:category', auth, async (req, res) => {
     const municipalityId = req.user.municipality;
     const { category } = req.params;
 
-    const permitTypes = await PermitType.getByCategory(municipalityId, category);
+    const permitTypes = await PermitType.getByCategory(
+      municipalityId,
+      category,
+    );
     res.json(permitTypes);
   } catch (error) {
     console.error('Error fetching permit types by category:', error);
-    res.status(500).json({ message: 'Error fetching permit types', error: error.message });
+    res
+      .status(500)
+      .json({ message: 'Error fetching permit types', error: error.message });
   }
 });
 

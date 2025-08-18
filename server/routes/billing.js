@@ -28,7 +28,7 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     const userType = req.user.userType;
-    
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -38,10 +38,10 @@ router.get('/', authenticateToken, async (req, res) => {
       userType,
       user: {
         name: `${user.firstName} ${user.lastName}`,
-        email: user.email
+        email: user.email,
       },
       subscription: null,
-      usage: null
+      usage: null,
     };
 
     // For municipal users, get municipality subscription info
@@ -49,7 +49,7 @@ router.get('/', authenticateToken, async (req, res) => {
       const municipality = await Municipality.findById(user.municipality);
       if (municipality) {
         const limitsCheck = municipality.isWithinLimits();
-        
+
         billingInfo.subscription = {
           plan: municipality.subscription.plan,
           status: municipality.subscription.status,
@@ -59,28 +59,37 @@ router.get('/', authenticateToken, async (req, res) => {
           isActive: municipality.isSubscriptionActive(),
           daysUntilRenewal: municipality.getDaysUntilRenewal(),
           limits: limitsCheck.limits,
-          planName: municipality.subscription.plan.charAt(0).toUpperCase() + municipality.subscription.plan.slice(1)
+          planName:
+            municipality.subscription.plan.charAt(0).toUpperCase() +
+            municipality.subscription.plan.slice(1),
         };
-        
+
         billingInfo.usage = {
           permits: {
             current: limitsCheck.current.permits,
             limit: limitsCheck.limits.permits,
-            percentage: limitsCheck.limits.permits ? 
-              Math.round((limitsCheck.current.permits / limitsCheck.limits.permits) * 100) : 0
+            percentage: limitsCheck.limits.permits
+              ? Math.round(
+                  (limitsCheck.current.permits / limitsCheck.limits.permits) *
+                    100,
+                )
+              : 0,
           },
           users: {
             current: limitsCheck.current.users,
             limit: limitsCheck.limits.users,
-            percentage: limitsCheck.limits.users ? 
-              Math.round((limitsCheck.current.users / limitsCheck.limits.users) * 100) : 0
+            percentage: limitsCheck.limits.users
+              ? Math.round(
+                  (limitsCheck.current.users / limitsCheck.limits.users) * 100,
+                )
+              : 0,
           },
-          isWithinLimits: limitsCheck.isValid
+          isWithinLimits: limitsCheck.isValid,
         };
-        
+
         billingInfo.municipality = {
           name: municipality.name,
-          id: municipality._id
+          id: municipality._id,
         };
       }
     }
@@ -89,13 +98,21 @@ router.get('/', authenticateToken, async (req, res) => {
     if (userType === 'residential' || userType === 'commercial') {
       billingInfo.accountStatus = 'active';
       billingInfo.planName = 'Free Forever';
-      billingInfo.benefits = userType === 'residential' ? 
-        ['Submit building permit applications', 'Track permit status', 'Communicate with review departments'] :
-        ['Submit contractor applications', 'Manage multiple properties', 'Track business permits'];
+      billingInfo.benefits =
+        userType === 'residential'
+          ? [
+              'Submit building permit applications',
+              'Track permit status',
+              'Communicate with review departments',
+            ]
+          : [
+              'Submit contractor applications',
+              'Manage multiple properties',
+              'Track business permits',
+            ];
     }
 
     res.json(billingInfo);
-
   } catch (error) {
     console.error('Error fetching billing information:', error);
     res.status(500).json({ error: 'Failed to fetch billing information' });
@@ -115,12 +132,12 @@ router.get('/plans', authenticateToken, async (req, res) => {
           'Basic permit workflows',
           'Email notifications',
           'Basic reporting',
-          'Email support'
+          'Email support',
         ],
-        popular: false
+        popular: false,
       },
       professional: {
-        name: 'Professional', 
+        name: 'Professional',
         price: 4800, // Annual price in cents ($48.00)
         permits: 2000,
         users: 15,
@@ -130,9 +147,9 @@ router.get('/plans', authenticateToken, async (req, res) => {
           'Advanced reporting & analytics',
           'API access',
           'Custom branding',
-          'Phone support'
+          'Phone support',
         ],
-        popular: true
+        popular: true,
       },
       enterprise: {
         name: 'Enterprise',
@@ -145,14 +162,13 @@ router.get('/plans', authenticateToken, async (req, res) => {
           'Advanced integrations',
           'Dedicated account manager',
           'Custom training',
-          '24/7 priority support'
+          '24/7 priority support',
         ],
-        popular: false
-      }
+        popular: false,
+      },
     };
 
     res.json(plans);
-
   } catch (error) {
     console.error('Error fetching subscription plans:', error);
     res.status(500).json({ error: 'Failed to fetch subscription plans' });
@@ -165,9 +181,11 @@ router.put('/subscription/plan', authenticateToken, async (req, res) => {
     const { plan } = req.body;
     const userId = req.user.userId;
     const userType = req.user.userType;
-    
+
     if (userType !== 'municipal') {
-      return res.status(403).json({ error: 'Only municipal users can update subscription plans' });
+      return res
+        .status(403)
+        .json({ error: 'Only municipal users can update subscription plans' });
     }
 
     if (!['basic', 'professional', 'enterprise'].includes(plan)) {
@@ -186,7 +204,7 @@ router.put('/subscription/plan', authenticateToken, async (req, res) => {
 
     // Update subscription plan
     municipality.subscription.plan = plan;
-    
+
     // If upgrading from basic to professional, extend period end
     if (plan === 'professional' && municipality.subscription.plan === 'basic') {
       // In a real implementation, this would integrate with a payment processor
@@ -198,9 +216,8 @@ router.put('/subscription/plan', authenticateToken, async (req, res) => {
     res.json({
       message: 'Subscription plan updated successfully',
       plan: plan,
-      limits: municipality.getSubscriptionLimits()
+      limits: municipality.getSubscriptionLimits(),
     });
-
   } catch (error) {
     console.error('Error updating subscription plan:', error);
     res.status(500).json({ error: 'Failed to update subscription plan' });
@@ -211,7 +228,7 @@ router.put('/subscription/plan', authenticateToken, async (req, res) => {
 router.get('/history', authenticateToken, async (req, res) => {
   try {
     const userType = req.user.userType;
-    
+
     if (userType !== 'municipal') {
       return res.json([]);
     }
@@ -225,21 +242,20 @@ router.get('/history', authenticateToken, async (req, res) => {
         status: 'paid',
         plan: 'Basic',
         period: '2024-01-01 to 2024-12-31',
-        downloadUrl: '/api/billing/invoice/inv_001.pdf'
+        downloadUrl: '/api/billing/invoice/inv_001.pdf',
       },
       {
-        id: 'inv_002', 
+        id: 'inv_002',
         date: new Date('2023-01-01'),
         amount: 2400,
         status: 'paid',
         plan: 'Basic',
         period: '2023-01-01 to 2023-12-31',
-        downloadUrl: '/api/billing/invoice/inv_002.pdf'
-      }
+        downloadUrl: '/api/billing/invoice/inv_002.pdf',
+      },
     ];
 
     res.json(mockHistory);
-
   } catch (error) {
     console.error('Error fetching billing history:', error);
     res.status(500).json({ error: 'Failed to fetch billing history' });
@@ -252,9 +268,11 @@ router.post('/subscription/cancel', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
     const userType = req.user.userType;
     const { cancelAtPeriodEnd = true } = req.body;
-    
+
     if (userType !== 'municipal') {
-      return res.status(403).json({ error: 'Only municipal users can cancel subscriptions' });
+      return res
+        .status(403)
+        .json({ error: 'Only municipal users can cancel subscriptions' });
     }
 
     const user = await User.findById(userId);
@@ -268,7 +286,7 @@ router.post('/subscription/cancel', authenticateToken, async (req, res) => {
     }
 
     municipality.subscription.cancelAtPeriodEnd = cancelAtPeriodEnd;
-    
+
     if (!cancelAtPeriodEnd) {
       municipality.subscription.status = 'canceled';
     }
@@ -276,16 +294,15 @@ router.post('/subscription/cancel', authenticateToken, async (req, res) => {
     await municipality.save();
 
     res.json({
-      message: cancelAtPeriodEnd ? 
-        'Subscription will be canceled at the end of the current period' : 
-        'Subscription canceled immediately',
+      message: cancelAtPeriodEnd
+        ? 'Subscription will be canceled at the end of the current period'
+        : 'Subscription canceled immediately',
       subscription: {
         status: municipality.subscription.status,
         cancelAtPeriodEnd: municipality.subscription.cancelAtPeriodEnd,
-        currentPeriodEnd: municipality.subscription.currentPeriodEnd
-      }
+        currentPeriodEnd: municipality.subscription.currentPeriodEnd,
+      },
     });
-
   } catch (error) {
     console.error('Error canceling subscription:', error);
     res.status(500).json({ error: 'Failed to cancel subscription' });
@@ -297,9 +314,11 @@ router.post('/subscription/reactivate', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     const userType = req.user.userType;
-    
+
     if (userType !== 'municipal') {
-      return res.status(403).json({ error: 'Only municipal users can reactivate subscriptions' });
+      return res
+        .status(403)
+        .json({ error: 'Only municipal users can reactivate subscriptions' });
     }
 
     const user = await User.findById(userId);
@@ -322,10 +341,9 @@ router.post('/subscription/reactivate', authenticateToken, async (req, res) => {
       subscription: {
         status: municipality.subscription.status,
         cancelAtPeriodEnd: municipality.subscription.cancelAtPeriodEnd,
-        currentPeriodEnd: municipality.subscription.currentPeriodEnd
-      }
+        currentPeriodEnd: municipality.subscription.currentPeriodEnd,
+      },
     });
-
   } catch (error) {
     console.error('Error reactivating subscription:', error);
     res.status(500).json({ error: 'Failed to reactivate subscription' });

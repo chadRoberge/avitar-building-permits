@@ -14,7 +14,7 @@ export default class AddPropertyModalComponent extends Component {
   @tracked zip = '';
   @tracked isPrimary = false;
   @tracked propertyType = 'residential';
-  
+
   @tracked isLoading = false;
   @tracked errorMessage = '';
   @tracked successMessage = '';
@@ -30,24 +30,24 @@ export default class AddPropertyModalComponent extends Component {
       const id = this.args.municipality._id;
       return typeof id === 'string' ? id : id.toString();
     }
-    
+
     // Then try from the current property service
     const municipality = this.currentProperty.currentMunicipality;
     if (municipality && municipality._id) {
       const id = municipality._id;
       return typeof id === 'string' ? id : id.toString();
     }
-    
+
     // Finally fall back to localStorage
     let municipalityId = localStorage.getItem('municipality_id');
-    
+
     // Handle case where municipality_id might be stored as an object
     if (municipalityId && municipalityId.startsWith('[object')) {
       console.warn('municipality_id appears to be an object, clearing it');
       localStorage.removeItem('municipality_id');
       return null;
     }
-    
+
     return municipalityId;
   }
 
@@ -66,7 +66,7 @@ export default class AddPropertyModalComponent extends Component {
   @action
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     if (!this.validateForm()) {
       return;
     }
@@ -82,26 +82,26 @@ export default class AddPropertyModalComponent extends Component {
           street: this.street,
           city: this.city,
           state: this.state,
-          zip: this.zip
+          zip: this.zip,
         },
         municipalityId: this.municipalityId,
         propertyType: this.propertyType,
-        isPrimary: this.isPrimary
+        isPrimary: this.isPrimary,
       };
 
       await this.currentProperty.addProperty(propertyData);
-      
+
       this.successMessage = 'Property added successfully!';
-      
+
       // Reset form after success
       setTimeout(() => {
         this.resetForm();
         this.args.onClose?.();
       }, 1500);
-
     } catch (error) {
       console.error('Error adding property:', error);
-      this.errorMessage = error.message || 'Failed to add property. Please try again.';
+      this.errorMessage =
+        error.message || 'Failed to add property. Please try again.';
     } finally {
       this.isLoading = false;
     }
@@ -119,7 +119,6 @@ export default class AddPropertyModalComponent extends Component {
       this.handleCancel();
     }
   }
-
 
   resetForm() {
     this.displayName = '';
@@ -166,7 +165,8 @@ export default class AddPropertyModalComponent extends Component {
     }
 
     if (!this.municipalityId) {
-      this.errorMessage = 'Municipality information is missing. Please try refreshing the page.';
+      this.errorMessage =
+        'Municipality information is missing. Please try refreshing the page.';
       return false;
     }
 
@@ -175,7 +175,7 @@ export default class AddPropertyModalComponent extends Component {
     if (municipality && municipality.address && municipality.address.city) {
       const municipalityCity = municipality.address.city.toLowerCase().trim();
       const propertyCity = this.city.toLowerCase().trim();
-      
+
       if (municipalityCity !== propertyCity) {
         this.errorMessage = `Property city must be ${municipality.address.city} to match the current municipality.`;
         return false;

@@ -9,17 +9,15 @@ export default class PermitFilesDisplayComponent extends Component {
   @tracked loadError = null;
   @tracked expandedFiles = new Set();
 
-
   constructor() {
     super(...arguments);
     this.loadFiles();
-    
+
     // Notify parent component that this component is ready
     if (this.args.onMount) {
       this.args.onMount(this);
     }
   }
-
 
   get hasFiles() {
     return this.files.length > 0;
@@ -40,11 +38,14 @@ export default class PermitFilesDisplayComponent extends Component {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${config.APP.API_HOST}/api/permits/${this.args.permitId}/files`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permits/${this.args.permitId}/files`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
         throw new Error('Failed to load files');
@@ -59,7 +60,6 @@ export default class PermitFilesDisplayComponent extends Component {
     }
   }
 
-
   @action
   toggleFileDetails(fileId) {
     if (this.expandedFiles.has(fileId)) {
@@ -73,8 +73,7 @@ export default class PermitFilesDisplayComponent extends Component {
 
   isFileExpanded = (fileId) => {
     return this.expandedFiles.has(fileId);
-  }
-
+  };
 
   @action
   async downloadFile(file) {
@@ -82,8 +81,8 @@ export default class PermitFilesDisplayComponent extends Component {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(file.downloadUrl, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {
@@ -100,7 +99,6 @@ export default class PermitFilesDisplayComponent extends Component {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
     } catch (error) {
       console.error('Download error:', error);
       alert('Failed to download file: ' + error.message);
@@ -115,12 +113,15 @@ export default class PermitFilesDisplayComponent extends Component {
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${config.APP.API_HOST}/api/permits/${this.args.permitId}/files/${file._id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permits/${this.args.permitId}/files/${file._id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
         const result = await response.json();
@@ -128,13 +129,12 @@ export default class PermitFilesDisplayComponent extends Component {
       }
 
       // Remove from local list
-      this.files = this.files.filter(f => f._id !== file._id);
+      this.files = this.files.filter((f) => f._id !== file._id);
 
       // Notify parent component
       if (this.args.onFileDeleted) {
         this.args.onFileDeleted(file);
       }
-
     } catch (error) {
       console.error('Delete error:', error);
       alert('Failed to delete file: ' + error.message);
@@ -153,26 +153,31 @@ export default class PermitFilesDisplayComponent extends Component {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
+  };
 
   formatDate = (dateString) => {
     if (!dateString) return 'Unknown';
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
+    return (
+      date.toLocaleDateString() +
+      ' ' +
+      date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    );
+  };
 
   getFileIcon = (mimetype) => {
     if (!mimetype) return '📄';
-    
+
     if (mimetype.startsWith('image/')) return '🖼️';
     if (mimetype === 'application/pdf') return '📕';
     if (mimetype.includes('word')) return '📘';
-    if (mimetype.includes('excel') || mimetype.includes('spreadsheet')) return '📗';
+    if (mimetype.includes('excel') || mimetype.includes('spreadsheet'))
+      return '📗';
     if (mimetype.includes('zip')) return '📦';
     if (mimetype.startsWith('text/')) return '📄';
-    
+
     return '📎';
-  }
+  };
 
   canDeleteFile(file) {
     // For now, allow deletion if user uploaded the file

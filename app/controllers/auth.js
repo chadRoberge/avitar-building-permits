@@ -4,7 +4,7 @@ import { action } from '@ember/object';
 
 export default class AuthController extends Controller {
   queryParams = ['municipality_id', 'user_type'];
-  
+
   @tracked showSignIn = false;
   @tracked showSignUp = false;
 

@@ -2,7 +2,7 @@
 
 <div class="permits-page">
   <div class="container">
-    <!-- Header -->
+    {{!-- Header --}}
     <div class="page-header mb-4">
       <div class="row items-center">
         <div class="col-md-8">
@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <!-- Permits Summary -->
+    {{!-- Permits Summary --}}
     <div class="permits-summary mb-5">
       <div class="summary-cards">
         <div class="summary-card">
@@ -51,10 +51,10 @@
       </div>
     </div>
 
-    <!-- Permits Sections -->
+    {{!-- Permits Sections --}}
     <div class="permits-sections">
 
-      <!-- Pending Permits -->
+      {{!-- Pending Permits --}}
       {{#if @model.permits.pending.length}}
         <div class="permits-section mb-5">
           <h2 class="section-title">Pending Review ({{@model.permits.pending.length}})</h2>
@@ -85,7 +85,7 @@
         </div>
       {{/if}}
 
-      <!-- Approved Permits -->
+      {{!-- Approved Permits --}}
       {{#if @model.permits.approved.length}}
         <div class="permits-section mb-5">
           <h2 class="section-title">Approved ({{@model.permits.approved.length}})</h2>
@@ -122,7 +122,7 @@
         </div>
       {{/if}}
 
-      <!-- Active Permits -->
+      {{!-- Active Permits --}}
       {{#if @model.permits.active.length}}
         <div class="permits-section mb-5">
           <h2 class="section-title">Active ({{@model.permits.active.length}})</h2>
@@ -153,7 +153,7 @@
         </div>
       {{/if}}
 
-      <!-- Completed Permits -->
+      {{!-- Completed Permits --}}
       {{#if @model.permits.completed.length}}
         <div class="permits-section mb-5">
           <h2 class="section-title">Completed ({{@model.permits.completed.length}})</h2>
@@ -184,7 +184,7 @@
         </div>
       {{/if}}
 
-      <!-- Empty State -->
+      {{!-- Empty State --}}
       {{#unless @model.permits.all.length}}
         <div class="empty-state text-center p-5">
           <div class="empty-icon mb-3">📋</div>

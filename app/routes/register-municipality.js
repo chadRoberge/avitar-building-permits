@@ -8,8 +8,8 @@ export default class RegisterMunicipalityRoute extends Route {
         { code: 'NH', name: 'New Hampshire' },
         { code: 'VT', name: 'Vermont' },
         { code: 'ME', name: 'Maine' },
-        { code: 'MA', name: 'Massachusetts' }
-      ]
+        { code: 'MA', name: 'Massachusetts' },
+      ],
     };
   }
 }

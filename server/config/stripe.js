@@ -3,11 +3,17 @@ const stripe = require('stripe');
 // Get environment-specific Stripe keys
 const getStripeKeys = () => {
   const isDevelopment = process.env.NODE_ENV === 'development';
-  
+
   return {
-    secretKey: isDevelopment ? process.env.STRIPE_SECRET_KEY_DEV : process.env.STRIPE_SECRET_KEY_PROD,
-    publishableKey: isDevelopment ? process.env.STRIPE_PUBLISHABLE_KEY_DEV : process.env.STRIPE_PUBLISHABLE_KEY_PROD,
-    webhookSecret: isDevelopment ? process.env.STRIPE_WEBHOOK_SECRET_DEV : process.env.STRIPE_WEBHOOK_SECRET_PROD
+    secretKey: isDevelopment
+      ? process.env.STRIPE_SECRET_KEY_DEV
+      : process.env.STRIPE_SECRET_KEY_PROD,
+    publishableKey: isDevelopment
+      ? process.env.STRIPE_PUBLISHABLE_KEY_DEV
+      : process.env.STRIPE_PUBLISHABLE_KEY_PROD,
+    webhookSecret: isDevelopment
+      ? process.env.STRIPE_WEBHOOK_SECRET_DEV
+      : process.env.STRIPE_WEBHOOK_SECRET_PROD,
   };
 };
 
@@ -28,11 +34,11 @@ const MUNICIPAL_PLANS = {
       'Up to 100 permits per year',
       'Basic reporting',
       'Email support',
-      'Standard integrations'
-    ]
+      'Standard integrations',
+    ],
   },
   professional: {
-    productId: 'prod_municipal_professional', 
+    productId: 'prod_municipal_professional',
     priceId: 'price_municipal_professional_yearly',
     name: 'Municipal Professional',
     description: 'Advanced features for growing municipalities',
@@ -44,12 +50,12 @@ const MUNICIPAL_PLANS = {
       'Priority support',
       'Custom integrations',
       'Workflow automation',
-      'Multi-department management'
-    ]
+      'Multi-department management',
+    ],
   },
   enterprise: {
     productId: 'prod_municipal_enterprise',
-    priceId: 'price_municipal_enterprise_yearly', 
+    priceId: 'price_municipal_enterprise_yearly',
     name: 'Municipal Enterprise',
     description: 'Full-featured solution for large municipalities',
     price: null, // Custom pricing
@@ -61,13 +67,13 @@ const MUNICIPAL_PLANS = {
       'Full API access',
       'Advanced workflow automation',
       'Multi-jurisdiction support',
-      'Custom training & onboarding'
-    ]
-  }
+      'Custom training & onboarding',
+    ],
+  },
 };
 
 module.exports = {
   stripe: stripeInstance,
   stripeKeys,
-  MUNICIPAL_PLANS
+  MUNICIPAL_PLANS,
 };

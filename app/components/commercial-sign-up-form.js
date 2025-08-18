@@ -9,20 +9,20 @@ export default class CommercialSignUpFormComponent extends Component {
   @tracked firstName = '';
   @tracked lastName = '';
   @tracked phone = '';
-  
+
   // Business information
   @tracked businessName = '';
   @tracked businessType = '';
   @tracked licenseNumber = '';
   @tracked licenseType = '';
   @tracked federalTaxId = '';
-  
+
   // Business address
   @tracked businessStreet = '';
   @tracked businessCity = '';
   @tracked businessState = 'NH';
   @tracked businessZip = '';
-  
+
   @tracked isLoading = false;
   @tracked errorMessage = '';
 
@@ -35,7 +35,7 @@ export default class CommercialSignUpFormComponent extends Component {
   @action
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     if (!this.validateForm()) {
       return;
     }
@@ -62,15 +62,15 @@ export default class CommercialSignUpFormComponent extends Component {
             street: this.businessStreet,
             city: this.businessCity,
             state: this.businessState,
-            zip: this.businessZip
-          }
-        }
+            zip: this.businessZip,
+          },
+        },
       };
 
       // TODO: Implement actual API call
       console.log('Commercial user registration data:', userData);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       alert('Commercial account created successfully!');
     } catch (error) {
       this.errorMessage = 'Failed to create account. Please try again.';
@@ -80,9 +80,18 @@ export default class CommercialSignUpFormComponent extends Component {
   }
 
   validateForm() {
-    if (!this.email || !this.password || !this.confirmPassword || 
-        !this.firstName || !this.lastName || !this.businessName ||
-        !this.businessType || !this.businessStreet || !this.businessCity || !this.businessZip) {
+    if (
+      !this.email ||
+      !this.password ||
+      !this.confirmPassword ||
+      !this.firstName ||
+      !this.lastName ||
+      !this.businessName ||
+      !this.businessType ||
+      !this.businessStreet ||
+      !this.businessCity ||
+      !this.businessZip
+    ) {
       this.errorMessage = 'Please fill in all required fields';
       return false;
     }

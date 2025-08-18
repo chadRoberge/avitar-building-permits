@@ -6,7 +6,7 @@ import config from 'avitar-building-permits/config/environment';
 
 export default class MunicipalityRegistrationFormComponent extends Component {
   @service router;
-  
+
   @tracked currentStep = 1;
   @tracked isLoading = false;
   @tracked errorMessage = '';
@@ -48,7 +48,7 @@ export default class MunicipalityRegistrationFormComponent extends Component {
   updateField(field, event) {
     this[field] = event.target.value;
     this.errorMessage = '';
-    
+
     // Check name availability when municipality name changes
     if (field === 'municipalityName') {
       this.checkNameAvailability();
@@ -63,15 +63,18 @@ export default class MunicipalityRegistrationFormComponent extends Component {
     }
 
     this.checkingName = true;
-    
+
     try {
-      const response = await fetch(`${config.APP.API_HOST}/api/municipalities/check-availability`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/municipalities/check-availability`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: this.municipalityName }),
         },
-        body: JSON.stringify({ name: this.municipalityName })
-      });
+      );
 
       const result = await response.json();
       this.nameAvailable = result.available;
@@ -102,7 +105,7 @@ export default class MunicipalityRegistrationFormComponent extends Component {
   @action
   async submitRegistration(event) {
     event.preventDefault();
-    
+
     if (!this.validateCurrentStep()) {
       return;
     }
@@ -121,22 +124,24 @@ export default class MunicipalityRegistrationFormComponent extends Component {
             city: this.city,
             state: this.state,
             zip: this.zipCode,
-            county: this.county
+            county: this.county,
           },
           website: this.website,
           population: this.population ? parseInt(this.population) : null,
-          
+
           buildingDepartment: {
             name: this.departmentName,
             phone: this.departmentPhone,
             email: this.departmentEmail,
             fax: this.departmentFax,
-            address: this.departmentAddress.trim() || `${this.streetAddress}, ${this.city}, ${this.state} ${this.zipCode}`,
+            address:
+              this.departmentAddress.trim() ||
+              `${this.streetAddress}, ${this.city}, ${this.state} ${this.zipCode}`,
             hoursOfOperation: this.hoursOfOperation,
-            permitFeeSchedule: this.permitFeeSchedule
-          }
+            permitFeeSchedule: this.permitFeeSchedule,
+          },
         },
-        
+
         administrator: {
           firstName: this.adminFirstName,
           lastName: this.adminLastName,
@@ -146,25 +151,33 @@ export default class MunicipalityRegistrationFormComponent extends Component {
           title: this.adminTitle,
           employeeId: this.adminEmployeeId,
           userType: 'municipal',
-          role: 'admin'
-        }
+          role: 'admin',
+        },
       };
 
       // Debug: Log the data being sent
-      console.log('Registration data being sent:', JSON.stringify(registrationData, null, 2));
+      console.log(
+        'Registration data being sent:',
+        JSON.stringify(registrationData, null, 2),
+      );
 
       // Make API call to register municipality
-      const response = await fetch(`${config.APP.API_HOST}/api/municipalities/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/municipalities/register`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(registrationData),
         },
-        body: JSON.stringify(registrationData)
-      });
+      );
 
       // Check if response is empty or invalid
       if (!response || response.status === 0) {
-        throw new Error('Unable to connect to server. Please check your connection.');
+        throw new Error(
+          'Unable to connect to server. Please check your connection.',
+        );
       }
 
       // First get the response text, then try to parse as JSON
@@ -172,7 +185,7 @@ export default class MunicipalityRegistrationFormComponent extends Component {
       console.log('Raw server response:', responseText);
       console.log('Response status:', response.status);
       console.log('Response headers:', [...response.headers.entries()]);
-      
+
       let result;
       try {
         result = JSON.parse(responseText);
@@ -182,22 +195,28 @@ export default class MunicipalityRegistrationFormComponent extends Component {
         console.error('JSON parse error:', jsonError);
         console.error('Response status:', response.status);
         console.error('Response headers:', [...response.headers.entries()]);
-        throw new Error(`Server returned non-JSON response (${response.status}): ${responseText.substring(0, 200)}...`);
+        throw new Error(
+          `Server returned non-JSON response (${response.status}): ${responseText.substring(0, 200)}...`,
+        );
       }
 
       if (!response.ok) {
         // Log the full error details to console for debugging
         console.error('API Error Response:', result);
-        throw new Error(result.error || result.message || `Server error (${response.status}): ${responseText}`);
+        throw new Error(
+          result.error ||
+            result.message ||
+            `Server error (${response.status}): ${responseText}`,
+        );
       }
-      
+
       this.successMessage = `Successfully registered ${this.municipalityName}! You will receive confirmation via email. Redirecting to your municipal dashboard...`;
-      
+
       // Store auth token for immediate login
       if (result.token) {
         localStorage.setItem('auth_token', result.token);
       }
-      
+
       // Reset form and redirect after success
       setTimeout(() => {
         // Check if the municipality portal route exists
@@ -208,21 +227,31 @@ export default class MunicipalityRegistrationFormComponent extends Component {
           this.router.transitionTo('admin');
         }
       }, 4000);
-      
     } catch (error) {
       console.error('Registration error:', error);
-      
+
       // Handle different types of errors
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        this.errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
-      } else if (error.message.includes('Municipality') && error.message.includes('already exists')) {
-        this.errorMessage = 'A municipality with this name already exists. Please choose a different name.';
-      } else if (error.message.includes('email') && error.message.includes('already exists')) {
-        this.errorMessage = 'An account with this email already exists. Please use a different email address.';
+        this.errorMessage =
+          'Unable to connect to server. Please check your internet connection and try again.';
+      } else if (
+        error.message.includes('Municipality') &&
+        error.message.includes('already exists')
+      ) {
+        this.errorMessage =
+          'A municipality with this name already exists. Please choose a different name.';
+      } else if (
+        error.message.includes('email') &&
+        error.message.includes('already exists')
+      ) {
+        this.errorMessage =
+          'An account with this email already exists. Please use a different email address.';
       } else if (error.message.includes('validation')) {
         this.errorMessage = `Registration failed: ${error.message}`;
       } else {
-        this.errorMessage = error.message || 'Failed to register municipality. Please check all fields and try again.';
+        this.errorMessage =
+          error.message ||
+          'Failed to register municipality. Please check all fields and try again.';
       }
     } finally {
       this.isLoading = false;
@@ -245,17 +274,30 @@ export default class MunicipalityRegistrationFormComponent extends Component {
   }
 
   validateStep1() {
-    if (!this.municipalityName || !this.municipalityType || !this.streetAddress || 
-        !this.city || !this.state || !this.zipCode || !this.county) {
-      this.errorMessage = 'Please fill in all required municipality information fields';
+    if (
+      !this.municipalityName ||
+      !this.municipalityType ||
+      !this.streetAddress ||
+      !this.city ||
+      !this.state ||
+      !this.zipCode ||
+      !this.county
+    ) {
+      this.errorMessage =
+        'Please fill in all required municipality information fields';
       return false;
     }
     return true;
   }
 
   validateStep2() {
-    if (!this.departmentName || !this.departmentPhone || !this.departmentEmail) {
-      this.errorMessage = 'Please fill in all required department information fields';
+    if (
+      !this.departmentName ||
+      !this.departmentPhone ||
+      !this.departmentEmail
+    ) {
+      this.errorMessage =
+        'Please fill in all required department information fields';
       return false;
     }
 
@@ -269,9 +311,16 @@ export default class MunicipalityRegistrationFormComponent extends Component {
   }
 
   validateStep3() {
-    if (!this.adminFirstName || !this.adminLastName || !this.adminEmail || 
-        !this.adminPassword || !this.adminConfirmPassword || !this.adminTitle) {
-      this.errorMessage = 'Please fill in all required administrator account fields';
+    if (
+      !this.adminFirstName ||
+      !this.adminLastName ||
+      !this.adminEmail ||
+      !this.adminPassword ||
+      !this.adminConfirmPassword ||
+      !this.adminTitle
+    ) {
+      this.errorMessage =
+        'Please fill in all required administrator account fields';
       return false;
     }
 
@@ -281,7 +330,8 @@ export default class MunicipalityRegistrationFormComponent extends Component {
     }
 
     if (this.adminPassword.length < 8) {
-      this.errorMessage = 'Administrator password must be at least 8 characters long';
+      this.errorMessage =
+        'Administrator password must be at least 8 characters long';
       return false;
     }
 

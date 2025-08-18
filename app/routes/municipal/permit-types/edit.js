@@ -10,11 +10,14 @@ export default class MunicipalPermitTypesEditRoute extends Route {
         return null;
       }
 
-      const response = await fetch(`${config.APP.API_HOST}/api/permit-types/${params.permit_type_id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(
+        `${config.APP.API_HOST}/api/permit-types/${params.permit_type_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
       if (!response.ok) {
         console.error('Failed to load permit type, status:', response.status);
@@ -33,7 +36,7 @@ export default class MunicipalPermitTypesEditRoute extends Route {
 
   setupController(controller, model) {
     super.setupController(controller, model);
-    
+
     // Initialize the form with the loaded permit type data
     if (model && model.permitType) {
       console.log('Setting up controller with permit type:', model.permitType);

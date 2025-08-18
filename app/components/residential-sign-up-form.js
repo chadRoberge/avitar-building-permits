@@ -12,7 +12,7 @@ export default class ResidentialSignUpFormComponent extends Component {
   @tracked firstName = '';
   @tracked lastName = '';
   @tracked phone = '';
-  
+
   // Property information
   @tracked propertyStreet = '';
   @tracked propertyCity = '';
@@ -23,13 +23,13 @@ export default class ResidentialSignUpFormComponent extends Component {
 
   constructor() {
     super(...arguments);
-    
+
     // Pre-populate property city with municipality city
     if (this.args.municipality?.city) {
       this.propertyCity = this.args.municipality.city;
     }
   }
-  
+
   @tracked isLoading = false;
   @tracked errorMessage = '';
 
@@ -48,7 +48,7 @@ export default class ResidentialSignUpFormComponent extends Component {
   @action
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     if (!this.validateForm()) {
       return;
     }
@@ -66,18 +66,18 @@ export default class ResidentialSignUpFormComponent extends Component {
         userType: 'residential',
         municipality: {
           id: this.args.municipality.id || this.args.municipality._id,
-          name: this.args.municipality.name
+          name: this.args.municipality.name,
         },
         propertyAddress: {
           street: this.propertyStreet,
           city: this.propertyCity,
           state: this.propertyState,
-          zip: this.propertyZip
+          zip: this.propertyZip,
         },
         propertyInfo: {
           type: this.propertyType,
-          isOwner: this.isOwner
-        }
+          isOwner: this.isOwner,
+        },
       };
 
       console.log('Registering residential user:', userData);
@@ -87,7 +87,7 @@ export default class ResidentialSignUpFormComponent extends Component {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(userData),
       });
 
       const result = await response.json();
@@ -100,28 +100,41 @@ export default class ResidentialSignUpFormComponent extends Component {
       localStorage.setItem('auth_token', result.token);
       localStorage.setItem('user_type', result.user.userType);
       localStorage.setItem('user_id', result.user._id);
-      localStorage.setItem('municipality_id', result.user.municipality._id || result.user.municipality);
+      localStorage.setItem(
+        'municipality_id',
+        result.user.municipality._id || result.user.municipality,
+      );
 
       // Show success message and redirect
       console.log('Registration successful:', result);
-      
+
       // Redirect to residential dashboard
-      alert(`Welcome ${result.user.firstName}! Your residential account has been created successfully. You can now apply for building permits in ${this.args.municipality.name}.`);
-      
+      alert(
+        `Welcome ${result.user.firstName}! Your residential account has been created successfully. You can now apply for building permits in ${this.args.municipality.name}.`,
+      );
+
       this.router.transitionTo('residential.dashboard');
-      
     } catch (error) {
       console.error('Registration error:', error);
-      this.errorMessage = error.message || 'Failed to create account. Please try again.';
+      this.errorMessage =
+        error.message || 'Failed to create account. Please try again.';
     } finally {
       this.isLoading = false;
     }
   }
 
   validateForm() {
-    if (!this.email || !this.password || !this.confirmPassword || 
-        !this.firstName || !this.lastName || !this.propertyStreet ||
-        !this.propertyCity || !this.propertyZip || !this.propertyType) {
+    if (
+      !this.email ||
+      !this.password ||
+      !this.confirmPassword ||
+      !this.firstName ||
+      !this.lastName ||
+      !this.propertyStreet ||
+      !this.propertyCity ||
+      !this.propertyZip ||
+      !this.propertyType
+    ) {
       this.errorMessage = 'Please fill in all required fields';
       return false;
     }
@@ -145,7 +158,7 @@ export default class ResidentialSignUpFormComponent extends Component {
     // Validate that property city matches municipality city
     const municipalityCity = this.args.municipality?.city?.toLowerCase().trim();
     const propertyCity = this.propertyCity?.toLowerCase().trim();
-    
+
     if (municipalityCity && propertyCity && municipalityCity !== propertyCity) {
       this.errorMessage = `Property must be located in ${this.args.municipality.city}. You entered "${this.propertyCity}".`;
       return false;

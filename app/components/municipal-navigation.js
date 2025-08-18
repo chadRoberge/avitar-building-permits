@@ -5,7 +5,7 @@ import { inject as service } from '@ember/service';
 
 export default class MunicipalNavigationComponent extends Component {
   @service router;
-  
+
   @tracked isCollapsed = false;
   @tracked isMobileMenuOpen = false;
 
@@ -19,32 +19,32 @@ export default class MunicipalNavigationComponent extends Component {
         route: 'municipal.dashboard',
         label: 'Dashboard',
         icon: '📊',
-        description: 'Overview and statistics'
+        description: 'Overview and statistics',
       },
       {
         route: 'municipal.permits.index',
         label: 'Permits',
         icon: '📋',
-        description: 'Manage permit applications'
+        description: 'Manage permit applications',
       },
       {
         route: 'municipal.permit-types.index',
         label: 'Permit Types',
         icon: '⚙️',
-        description: 'Configure permit categories'
+        description: 'Configure permit categories',
       },
       {
         route: 'municipal.billing',
         label: 'Billing & Subscription',
         icon: '💳',
-        description: 'Manage subscription and billing'
+        description: 'Manage subscription and billing',
       },
       {
         route: 'municipal.settings',
         label: 'Settings',
         icon: '🔧',
-        description: 'Portal configuration'
-      }
+        description: 'Portal configuration',
+      },
     ];
   }
 
@@ -83,27 +83,31 @@ export default class MunicipalNavigationComponent extends Component {
     localStorage.removeItem('selected_municipality_id');
     localStorage.removeItem('remember_me');
     localStorage.removeItem('auth_expiration');
-    
+
     // For extra safety, clear any other auth-related keys
-    Object.keys(localStorage).forEach(key => {
-      if (key.includes('auth') || key.includes('municipal') || key.includes('user')) {
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        key.includes('auth') ||
+        key.includes('municipal') ||
+        key.includes('user')
+      ) {
         localStorage.removeItem(key);
       }
     });
-    
+
     console.log('User logged out, all auth data cleared');
-    
+
     // Redirect to admin login
     this.router.transitionTo('admin');
   }
 
   constructor() {
     super(...arguments);
-    
+
     // Add resize listener for mobile detection
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.handleResize);
-      
+
       // Set initial state based on screen size
       if (this.isMobile) {
         this.isCollapsed = false;

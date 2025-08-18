@@ -123,7 +123,7 @@
 
   {{#if this.showDeleteModal}}
     <div class="modal-overlay" {{on "click" this.closeDeleteModal}}>
-      <div class="modal-content" {{on "click" (fn this.stopPropagation)}}>
+      <div class="modal-content" {{on "click" this.stopPropagation}}>
         <div class="modal-header">
           <h3>Delete Permit Type</h3>
           <button type="button" class="modal-close" {{on "click" this.closeDeleteModal}}>×</button>

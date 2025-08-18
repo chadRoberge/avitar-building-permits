@@ -27,7 +27,7 @@ module.exports = function (environment) {
     // ENV.APP.LOG_TRANSITIONS = true;
     // ENV.APP.LOG_TRANSITIONS_INTERNAL = true;
     // ENV.APP.LOG_VIEW_LOOKUPS = true;
-    
+
     // Development API configuration
     // FORCE EMPTY API_HOST FOR ALL NON-LOCALHOST ENVIRONMENTS
     ENV.APP.API_HOST = 'http://localhost:3000';
@@ -43,7 +43,7 @@ module.exports = function (environment) {
 
     ENV.APP.rootElement = '#ember-testing';
     ENV.APP.autoboot = false;
-    
+
     // Test API configuration (mock server or test backend)
     ENV.APP.API_HOST = 'http://localhost:3001';
   }
@@ -51,14 +51,14 @@ module.exports = function (environment) {
   if (environment === 'production') {
     // Production API configuration - Use relative URLs for Vercel
     ENV.APP.API_HOST = '';
-    
+
     // Enable production optimizations
     ENV.APP.LOG_ACTIVE_GENERATION = false;
     ENV.APP.LOG_VIEW_LOOKUPS = false;
     ENV.APP.LOG_TRANSITIONS = false;
     ENV.APP.LOG_TRANSITIONS_INTERNAL = false;
   }
-  
+
   // Note: VERCEL environment variable is handled above in development section
 
   return ENV;

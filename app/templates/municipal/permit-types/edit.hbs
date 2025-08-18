@@ -50,32 +50,32 @@
       <div class="form-grid">
         <div class="form-group">
           <label for="permit-name">Permit Name</label>
-          <Input @id="permit-name" @value={{this.permitName}} required />
+          <Input id="permit-name" @value={{this.permitName}} required />
           <small class="form-help">This will be displayed to applicants</small>
         </div>
 
         <div class="form-group">
           <label for="permit-code">Permit Code</label>
-          <Input @id="permit-code" @value={{this.permitCode}} required />
+          <Input id="permit-code" @value={{this.permitCode}} required />
           <small class="form-help">Short code for internal reference (e.g., BP, ZP, EP)</small>
         </div>
 
         <div class="form-group">
           <label for="base-fee">Base Fee ($)</label>
-          <Input @id="base-fee" @type="number" @value={{this.baseFee}} placeholder="0.00" step="0.01" min="0" />
+          <Input id="base-fee" @type="number" @value={{this.baseFee}} placeholder="0.00" step="0.01" min="0" />
           <small class="form-help">Standard application fee</small>
         </div>
 
         <div class="form-group">
           <label for="processing-time">Processing Time (days)</label>
-          <Input @id="processing-time" @type="number" @value={{this.processingTime}} placeholder="14" min="1" />
+          <Input id="processing-time" @type="number" @value={{this.processingTime}} placeholder="14" min="1" />
           <small class="form-help">Typical time to process applications</small>
         </div>
       </div>
 
       <div class="form-group">
         <label for="permit-description">Detailed Description</label>
-        <Textarea @id="permit-description" @value={{this.permitDescription}} placeholder="Provide detailed information about when this permit is required..." rows="4" />
+        <Textarea id="permit-description" @value={{this.permitDescription}} placeholder="Provide detailed information about when this permit is required..." rows="4" />
       </div>
 
       <div class="form-settings">

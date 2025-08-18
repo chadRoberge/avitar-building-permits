@@ -8,7 +8,7 @@ export default class MunicipalPermitTypesIndexRoute extends Route {
 
   setupController(controller, model) {
     super.setupController(controller, model);
-    
+
     // Load permit types data after controller is set up
     controller.loadPermitTypes();
   }
