@@ -9,6 +9,14 @@ yarn-error.log*
 # Ember build artifacts - temp files only
 /tmp
 
+# Exclude Ember app files from serverless build
+/app
+/tests
+/public
+ember-cli-build.js
+testem.js
+.ember-cli
+
 # IDE files
 .vscode
 .idea
