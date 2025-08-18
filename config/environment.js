@@ -29,7 +29,8 @@ module.exports = function (environment) {
     // ENV.APP.LOG_VIEW_LOOKUPS = true;
     
     // Development API configuration
-    ENV.APP.API_HOST = 'http://localhost:3000';
+    // Use relative URLs on Vercel, localhost for local development
+    ENV.APP.API_HOST = process.env.VERCEL ? '' : 'http://localhost:3000';
   }
 
   if (environment === 'test') {
@@ -58,10 +59,7 @@ module.exports = function (environment) {
     ENV.APP.LOG_TRANSITIONS_INTERNAL = false;
   }
   
-  // Special case for Vercel deployment (which runs as development but needs production settings)
-  if (process.env.VERCEL_URL || process.env.VERCEL) {
-    ENV.APP.API_HOST = `https://${process.env.VERCEL_URL || 'avitar-building-permits.vercel.app'}`;
-  }
+  // Note: VERCEL environment variable is handled above in development section
 
   return ENV;
 };
