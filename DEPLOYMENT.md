@@ -20,22 +20,25 @@ git push origin main
 
 In your Vercel dashboard, go to **Settings → Environment Variables** and add:
 
-**Production Variables:**
+**Vercel Development Environment Variables:**
 ```
-MONGODB_URI=mongodb+srv://chadroberge:XTIWAfmk6G03PFiA@avitaraccounting.n9gur.mongodb.net/BuildingPermits?retryWrites=true&w=majority&appName=AvitarAccounting
-JWT_SECRET=123kllj4h1n@fdlakdsfjdsfs
-NODE_ENV=production
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret_key
+NODE_ENV=development
 CLIENT_URL=https://your-app.vercel.app
+STRIPE_SECRET_KEY_DEV=sk_test_your_development_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY_DEV=pk_test_your_development_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET_DEV=whsec_your_development_webhook_secret
+```
+
+**NOTE**: Replace the placeholder values above with your actual development keys when configuring Vercel.
+
+**For Future Production Deployment:**
+```
+NODE_ENV=production
 STRIPE_SECRET_KEY_PROD=sk_live_your_production_stripe_secret_key_here
 STRIPE_PUBLISHABLE_KEY_PROD=pk_live_your_production_stripe_publishable_key_here
 STRIPE_WEBHOOK_SECRET_PROD=whsec_your_production_webhook_secret_here
-```
-
-**Development/Test Variables (for staging):**
-```
-STRIPE_SECRET_KEY_DEV=sk_test_your_development_stripe_secret_key_here
-STRIPE_PUBLISHABLE_KEY_DEV=pk_test_your_development_stripe_publishable_key_here
-STRIPE_WEBHOOK_SECRET_DEV=whsec_your_development_webhook_secret_here
 ```
 
 ### 4. Update CLIENT_URL After Deployment
