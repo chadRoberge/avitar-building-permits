@@ -15,8 +15,10 @@ const stripeRoutes = require('./routes/stripe');
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB (don't block on connection)
+connectDB().catch(err => {
+  console.error('Database connection failed on startup:', err.message);
+});
 
 // Middleware - CORS configuration
 app.use((req, res, next) => {
@@ -84,6 +86,17 @@ console.log('- /api/permit-messages');
 console.log('- /api/billing');
 console.log('- /api/stripe');
 
+// Simple test endpoint (no DB required)
+app.get('/api/test', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'Simple test endpoint working',
+    environment: process.env.NODE_ENV,
+    vercel: !!process.env.VERCEL,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
@@ -91,6 +104,7 @@ app.get('/api/health', (req, res) => {
     message: 'Building Permits API is running',
     environment: process.env.NODE_ENV,
     vercel: !!process.env.VERCEL,
+    dbState: require('mongoose').connection.readyState,
     timestamp: new Date().toISOString(),
   });
 });
