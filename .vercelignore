@@ -9,13 +9,8 @@ yarn-error.log*
 # Ember build artifacts - temp files only
 /tmp
 
-# Exclude Ember app files from serverless build
-/app
-/tests
-/public
-ember-cli-build.js
-testem.js
-.ember-cli
+# Note: Ember files needed for static build, only exclude from serverless function context
+# These files are needed for the static build but not for the API function
 
 # IDE files
 .vscode
