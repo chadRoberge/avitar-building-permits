@@ -25,7 +25,7 @@ In your Vercel dashboard, go to **Settings → Environment Variables** and add:
 MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
 NODE_ENV=development
-CLIENT_URL=https://your-app.vercel.app
+CLIENT_URL=https://avitar-building-permits.vercel.app
 STRIPE_SECRET_KEY_DEV=sk_test_your_development_stripe_secret_key
 STRIPE_PUBLISHABLE_KEY_DEV=pk_test_your_development_stripe_publishable_key
 STRIPE_WEBHOOK_SECRET_DEV=whsec_your_development_webhook_secret
@@ -41,15 +41,15 @@ STRIPE_PUBLISHABLE_KEY_PROD=pk_live_your_production_stripe_publishable_key_here
 STRIPE_WEBHOOK_SECRET_PROD=whsec_your_production_webhook_secret_here
 ```
 
-### 4. Update CLIENT_URL After Deployment
+### 4. Your Deployed Application
 
-After deployment, update the `CLIENT_URL` environment variable with your actual Vercel URL.
+Your application is now live at: **https://avitar-building-permits.vercel.app**
 
 ### 5. Configure Stripe Webhooks
 
 1. In your Stripe Dashboard, go to **Developers → Webhooks**
 2. Click **Add endpoint**
-3. Set URL to: `https://your-app.vercel.app/api/stripe/webhook`
+3. Set URL to: `https://avitar-building-permits.vercel.app/api/stripe/webhook`
 4. Select these events:
    - `customer.subscription.created`
    - `customer.subscription.updated`
