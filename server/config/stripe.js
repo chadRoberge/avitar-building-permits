@@ -19,7 +19,9 @@ const getStripeKeys = () => {
 
 // Initialize Stripe with environment-specific secret key
 const stripeKeys = getStripeKeys();
-const stripeInstance = stripe(stripeKeys.secretKey);
+const stripeInstance = stripeKeys.secretKey 
+  ? stripe(stripeKeys.secretKey)
+  : null; // Allow server to run without Stripe in development
 
 // Stripe product and price configurations for municipal plans
 const MUNICIPAL_PLANS = {
