@@ -2,7 +2,7 @@ import Route from '@ember/routing/route';
 
 export default class SystemAdminRoute extends Route {
   // Redirect to login if not authenticated, otherwise to dashboard
-  redirect() {
+  beforeModel() {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
     
