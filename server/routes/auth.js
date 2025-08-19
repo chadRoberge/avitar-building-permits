@@ -183,6 +183,7 @@ router.post('/login', async (req, res) => {
         user.userType = 'system_admin';
         await user.save();
         console.log('Admin user type updated successfully');
+        // Continue with login process after fixing userType
       } else if (userType === 'municipal') {
         return res.status(401).json({
           error:
