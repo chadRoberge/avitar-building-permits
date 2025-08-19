@@ -83,8 +83,8 @@ export default class AdminLoginFormComponent extends Component {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Navigate to admin dashboard
-      this.router.transitionTo('admin.dashboard');
+      // Navigate to system admin dashboard
+      this.router.transitionTo('system-admin.dashboard');
 
     } catch (error) {
       console.error('=== ADMIN LOGIN ERROR ===');

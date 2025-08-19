@@ -155,7 +155,7 @@ export default class HomeController extends Controller {
 
   @action
   showAdminLogin() {
-    // Navigate to admin login page
-    this.router.transitionTo('admin.login');
+    // Navigate to system admin login page
+    this.router.transitionTo('system-admin.login');
   }
 }

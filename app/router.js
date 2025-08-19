@@ -12,8 +12,11 @@ Router.map(function () {
   this.route('register-municipality');
   this.route('auth');
 
-  // System admin routes
-  this.route('admin', function () {
+  // Municipal staff routes (admin portal)
+  this.route('admin');
+  
+  // System admin routes (system administration)
+  this.route('system-admin', function () {
     this.route('login');
     this.route('dashboard');
     this.route('municipalities');
