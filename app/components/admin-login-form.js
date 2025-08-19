@@ -28,6 +28,11 @@ export default class AdminLoginFormComponent extends Component {
   async submitLogin(event) {
     event.preventDefault();
     
+    console.log('=== ADMIN LOGIN FORM SUBMIT ===');
+    console.log('Email:', this.email);
+    console.log('Password length:', this.password?.length || 0);
+    console.log('Config API_HOST:', config.APP.API_HOST);
+    
     if (this.isLoading) return;
 
     // Basic validation
@@ -82,7 +87,10 @@ export default class AdminLoginFormComponent extends Component {
       this.router.transitionTo('admin.dashboard');
 
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('=== ADMIN LOGIN ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       this.errorMessage = error.message || 'Login failed. Please try again.';
     } finally {
       this.isLoading = false;
