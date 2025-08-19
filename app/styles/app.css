@@ -5390,18 +5390,18 @@ select:disabled {
 }
 
 .nav-item {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 0; /* Removed spacing between items */
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  padding: var(--spacing-md) var(--spacing-xl);
+  padding: var(--spacing-sm) var(--spacing-lg); /* Reduced from md/xl to sm/lg for more compact buttons */
   color: var(--color-white);
   text-decoration: none;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm); /* Reduced gap between icon and text */
 }
 
 .nav-link:hover {
