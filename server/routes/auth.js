@@ -177,7 +177,13 @@ router.post('/login', async (req, res) => {
 
     // Check if user type matches requested login type
     if (userType && user.userType !== userType) {
-      if (userType === 'municipal') {
+      // Special handling for admin user - auto-fix userType if needed
+      if (email === 'admin@avitarbuildingpermits.com' && userType === 'system_admin') {
+        console.log(`Admin user has incorrect userType: ${user.userType}, updating to system_admin`);
+        user.userType = 'system_admin';
+        await user.save();
+        console.log('Admin user type updated successfully');
+      } else if (userType === 'municipal') {
         return res.status(401).json({
           error:
             'This portal is for municipal staff only. Please use the public portal.',
