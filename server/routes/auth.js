@@ -162,6 +162,13 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    // Check database connection
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      console.error('Database not connected. Connection state:', mongoose.connection.readyState);
+      return res.status(503).json({ error: 'Service temporarily unavailable. Database connection issue.' });
+    }
+
     // Find user
     const user = await User.findOne({ email });
     if (!user || !user.isActive) {

@@ -55,6 +55,9 @@ export default class AdminLoginFormComponent extends Component {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 503) {
+          throw new Error('Service temporarily unavailable. Please try again in a moment.');
+        }
         throw new Error(data.error || 'Login failed');
       }
 
