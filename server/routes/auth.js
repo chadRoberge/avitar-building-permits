@@ -158,6 +158,15 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password, userType } = req.body;
 
+    // Debug logging for admin login attempts
+    if (email === 'admin@avitarbuildingpermits.com') {
+      console.log('=== ADMIN LOGIN ATTEMPT ===');
+      console.log('Email:', email);
+      console.log('Requested userType:', userType);
+      console.log('Environment:', process.env.NODE_ENV);
+      console.log('Vercel:', !!process.env.VERCEL);
+    }
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
@@ -172,11 +181,27 @@ router.post('/login', async (req, res) => {
     // Find user
     const user = await User.findOne({ email });
     if (!user || !user.isActive) {
+      if (email === 'admin@avitarbuildingpermits.com') {
+        console.log('Admin user not found or inactive:', { userFound: !!user, isActive: user?.isActive });
+      }
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Debug admin user details
+    if (email === 'admin@avitarbuildingpermits.com') {
+      console.log('Admin user found:', {
+        userType: user.userType,
+        isActive: user.isActive,
+        requestedType: userType
+      });
     }
 
     // Check if user type matches requested login type
     if (userType && user.userType !== userType) {
+      if (email === 'admin@avitarbuildingpermits.com') {
+        console.log('Admin userType mismatch detected');
+      }
+      
       // Special handling for admin user - auto-fix userType if needed
       if (email === 'admin@avitarbuildingpermits.com' && userType === 'system_admin') {
         console.log(`Admin user has incorrect userType: ${user.userType}, updating to system_admin`);
@@ -194,6 +219,8 @@ router.post('/login', async (req, res) => {
           .status(401)
           .json({ error: 'Invalid user type for this portal' });
       }
+    } else if (email === 'admin@avitarbuildingpermits.com') {
+      console.log('Admin userType matches or no userType requested - proceeding with login');
     }
 
     // Check password

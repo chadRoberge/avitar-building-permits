@@ -40,6 +40,12 @@ export default class AdminLoginFormComponent extends Component {
     this.errorMessage = '';
 
     try {
+      console.log('Admin login attempt:', {
+        email: this.email,
+        userType: 'system_admin',
+        apiHost: config.APP.API_HOST
+      });
+
       const response = await fetch(`${config.APP.API_HOST}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -52,7 +58,9 @@ export default class AdminLoginFormComponent extends Component {
         }),
       });
 
+      console.log('Admin login response status:', response.status);
       const data = await response.json();
+      console.log('Admin login response data:', data);
 
       if (!response.ok) {
         if (response.status === 503) {
