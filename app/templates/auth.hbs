@@ -15,9 +15,9 @@
         </div>
         <div class="col-md-4 text-right">
           <div class="header-actions">
-            <a href={{concat "/municipality/" @model.municipality.id}} class="btn btn-outline-secondary btn-sm">
+            <LinkTo @route="municipal-portal" @model={{@model.municipality._id}} class="btn btn-outline-secondary btn-sm">
               ← Back to Municipality Portal
-            </a>
+            </LinkTo>
           </div>
         </div>
       </div>
