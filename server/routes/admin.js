@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Permit = require('../models/Permit');
 const auth = require('../middleware/auth');
 
+console.log('=== ADMIN ROUTES FILE LOADED ===');
 const router = express.Router();
 
 // Middleware to ensure user is system admin
@@ -21,7 +22,9 @@ router.use(requireSystemAdmin);
 // ===== DASHBOARD ENDPOINTS =====
 
 // Get system overview dashboard data
+console.log('Registering admin dashboard route');
 router.get('/dashboard', async (req, res) => {
+  console.log('Admin dashboard route hit');
   try {
     // Get counts and statistics
     const [

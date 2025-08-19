@@ -64,7 +64,9 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+console.log('Mounting admin routes at /api/admin');
 app.use('/api/admin', adminRoutes);
+console.log('Admin routes mounted successfully');
 app.use('/api/municipalities', municipalityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/permit-types', permitTypeRoutes);
