@@ -227,4 +227,10 @@ export default class AdminMunicipalManagerComponent extends Component {
     };
     return statuses[status] || status;
   }
+
+  getInitials(firstName, lastName) {
+    const first = firstName ? firstName.charAt(0).toUpperCase() : '';
+    const last = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return first + last;
+  }
 }

@@ -125,4 +125,10 @@ export default class AdminDashboardComponent extends Component {
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
   }
+
+  getInitials(firstName, lastName) {
+    const first = firstName ? firstName.charAt(0).toUpperCase() : '';
+    const last = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return first + last;
+  }
 }

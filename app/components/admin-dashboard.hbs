@@ -92,7 +92,7 @@
               {{#each this.dashboardData.recent.users as |user|}}
                 <div class="activity-item">
                   <div class="activity-avatar">
-                    {{user.firstName.0}}{{user.lastName.0}}
+                    {{this.getInitials user.firstName user.lastName}}
                   </div>
                   <div class="activity-content">
                     <div class="activity-title">

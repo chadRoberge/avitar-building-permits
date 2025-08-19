@@ -198,7 +198,7 @@
                 <div class="users-list">
                   {{#each this.selectedMunicipality.users as |user|}}
                     <div class="user-item">
-                      <div class="user-avatar">{{user.firstName.0}}{{user.lastName.0}}</div>
+                      <div class="user-avatar">{{this.getInitials user.firstName user.lastName}}</div>
                       <div class="user-info">
                         <div class="user-name">{{user.firstName}} {{user.lastName}}</div>
                         <div class="user-email">{{user.email}}</div>
