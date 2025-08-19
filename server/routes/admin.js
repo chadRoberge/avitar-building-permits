@@ -7,6 +7,12 @@ const auth = require('../middleware/auth');
 console.log('=== ADMIN ROUTES FILE LOADED ===');
 const router = express.Router();
 
+// Simple test route that doesn't require auth or database
+router.get('/test', (req, res) => {
+  console.log('Admin test route hit!');
+  res.json({ message: 'Admin routes are working!', timestamp: new Date().toISOString() });
+});
+
 // Middleware to ensure user is system admin
 const requireSystemAdmin = (req, res, next) => {
   if (req.user.userType !== 'system_admin') {
