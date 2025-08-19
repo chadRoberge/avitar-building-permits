@@ -65,12 +65,14 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 
-// Inline admin routes to debug the issue
+// System admin routes (inline for development)
 app.get('/api/admin/test', (req, res) => {
-  res.json({ message: 'Admin test route working directly!' });
+  console.log('System admin test route hit');
+  res.json({ message: 'System admin routes working!', userType: 'system_admin' });
 });
 
 app.get('/api/admin/dashboard', (req, res) => {
+  console.log('System admin dashboard route hit');
   res.json({
     overview: {
       totalMunicipalities: 1,
@@ -79,16 +81,29 @@ app.get('/api/admin/dashboard', (req, res) => {
       totalPermits: 0
     },
     analytics: {
-      usersByType: { system_admin: 1 },
-      permitsByStatus: {}
+      usersByType: { system_admin: 1, municipal: 0, residential: 0, commercial: 0 },
+      permitsByStatus: { submitted: 0, under_review: 0, approved: 0, rejected: 0 }
     }
   });
 });
 
 app.get('/api/admin/municipalities', (req, res) => {
+  console.log('System admin municipalities route hit');
   res.json({
-    municipalities: [],
-    total: 0,
+    municipalities: [
+      {
+        _id: '68a240b6e4c79146f637dac2',
+        name: 'Deerfield',
+        city: 'Deerfield', 
+        state: 'NH',
+        zip: '03037',
+        isActive: true,
+        userCount: 1,
+        subscription: { plan: 'basic', status: 'active' },
+        address: { city: 'Deerfield', state: 'NH' }
+      }
+    ],
+    total: 1,
     page: 1,
     limit: 50
   });
