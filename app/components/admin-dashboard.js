@@ -24,7 +24,7 @@ export default class AdminDashboardComponent extends Component {
     try {
       const response = await fetch(`${config.APP.API_HOST}/api/admin/dashboard`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       });
 

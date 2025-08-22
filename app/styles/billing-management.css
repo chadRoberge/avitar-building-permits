@@ -1,0 +1,646 @@
+/* Billing Management Styles */
+.municipal-billing-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.page-description {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+/* Billing Management Component */
+.billing-management {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.billing-loading {
+  text-align: center;
+  padding: 3rem;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.billing-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Billing Overview */
+.billing-overview {
+  padding: 2rem;
+}
+
+.billing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 1rem;
+}
+
+.billing-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Billing Cards */
+.billing-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 768px) {
+  .billing-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.billing-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.billing-card h3 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1.25rem;
+}
+
+/* Plan Card */
+.plan-info {
+  margin-bottom: 1.5rem;
+}
+
+.plan-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.plan-price {
+  font-size: 1.25rem;
+  color: #007bff;
+  font-weight: 500;
+}
+
+.plan-renewal {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.plan-notice.warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.plan-meta {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e9ecef;
+  color: #6c757d;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.plan-meta small {
+  font-size: 0.8rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.subscription-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-indicator.active {
+  background-color: #28a745;
+}
+
+.status-indicator.past_due {
+  background-color: #ffc107;
+}
+
+.status-indicator.canceled {
+  background-color: #dc3545;
+}
+
+.status-indicator.incomplete {
+  background-color: #6c757d;
+}
+
+.status-indicator.incomplete_expired {
+  background-color: #dc3545;
+}
+
+.status-indicator.trialing {
+  background-color: #17a2b8;
+}
+
+.status-indicator.unpaid {
+  background-color: #dc3545;
+}
+
+.plan-benefits h4 {
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.plan-benefits ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.plan-benefits li {
+  margin-bottom: 0.25rem;
+  color: #28a745;
+}
+
+.plan-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Usage Card */
+.usage-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.usage-metric {
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.usage-header {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.usage-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.usage-count {
+  font-weight: 600;
+  color: #007bff;
+}
+
+.usage-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.usage-progress {
+  height: 100%;
+  background-color: #007bff;
+  transition: width 0.3s ease;
+}
+
+.usage-progress[style*="100%"] {
+  background-color: #dc3545;
+}
+
+.usage-percentage {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.usage-unlimited {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.usage-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ffeaa7;
+  margin-top: 1rem;
+}
+
+/* Billing History */
+.billing-history {
+  padding: 0 2rem 2rem;
+}
+
+.billing-history h3 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+}
+
+.history-table {
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 100px 100px 120px;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 100px 100px 120px;
+  padding: 1rem;
+  border-bottom: 1px solid #f1f3f4;
+  align-items: center;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-row:hover {
+  background-color: #f8f9fa;
+}
+
+.status-badge.paid {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.failed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
+/* Modals */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #343a40;
+}
+
+/* Plan Comparison Modal */
+.plan-comparison-modal {
+  max-width: 1000px;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.plan-option {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.plan-option:hover {
+  border-color: #007bff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 123, 255, 0.15);
+}
+
+.plan-option.current {
+  border-color: #28a745;
+  background-color: #f8fff9;
+}
+
+.plan-option.popular {
+  border-color: #007bff;
+  background-color: #f8f9ff;
+}
+
+.popular-badge,
+.current-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.popular-badge {
+  background-color: #007bff;
+  color: white;
+}
+
+.current-badge {
+  background-color: #28a745;
+  color: white;
+}
+
+.plan-option h3 {
+  margin: 1rem 0 0.5rem 0;
+  text-align: center;
+  color: #2c3e50;
+}
+
+.plan-pricing {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.plan-pricing .price {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #007bff;
+}
+
+.plan-pricing .period {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.plan-limits {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+}
+
+.limit-item {
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+}
+
+.plan-features li {
+  padding: 0.25rem 0;
+  color: #28a745;
+}
+
+.plan-action {
+  text-align: center;
+}
+
+/* Cancel Confirmation Modal */
+.cancel-confirmation-modal {
+  max-width: 500px;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-body p {
+  margin-bottom: 1rem;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Button Styles */
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.btn-outline {
+  background-color: transparent;
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .municipal-billing-page {
+    padding: 1rem;
+  }
+
+  .billing-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .table-header > div,
+  .table-row > div {
+    padding: 0.25rem 0;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+}

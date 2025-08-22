@@ -242,9 +242,55 @@ const permitTypeSchema = new mongoose.Schema(
     requiredInspections: [
       {
         name: String,
+        type: {
+          type: String,
+          enum: [
+            'foundation-certification',
+            'footing-inspection', 
+            'rebar-inspection',
+            'electrical-inspection',
+            'framing-inspection',
+            'plumbing-inspection',
+            'mechanical-inspection',
+            'insulation-inspection',
+            'drywall-inspection',
+            'final-inspection',
+            'fire-safety-inspection',
+            'accessibility-inspection',
+            'energy-efficiency-inspection',
+            'environmental-inspection',
+            'other'
+          ],
+          required: true
+        },
         description: String,
         triggerCondition: String, // When this inspection is required
         estimatedDuration: Number, // in minutes
+        required: {
+          type: Boolean,
+          default: true
+        },
+        order: {
+          type: Number,
+          default: 0
+        }
+      },
+    ],
+
+    // Required departments that must review this permit type
+    requiredDepartments: [
+      {
+        type: String,
+        enum: [
+          'building',
+          'planning',
+          'fire',
+          'health',
+          'engineering',
+          'zoning',
+          'environmental',
+          'finance'
+        ],
       },
     ],
 

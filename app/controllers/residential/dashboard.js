@@ -69,6 +69,12 @@ export default class ResidentialDashboardController extends Controller {
   }
 
   @action
+  refresh() {
+    // Refresh the route to reload the data
+    this.router.refresh();
+  }
+
+  @action
   logout() {
     // Clear all authentication and session data
     localStorage.removeItem('auth_token');

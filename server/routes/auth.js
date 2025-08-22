@@ -229,6 +229,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Update last login date
+    user.lastLoginDate = new Date();
+    await user.save();
+
     // Generate token
     const token = generateToken(user);
 

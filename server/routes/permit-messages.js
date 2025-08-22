@@ -24,7 +24,7 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// Get messages for a specific permit
+// Get messages for a specific permit (legacy route)
 router.get('/permit/:permitId', authenticateToken, async (req, res) => {
   try {
     const { permitId } = req.params;
@@ -60,7 +60,185 @@ router.get('/permit/:permitId', authenticateToken, async (req, res) => {
   }
 });
 
-// Post a new message to a permit
+// Get messages for a specific permit (new format expected by frontend)
+router.get('/:permitId', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+    const userId = req.user.userId;
+    const userType = req.user.userType;
+
+    console.log('Loading messages for permit:', permitId, 'by user:', userId, 'type:', userType);
+
+    // First verify the user has access to this permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Check access permissions
+    const hasAccess =
+      permit.applicant?.id === userId ||
+      permit.contractor?.id === userId ||
+      userType === 'municipal';
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get messages for this permit using model method if it exists, otherwise query directly
+    let messages;
+    try {
+      messages = await PermitMessage.getPermitMessages(permitId, userType);
+    } catch (error) {
+      // Fallback to direct query if model method doesn't exist
+      console.log('Using direct query fallback for messages');
+      const query = { permit: permitId };
+      
+      // Filter internal messages for non-municipal users
+      if (userType !== 'municipal') {
+        query.isInternal = { $ne: true };
+      }
+      
+      messages = await PermitMessage.find(query)
+        .sort({ createdAt: 1 })
+        .lean();
+    }
+
+    console.log(`Found ${messages.length} messages for permit ${permitId}`);
+
+    // Transform messages to match frontend expectations
+    const transformedMessages = messages.map(msg => ({
+      id: msg._id,
+      permitId: msg.permit || msg.permitId,
+      senderId: msg.sender?.id || msg.senderId,
+      senderName: msg.sender?.name || msg.senderName,
+      senderType: msg.sender?.type || msg.senderType,
+      content: msg.message || msg.content,
+      isInternal: msg.isInternal || false,
+      createdAt: msg.createdAt,
+      updatedAt: msg.updatedAt
+    }));
+
+    // Mark messages as read for this user if method exists
+    try {
+      await PermitMessage.markAsRead(permitId, userId);
+    } catch (error) {
+      console.log('markAsRead method not available');
+    }
+
+    res.json(transformedMessages);
+  } catch (error) {
+    console.error('Error fetching permit messages:', error);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// Post a new message (new format expected by frontend)
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const { permitId, content, isInternal = false } = req.body;
+    const userId = req.user.userId;
+    const userType = req.user.userType;
+
+    console.log('Creating message:', { permitId, content: content?.substring(0, 50), isInternal, userId, userType });
+
+    // Validate message content
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ error: 'Message content is required' });
+    }
+
+    if (content.length > 2000) {
+      return res.status(400).json({ error: 'Message too long (max 2000 characters)' });
+    }
+
+    if (!permitId) {
+      return res.status(400).json({ error: 'Permit ID is required' });
+    }
+
+    // Verify the user has access to this permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    const hasAccess =
+      permit.applicant?.id === userId ||
+      permit.contractor?.id === userId ||
+      userType === 'municipal';
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Only municipal users can send internal messages
+    if (isInternal && userType !== 'municipal') {
+      return res.status(403).json({ error: 'Only municipal users can send internal messages' });
+    }
+
+    // Get user information for the message
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Determine sender type and department
+    let senderType;
+    let department = null;
+
+    if (userType === 'municipal') {
+      senderType = 'municipal_staff';
+      department = user.department || 'Municipal Staff';
+    } else if (userType === 'commercial') {
+      senderType = 'contractor';
+    } else {
+      senderType = 'applicant';
+    }
+
+    // Create the message
+    const newMessage = new PermitMessage({
+      permit: permitId,
+      message: content.trim(),
+      messageType: 'general',
+      isInternal: isInternal,
+      sender: {
+        id: userId,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        type: senderType,
+        department: department,
+      },
+    });
+
+    const savedMessage = await newMessage.save();
+
+    console.log('New permit message created:', {
+      permitId,
+      messageId: savedMessage._id,
+      sender: savedMessage.sender.name,
+      isInternal: savedMessage.isInternal,
+    });
+
+    // Transform response to match frontend expectations
+    const transformedMessage = {
+      id: savedMessage._id,
+      permitId: savedMessage.permit,
+      senderId: savedMessage.sender.id,
+      senderName: savedMessage.sender.name,
+      senderType: savedMessage.sender.type,
+      content: savedMessage.message,
+      isInternal: savedMessage.isInternal,
+      createdAt: savedMessage.createdAt,
+      updatedAt: savedMessage.updatedAt
+    };
+
+    res.status(201).json(transformedMessage);
+  } catch (error) {
+    console.error('Error posting permit message:', error);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// Post a new message to a permit (legacy route)
 router.post('/permit/:permitId', authenticateToken, async (req, res) => {
   try {
     const { permitId } = req.params;

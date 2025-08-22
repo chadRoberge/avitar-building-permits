@@ -17,6 +17,17 @@
     </div>
   </header>
 
+  {{#if @model.loadError}}
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Error Loading Dashboard</h3>
+      <p>{{@model.loadError}}</p>
+      <button type="button" class="btn btn-primary" {{on "click" (fn this.refresh)}}>
+        Refresh
+      </button>
+    </div>
+  {{/if}}
+
   {{!-- Summary Cards --}}
   <div class="summary-grid">
     <div class="summary-card permits-card">
@@ -107,8 +118,11 @@
                         {{#unless permit.category}}📄{{/unless}}
                       </div>
                       <div class="permit-content">
-                        <div class="permit-title">{{if permit.type permit.type permit.name}}</div>
-                        <div class="permit-date">{{format-date permit.submittedDate}}</div>
+                        <div class="permit-title">{{permit.type}}</div>
+                        <div class="permit-date">Applied: {{format-date permit.submittedDate}}</div>
+                        {{#if permit.projectDescription}}
+                          <div class="permit-description">{{permit.projectDescription}}</div>
+                        {{/if}}
                       </div>
                       <div class="permit-status">
                         <span class="status-badge {{get-status-badge-class permit.status}}">
@@ -133,6 +147,14 @@
                     <button type="button" class="btn btn-primary" {{on "click" this.addProperty}}>
                       Add Property
                     </button>
+                  {{/if}}
+                  
+                  {{#if @model.isLoaded}}
+                    <div class="debug-info" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.8rem; color: #6c757d;">
+                      <strong>Debug Info:</strong><br>
+                      Total permits loaded: {{@model.permits.all.length}}<br>
+                      Data successfully loaded from API: {{@model.isLoaded}}
+                    </div>
                   {{/if}}
                 </div>
               {{/if}}
@@ -207,19 +229,40 @@
               </div>
             {{/if}}
 
-            {{!-- Active Permits --}}
-            {{#if @model.permits.current.length}}
+            {{!-- Approved Permits --}}
+            {{#if @model.permits.approved.length}}
               <div class="permits-section">
-                <h3>Active Permits ({{@model.permits.current.length}})</h3>
+                <h3>Approved Permits ({{@model.permits.approved.length}})</h3>
                 <div class="permits-grid">
-                  {{#each @model.permits.current as |permit|}}
-                    <div class="permit-card active" {{on "click" (fn this.viewPermit permit.id)}}>
+                  {{#each @model.permits.approved as |permit|}}
+                    <div class="permit-card approved" {{on "click" (fn this.viewPermit permit.id)}}>
                       <div class="permit-header">
                         <span class="permit-type">{{permit.type}}</span>
                         <span class="status-badge success">{{permit.status}}</span>
                       </div>
                       <div class="permit-details">
                         <div class="permit-date">Approved: {{format-date permit.approvedDate}}</div>
+                        <div class="permit-expiry">Expires: {{format-date permit.expiryDate}}</div>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              </div>
+            {{/if}}
+
+            {{!-- Active Permits (Inspections) --}}
+            {{#if @model.permits.active.length}}
+              <div class="permits-section">
+                <h3>Active Permits ({{@model.permits.active.length}})</h3>
+                <div class="permits-grid">
+                  {{#each @model.permits.active as |permit|}}
+                    <div class="permit-card active" {{on "click" (fn this.viewPermit permit.id)}}>
+                      <div class="permit-header">
+                        <span class="permit-type">{{permit.type}}</span>
+                        <span class="status-badge primary">{{permit.status}}</span>
+                      </div>
+                      <div class="permit-details">
+                        <div class="permit-date">Started: {{format-date permit.approvedDate}}</div>
                         <div class="permit-expiry">Expires: {{format-date permit.expiryDate}}</div>
                       </div>
                     </div>

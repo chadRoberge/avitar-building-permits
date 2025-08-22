@@ -97,10 +97,41 @@
       </div>
     </div>
 
-    {{! Step 3: Application Questions }}
+    {{! Step 3: Review Departments }}
     <div class="form-section">
       <div class="section-header">
-        <h2>3. Application Questions</h2>
+        <h2>3. Review Departments</h2>
+        <p>Select which departments need to review this permit type before approval</p>
+      </div>
+
+      <div class="departments-selection">
+        <div class="departments-grid">
+          {{#each this.availableDepartments as |department|}}
+            <div class="department-card {{if (this.isDepartmentSelected department.id) 'selected'}}" {{on "click" (fn this.toggleDepartment department.id)}}>
+              <div class="department-header">
+                <span class="department-icon">{{department.icon}}</span>
+                <div class="department-info">
+                  <h4 class="department-name">{{department.name}}</h4>
+                  <p class="department-description">{{department.description}}</p>
+                </div>
+                <div class="selection-indicator">
+                  {{#if (this.isDepartmentSelected department.id)}}
+                    <span class="selected-icon">✓</span>
+                  {{else}}
+                    <span class="unselected-icon">+</span>
+                  {{/if}}
+                </div>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+    {{! Step 4: Application Questions }}
+    <div class="form-section">
+      <div class="section-header">
+        <h2>4. Application Questions</h2>
         <p>Customize the information you collect from applicants</p>
       </div>
 
@@ -210,7 +241,7 @@
                     <Textarea @value={{question.description}} placeholder="Provide additional context or instructions" rows="2" {{on "input" (fn this.updateQuestionDescription index)}} />
                   </div>
 
-                  {{#if (includes question.type (array "select" "radio" "checkbox"))}}
+                  {{#if (this.questionTypeNeedsOptions question.type)}}
                     <div class="form-group">
                       <label>Options</label>
                       <div class="options-builder">

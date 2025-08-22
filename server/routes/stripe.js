@@ -7,19 +7,12 @@ const auth = require('../middleware/auth');
 // Create Stripe checkout session for municipal subscription
 router.post('/create-checkout-session', auth, async (req, res) => {
   try {
-    const { planType, municipalityId } = req.body;
+    const { planType, municipalityId, priceId, productId } = req.body;
 
     // Validate user is municipal admin
     if (req.user.userType !== 'municipal') {
       return res.status(403).json({ error: 'Access denied' });
     }
-
-    // Validate plan type
-    if (!MUNICIPAL_PLANS[planType]) {
-      return res.status(400).json({ error: 'Invalid plan type' });
-    }
-
-    const plan = MUNICIPAL_PLANS[planType];
 
     // Get municipality
     const municipality = await Municipality.findById(municipalityId);
@@ -47,30 +40,115 @@ router.post('/create-checkout-session', auth, async (req, res) => {
       await municipality.save();
     }
 
+    let lineItems;
+
+    // If we have a Stripe price ID, use it directly
+    if (priceId) {
+      lineItems = [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ];
+    } else {
+      // Fallback: Try to get plan from StripePlansService or use hardcoded plans
+      try {
+        const StripePlansService = require('../services/stripe-plans');
+        const plans = await StripePlansService.getAvailablePlans();
+        const plan = plans[planType];
+
+        if (plan && plan.price) {
+          lineItems = [
+            {
+              price_data: {
+                currency: plan.currency || 'usd',
+                product_data: {
+                  name: plan.name,
+                  description: plan.description,
+                  metadata: {
+                    planType: planType,
+                    municipalityId: municipality._id.toString(),
+                    plan_type: 'municipal',
+                    plan_key: planType,
+                  },
+                },
+                unit_amount: plan.price,
+                recurring: {
+                  interval: plan.interval || 'year',
+                },
+              },
+              quantity: 1,
+            },
+          ];
+        } else {
+          // Final fallback to hardcoded plans
+          if (!MUNICIPAL_PLANS[planType]) {
+            return res.status(400).json({ error: 'Invalid plan type and no price ID provided' });
+          }
+
+          const fallbackPlan = MUNICIPAL_PLANS[planType];
+          lineItems = [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: fallbackPlan.name,
+                  description: fallbackPlan.description,
+                  metadata: {
+                    planType: planType,
+                    municipalityId: municipality._id.toString(),
+                    plan_type: 'municipal',
+                    plan_key: planType,
+                  },
+                },
+                unit_amount: fallbackPlan.price,
+                recurring: {
+                  interval: fallbackPlan.interval,
+                },
+              },
+              quantity: 1,
+            },
+          ];
+        }
+      } catch (serviceError) {
+        console.error('Error getting plans from service:', serviceError);
+        
+        // Final fallback to hardcoded plans
+        if (!MUNICIPAL_PLANS[planType]) {
+          return res.status(400).json({ error: 'Invalid plan type and no price ID provided' });
+        }
+
+        const fallbackPlan = MUNICIPAL_PLANS[planType];
+        lineItems = [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: fallbackPlan.name,
+                description: fallbackPlan.description,
+                metadata: {
+                  planType: planType,
+                  municipalityId: municipality._id.toString(),
+                  plan_type: 'municipal',
+                  plan_key: planType,
+                },
+              },
+              unit_amount: fallbackPlan.price,
+              recurring: {
+                interval: fallbackPlan.interval,
+              },
+            },
+            quantity: 1,
+          },
+        ];
+      }
+    }
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: plan.name,
-              description: plan.description,
-              metadata: {
-                planType: planType,
-                municipalityId: municipality._id.toString(),
-              },
-            },
-            unit_amount: plan.price,
-            recurring: {
-              interval: plan.interval,
-            },
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: 'subscription',
       success_url: `${process.env.CLIENT_URL}/municipal/billing?session_id={CHECKOUT_SESSION_ID}&success=true`,
       cancel_url: `${process.env.CLIENT_URL}/municipal/billing?canceled=true`,
@@ -78,6 +156,8 @@ router.post('/create-checkout-session', auth, async (req, res) => {
         municipalityId: municipality._id.toString(),
         planType: planType,
         userId: req.user._id.toString(),
+        priceId: priceId || '',
+        productId: productId || '',
       },
       subscription_data: {
         metadata: {
@@ -261,6 +341,15 @@ router.post('/webhook', async (req, res) => {
 
       case 'checkout.session.completed':
         await handleCheckoutCompleted(event.data.object);
+        break;
+
+      case 'product.created':
+      case 'product.updated':
+      case 'product.deleted':
+      case 'price.created':
+      case 'price.updated':
+      case 'price.deleted':
+        await handleProductPriceChange(event.type, event.data.object);
         break;
 
       default:
@@ -464,6 +553,20 @@ async function handleCheckoutCompleted(session) {
     );
   } catch (error) {
     console.error('Error handling checkout completed:', error);
+  }
+}
+
+async function handleProductPriceChange(eventType, object) {
+  try {
+    console.log(`Product/Price change detected: ${eventType}`, object.id);
+    
+    // Clear plans cache when products or prices change
+    const StripePlansService = require('../services/stripe-plans');
+    StripePlansService.clearCache();
+    
+    console.log('Plans cache cleared due to product/price change');
+  } catch (error) {
+    console.error('Error handling product/price change:', error);
   }
 }
 

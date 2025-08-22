@@ -1,0 +1,237 @@
+<div class="municipal-dashboard">
+  <div class="dashboard-header">
+    <h1>Municipal Dashboard</h1>
+    <p>{{this.currentYear}} Building Permits Overview for {{@municipality.name}}</p>
+  </div>
+
+  {{#if this.isLoading}}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading dashboard data...</p>
+    </div>
+  {{else if this.error}}
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Error Loading Dashboard</h3>
+      <p>{{this.error}}</p>
+      <button type="button" class="btn btn-primary" {{on "click" this.retryLoadDashboard}}>
+        Retry
+      </button>
+    </div>
+  {{else if this.dashboardData}}
+    {{!-- Key Metrics Cards --}}
+    <div class="metrics-grid">
+      <div class="metric-card permits-card">
+        <div class="metric-icon">📋</div>
+        <div class="metric-content">
+          <h3>Permits This Year</h3>
+          <div class="metric-value">{{this.dashboardData.totalPermits}}</div>
+          <div class="metric-change {{if (gt this.dashboardData.permitGrowth 0) 'positive' 'negative'}}">
+            {{#if (gt this.dashboardData.permitGrowth 0)}}+{{/if}}{{this.dashboardData.permitGrowth}}% from last year
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card inspections-card">
+        <div class="metric-icon">🔍</div>
+        <div class="metric-content">
+          <h3>Pending Inspections</h3>
+          <div class="metric-value">{{this.dashboardData.pendingInspections}}</div>
+          <div class="metric-subtitle">
+            {{this.dashboardData.overdueInspections}} overdue
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card approvals-card">
+        <div class="metric-icon">✅</div>
+        <div class="metric-content">
+          <h3>Awaiting Approval</h3>
+          <div class="metric-value">{{this.dashboardData.pendingApprovals}}</div>
+          <div class="metric-subtitle">
+            Avg. {{this.dashboardData.avgApprovalTime}} days to approve
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card revenue-card">
+        <div class="metric-icon">💰</div>
+        <div class="metric-content">
+          <h3>Permit Revenue</h3>
+          <div class="metric-value">${{this.formatCurrency this.dashboardData.permitRevenue}}</div>
+          <div class="metric-change {{if (gt this.dashboardData.revenueGrowth 0) 'positive' 'negative'}}">
+            {{#if (gt this.dashboardData.revenueGrowth 0)}}+{{/if}}{{this.dashboardData.revenueGrowth}}% from last year
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card economic-card">
+        <div class="metric-icon">🏗️</div>
+        <div class="metric-content">
+          <h3>Total Project Value</h3>
+          <div class="metric-value">${{this.formatCurrency this.dashboardData.totalProjectValue}}</div>
+          <div class="metric-subtitle">
+            Economic impact in municipality
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-card completion-card">
+        <div class="metric-icon">📈</div>
+        <div class="metric-content">
+          <h3>Completion Rate</h3>
+          <div class="metric-value">{{this.dashboardData.completionRate}}%</div>
+          <div class="metric-subtitle">
+            Permits completed on time
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{!-- Charts and Detailed Views --}}
+    <div class="dashboard-grid">
+      {{!-- Recent Activity --}}
+      <div class="dashboard-section recent-activity">
+        <h2>Recent Permit Activity</h2>
+        {{#if this.dashboardData.recentActivity.length}}
+          <div class="activity-list">
+            {{#each this.dashboardData.recentActivity as |activity|}}
+              <div class="activity-item">
+                <div class="activity-icon {{activity.type}}">
+                  {{#if (eq activity.type "submitted")}}📝{{/if}}
+                  {{#if (eq activity.type "approved")}}✅{{/if}}
+                  {{#if (eq activity.type "inspection")}}🔍{{/if}}
+                  {{#if (eq activity.type "completed")}}🎉{{/if}}
+                  {{#if (eq activity.type "updated")}}🔄{{/if}}
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title">{{activity.title}}</div>
+                  <div class="activity-details">
+                    {{activity.permitType}} - {{activity.applicant}}
+                  </div>
+                  <div class="activity-time">{{activity.timeAgo}}</div>
+                </div>
+                <div class="activity-link">
+                  <button type="button" class="btn btn-outline-primary btn-sm" {{on "click" (fn this.viewPermit activity.permitId)}}>
+                    View →
+                  </button>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>No recent permit activity</p>
+          </div>
+        {{/if}}
+      </div>
+
+      {{!-- Permit Status Breakdown --}}
+      <div class="dashboard-section permit-status">
+        <h2>Permit Status Overview</h2>
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="status-label">Submitted</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.submitted}}</div>
+            <div class="status-bar">
+              <div class="status-fill submitted" style="width: {{this.getStatusPercentage "submitted"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Under Review</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.reviewing}}</div>
+            <div class="status-bar">
+              <div class="status-fill reviewing" style="width: {{this.getStatusPercentage "reviewing"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Approved</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.approved}}</div>
+            <div class="status-bar">
+              <div class="status-fill approved" style="width: {{this.getStatusPercentage "approved"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Active</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.active}}</div>
+            <div class="status-bar">
+              <div class="status-fill active" style="width: {{this.getStatusPercentage "active"}}%"></div>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Completed</div>
+            <div class="status-value">{{this.dashboardData.statusBreakdown.completed}}</div>
+            <div class="status-bar">
+              <div class="status-fill completed" style="width: {{this.getStatusPercentage "completed"}}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{!-- Quick Actions --}}
+      <div class="dashboard-section quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="action-buttons">
+          <button 
+            type="button" 
+            class="action-btn primary"
+            {{on "click" this.reviewPendingPermits}}
+          >
+            <span class="action-icon">✅</span>
+            Review Pending Permits
+            <span class="action-count">{{this.dashboardData.pendingApprovals}}</span>
+          </button>
+          
+          <button 
+            type="button" 
+            class="action-btn secondary"
+            {{on "click" this.scheduleInspections}}
+          >
+            <span class="action-icon">🔍</span>
+            Schedule Inspections
+            <span class="action-count">{{this.dashboardData.pendingInspections}}</span>
+          </button>
+          
+          <button 
+            type="button" 
+            class="action-btn tertiary"
+            {{on "click" this.addPermitType}}
+          >
+            <span class="action-icon">➕</span>
+            Add Permit Type
+          </button>
+          
+          <button 
+            type="button" 
+            class="action-btn tertiary"
+            {{on "click" this.manageSettings}}
+          >
+            <span class="action-icon">⚙️</span>
+            Portal Settings
+          </button>
+        </div>
+      </div>
+
+      {{!-- Monthly Trends --}}
+      <div class="dashboard-section monthly-trends">
+        <h2>Monthly Permit Trends</h2>
+        {{#if this.dashboardData.monthlyTrends.length}}
+          <div class="trend-chart">
+            {{#each this.dashboardData.monthlyTrends as |month|}}
+              <div class="trend-month">
+                <div class="trend-bar" style="height: {{month.percentage}}%"></div>
+                <div class="trend-value">{{month.count}}</div>
+                <div class="trend-label">{{month.name}}</div>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="empty-state">
+            <p>No trend data available</p>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+  {{/if}}
+</div>

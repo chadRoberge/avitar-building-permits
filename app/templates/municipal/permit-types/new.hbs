@@ -119,10 +119,89 @@
         </div>
       </div>
 
-      {{! Step 3: Application Questions }}
+      {{! Step 3: Review Departments }}
       <div class="form-section">
         <div class="section-header">
-          <h2>3. Application Questions</h2>
+          <h2>3. Review Departments</h2>
+          <p>Select which departments need to review this permit type before approval</p>
+        </div>
+
+        <div class="departments-selection">
+          <div class="departments-grid">
+            {{#each this.availableDepartments as |department|}}
+              <div class="department-card {{if (this.isDepartmentSelected department.id) 'selected'}}" {{on "click" (fn this.toggleDepartment department.id)}}>
+                <div class="department-header">
+                  <span class="department-icon">{{department.icon}}</span>
+                  <div class="department-info">
+                    <h4 class="department-name">{{department.name}}</h4>
+                    <p class="department-description">{{department.description}}</p>
+                  </div>
+                  <div class="selection-indicator">
+                    {{#if (this.isDepartmentSelected department.id)}}
+                      <span class="selected-icon">✓</span>
+                    {{else}}
+                      <span class="unselected-icon">+</span>
+                    {{/if}}
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+
+      {{! Step 4: Required Inspections }}
+      <div class="form-section">
+        <div class="section-header">
+          <h2>4. Required Inspections</h2>
+          <p>Select which inspections are required for permit completion</p>
+        </div>
+
+        <div class="inspections-selection">
+          <div class="inspections-grid">
+            {{#each this.availableInspections as |inspection|}}
+              <div class="inspection-card {{if (this.isInspectionSelected inspection.type) 'selected'}}" {{on "click" (fn this.toggleInspection inspection.type)}}>
+                <div class="inspection-header">
+                  <span class="inspection-icon">{{inspection.icon}}</span>
+                  <div class="inspection-info">
+                    <h4 class="inspection-name">{{inspection.name}}</h4>
+                    <p class="inspection-description">{{inspection.description}}</p>
+                    {{#if inspection.estimatedDuration}}
+                      <small class="inspection-duration">~{{inspection.estimatedDuration}} minutes</small>
+                    {{/if}}
+                  </div>
+                  <div class="selection-indicator">
+                    {{#if (this.isInspectionSelected inspection.type)}}
+                      <span class="selected-icon">✓</span>
+                    {{else}}
+                      <span class="unselected-icon">+</span>
+                    {{/if}}
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+
+          {{#if this.selectedInspections.length}}
+            <div class="selected-inspections-summary">
+              <h4>Selected Inspections ({{this.selectedInspections.length}})</h4>
+              <div class="inspection-tags">
+                {{#each this.selectedInspections as |inspectionType|}}
+                  <span class="inspection-tag">
+                    {{this.getInspectionName inspectionType}}
+                    <button type="button" class="tag-remove" {{on "click" (fn this.toggleInspection inspectionType)}}>×</button>
+                  </span>
+                {{/each}}
+              </div>
+            </div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{! Step 5: Application Questions }}
+      <div class="form-section">
+        <div class="section-header">
+          <h2>5. Application Questions</h2>
           <p>Customize the information you collect from applicants</p>
         </div>
 
@@ -224,7 +303,7 @@
                       <Textarea @value={{question.description}} placeholder="Provide additional context or instructions" rows="2" {{on "input" (fn this.updateQuestionDescription index)}} />
                     </div>
 
-                    {{#if (includes question.type (array "select" "radio" "checkbox"))}}
+                    {{#if (this.questionTypeNeedsOptions question.type)}}
                       <div class="form-group">
                         <label>Options</label>
                         <div class="options-builder">
@@ -272,6 +351,9 @@
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" {{on "click" this.cancelForm}}>
           Cancel
+        </button>
+        <button type="button" class="btn btn-outline-secondary" {{on "click" this.resetForm}}>
+          Reset Form
         </button>
         <button type="submit" class="btn btn-primary" disabled={{this.isSubmitting}}>
           {{#if this.isSubmitting}}

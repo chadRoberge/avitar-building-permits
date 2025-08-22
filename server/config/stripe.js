@@ -74,8 +74,41 @@ const MUNICIPAL_PLANS = {
   },
 };
 
+// Function to get actual Stripe products (replaces hardcoded plans)
+const getStripeProducts = async () => {
+  if (!stripeInstance) {
+    console.warn('Stripe not configured, returning null');
+    return null;
+  }
+
+  try {
+    const products = await stripeInstance.products.list({
+      active: true,
+      expand: ['data.default_price'],
+      limit: 100,
+    });
+
+    return products.data;
+  } catch (error) {
+    console.error('Error fetching Stripe products:', error);
+    return null;
+  }
+};
+
+// Function to get municipal products specifically
+const getMunicipalProducts = async () => {
+  const products = await getStripeProducts();
+  if (!products) return null;
+
+  return products.filter(product => 
+    product.metadata.plan_type === 'municipal'
+  );
+};
+
 module.exports = {
   stripe: stripeInstance,
   stripeKeys,
-  MUNICIPAL_PLANS,
+  MUNICIPAL_PLANS, // Keep for backward compatibility
+  getStripeProducts,
+  getMunicipalProducts,
 };

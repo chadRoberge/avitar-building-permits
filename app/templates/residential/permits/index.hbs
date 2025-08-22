@@ -7,7 +7,7 @@
       <div class="row items-center">
         <div class="col-md-8">
           <h1 class="text-primary mb-2">My Permits</h1>
-          <p class="text-muted">View and manage your building permit applications for {{@model.municipality.name}}</p>
+          <p class="text-muted">View and manage your building permit applications{{#if @model.municipality.name}} for {{@model.municipality.name}}{{/if}}</p>
         </div>
         <div class="col-md-4 text-right">
           <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
@@ -17,185 +17,196 @@
       </div>
     </div>
 
-    {{!-- Permits Summary --}}
-    <div class="permits-summary mb-5">
-      <div class="summary-cards">
-        <div class="summary-card">
-          <div class="card-icon pending">⏳</div>
-          <div class="card-content">
-            <h3>{{@model.permits.pending.length}}</h3>
-            <p>Pending Review</p>
+    {{!-- Professional Search and Filter Section --}}
+    <div class="filters-section mb-4">
+      <div class="filter-container">
+        
+        {{!-- Search Bar with Results Count --}}
+        <div class="search-section">
+          <div class="search-row">
+            <div class="search-input-wrapper">
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="Search permits..."
+                value={{this.searchTerm}}
+                {{on "input" this.updateSearch}}
+              >
+              <span class="search-icon">🔍</span>
+            </div>
+            <div class="results-count">
+              <span class="count-text">
+                {{this.permitCount}}{{#if (gt this.permitCount 0)}} of {{if @model.permits.all.length @model.permits.all.length "0"}}{{/if}} permits
+              </span>
+            </div>
           </div>
         </div>
-        <div class="summary-card">
-          <div class="card-icon approved">✅</div>
-          <div class="card-content">
-            <h3>{{@model.permits.approved.length}}</h3>
-            <p>Approved</p>
-          </div>
-        </div>
-        <div class="summary-card">
-          <div class="card-icon active">🔨</div>
-          <div class="card-content">
-            <h3>{{@model.permits.active.length}}</h3>
-            <p>Active</p>
-          </div>
-        </div>
-        <div class="summary-card">
-          <div class="card-icon completed">🏁</div>
-          <div class="card-content">
-            <h3>{{@model.permits.completed.length}}</h3>
-            <p>Completed</p>
+
+        {{!-- Horizontal Filter Controls --}}
+        <div class="filter-controls">
+          <div class="filter-row">
+            <div class="filter-item">
+              <select class="filter-select" value={{this.selectedStatus}} {{on "change" this.updateStatusFilter}}>
+                {{#each this.statusOptions as |statusOption|}}
+                  <option value={{statusOption.value}}>{{statusOption.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+
+            <div class="filter-item">
+              <select class="filter-select" value={{this.selectedType}} {{on "change" this.updateTypeFilter}}>
+                <option value="all">All Types</option>
+                {{#each this.permitTypes as |type|}}
+                  <option value={{type}}>{{type}}</option>
+                {{/each}}
+              </select>
+            </div>
+
+            <div class="filter-item date-range">
+              <input 
+                type="date" 
+                class="date-input"
+                placeholder="From date"
+                value={{this.dateFrom}}
+                {{on "change" this.updateDateFrom}}
+                title="From date"
+              >
+              <span class="date-separator">–</span>
+              <input 
+                type="date" 
+                class="date-input"
+                placeholder="To date"
+                value={{this.dateTo}}
+                {{on "change" this.updateDateTo}}
+                title="To date"
+              >
+            </div>
+
+            <div class="filter-item sort-controls">
+              <select class="filter-select sort-select" value={{this.sortBy}} {{on "change" this.updateSort}}>
+                {{#each this.sortOptions as |sortOption|}}
+                  <option value={{sortOption.value}}>{{sortOption.label}}</option>
+                {{/each}}
+              </select>
+              <button 
+                type="button" 
+                class="sort-direction-btn"
+                {{on "click" this.toggleSortOrder}}
+                title={{if (eq this.sortOrder "desc") "Newest first" "Oldest first"}}
+              >
+                {{#if (eq this.sortOrder "desc")}}↓{{else}}↑{{/if}}
+              </button>
+            </div>
+
+            {{#if (or this.searchTerm (not (eq this.selectedStatus "all")) (not (eq this.selectedType "all")) this.dateFrom this.dateTo)}}
+              <div class="filter-item">
+                <button 
+                  type="button" 
+                  class="clear-filters-btn"
+                  {{on "click" this.clearFilters}}
+                  title="Clear all filters"
+                >
+                  ✕
+                </button>
+              </div>
+            {{/if}}
           </div>
         </div>
       </div>
     </div>
 
-    {{!-- Permits Sections --}}
-    <div class="permits-sections">
 
-      {{!-- Pending Permits --}}
-      {{#if @model.permits.pending.length}}
-        <div class="permits-section mb-5">
-          <h2 class="section-title">Pending Review ({{@model.permits.pending.length}})</h2>
-          <div class="permits-grid">
-            {{#each @model.permits.pending as |permit|}}
-              <div class="permit-card pending" {{on "click" (fn this.viewPermit permit.id)}}>
-                <div class="permit-header">
-                  <span class="permit-type">{{permit.type}}</span>
-                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
+    {{!-- Filtered Permits List --}}
+    {{#if this.filteredPermits.length}}
+      <div class="permits-list">
+        <div class="permits-grid">
+          {{#each this.filteredPermits as |permit|}}
+            <div class="permit-card {{permit.status}}" {{on "click" (fn this.viewPermit permit.id)}}>
+              <div class="permit-header">
+                <div class="permit-number">
+                  {{#if permit.permitNumber}}
+                    {{permit.permitNumber}}
+                  {{else}}
+                    {{permit.applicationId}}
+                  {{/if}}
                 </div>
+                <span class="status-badge {{get-status-badge-class permit.status}}">
+                  {{permit.status}}
+                </span>
+              </div>
+              
+              <div class="permit-body">
+                <h4 class="permit-type">{{permit.type}}</h4>
+                <p class="permit-description">{{permit.description}}</p>
+                
                 <div class="permit-details">
-                  <div class="permit-id">{{permit.applicationId}}</div>
-                  <div class="permit-description">{{permit.description}}</div>
-                  <div class="permit-dates">
-                    <div class="date-item">
-                      <span class="date-label">Submitted:</span>
-                      <span class="date-value">{{format-date permit.submittedDate}}</span>
+                  <div class="detail-row">
+                    <span class="detail-label">Submitted:</span>
+                    <span class="detail-value">{{format-date permit.submittedDate}}</span>
+                  </div>
+                  
+                  {{#if permit.approvedDate}}
+                    <div class="detail-row">
+                      <span class="detail-label">Approved:</span>
+                      <span class="detail-value">{{format-date permit.approvedDate}}</span>
                     </div>
+                  {{/if}}
+                  
+                  {{#if permit.expiryDate}}
+                    <div class="detail-row">
+                      <span class="detail-label">Expires:</span>
+                      <span class="detail-value">{{format-date permit.expiryDate}}</span>
+                    </div>
+                  {{/if}}
+                  
+                  {{#if permit.completedDate}}
+                    <div class="detail-row">
+                      <span class="detail-label">Completed:</span>
+                      <span class="detail-value">{{format-date permit.completedDate}}</span>
+                    </div>
+                  {{/if}}
+                  
+                  <div class="detail-row">
+                    <span class="detail-label">Project Value:</span>
+                    <span class="detail-value">{{format-currency permit.projectValue}}</span>
                   </div>
-                  <div class="permit-value">
-                    <span class="value-label">Project Value:</span>
-                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
-                  </div>
+                  
+                  {{#if permit.fee}}
+                    <div class="detail-row">
+                      <span class="detail-label">Fee:</span>
+                      <span class="detail-value">{{format-currency permit.fee}}</span>
+                    </div>
+                  {{/if}}
                 </div>
               </div>
-            {{/each}}
-          </div>
-        </div>
-      {{/if}}
-
-      {{!-- Approved Permits --}}
-      {{#if @model.permits.approved.length}}
-        <div class="permits-section mb-5">
-          <h2 class="section-title">Approved ({{@model.permits.approved.length}})</h2>
-          <div class="permits-grid">
-            {{#each @model.permits.approved as |permit|}}
-              <div class="permit-card approved" {{on "click" (fn this.viewPermit permit.id)}}>
-                <div class="permit-header">
-                  <span class="permit-type">{{permit.type}}</span>
-                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
-                </div>
-                <div class="permit-details">
-                  <div class="permit-id">{{permit.applicationId}}</div>
-                  <div class="permit-description">{{permit.description}}</div>
-                  <div class="permit-dates">
-                    <div class="date-item">
-                      <span class="date-label">Approved:</span>
-                      <span class="date-value">{{format-date permit.approvedDate}}</span>
-                    </div>
-                    {{#if permit.expiryDate}}
-                      <div class="date-item">
-                        <span class="date-label">Expires:</span>
-                        <span class="date-value">{{format-date permit.expiryDate}}</span>
-                      </div>
-                    {{/if}}
-                  </div>
-                  <div class="permit-value">
-                    <span class="value-label">Project Value:</span>
-                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
-                  </div>
-                </div>
+              
+              <div class="permit-footer">
+                <span class="view-details">Click to view details →</span>
               </div>
-            {{/each}}
-          </div>
+            </div>
+          {{/each}}
         </div>
-      {{/if}}
-
-      {{!-- Active Permits --}}
-      {{#if @model.permits.active.length}}
-        <div class="permits-section mb-5">
-          <h2 class="section-title">Active ({{@model.permits.active.length}})</h2>
-          <div class="permits-grid">
-            {{#each @model.permits.active as |permit|}}
-              <div class="permit-card active" {{on "click" (fn this.viewPermit permit.id)}}>
-                <div class="permit-header">
-                  <span class="permit-type">{{permit.type}}</span>
-                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
-                </div>
-                <div class="permit-details">
-                  <div class="permit-id">{{permit.applicationId}}</div>
-                  <div class="permit-description">{{permit.description}}</div>
-                  <div class="permit-dates">
-                    <div class="date-item">
-                      <span class="date-label">Started:</span>
-                      <span class="date-value">{{format-date permit.approvedDate}}</span>
-                    </div>
-                  </div>
-                  <div class="permit-value">
-                    <span class="value-label">Project Value:</span>
-                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
-                  </div>
-                </div>
-              </div>
-            {{/each}}
-          </div>
-        </div>
-      {{/if}}
-
-      {{!-- Completed Permits --}}
-      {{#if @model.permits.completed.length}}
-        <div class="permits-section mb-5">
-          <h2 class="section-title">Completed ({{@model.permits.completed.length}})</h2>
-          <div class="permits-grid">
-            {{#each @model.permits.completed as |permit|}}
-              <div class="permit-card completed" {{on "click" (fn this.viewPermit permit.id)}}>
-                <div class="permit-header">
-                  <span class="permit-type">{{permit.type}}</span>
-                  <span class="permit-status">{{get-status-badge-class permit.status}}</span>
-                </div>
-                <div class="permit-details">
-                  <div class="permit-id">{{permit.applicationId}}</div>
-                  <div class="permit-description">{{permit.description}}</div>
-                  <div class="permit-dates">
-                    <div class="date-item">
-                      <span class="date-label">Completed:</span>
-                      <span class="date-value">{{format-date permit.completedDate}}</span>
-                    </div>
-                  </div>
-                  <div class="permit-value">
-                    <span class="value-label">Project Value:</span>
-                    <span class="value-amount">{{format-currency permit.projectValue}}</span>
-                  </div>
-                </div>
-              </div>
-            {{/each}}
-          </div>
-        </div>
-      {{/if}}
-
+      </div>
+    {{else if @model.permits.all.length}}
+      {{!-- No Results State --}}
+      <div class="no-results-state text-center p-5">
+        <div class="no-results-icon mb-3">🔍</div>
+        <h3 class="text-muted mb-3">No Permits Match Your Filters</h3>
+        <p class="text-muted mb-4">Try adjusting your search terms or filters to find the permits you're looking for.</p>
+        <button type="button" class="btn btn-outline-primary" {{on "click" this.clearFilters}}>
+          Clear All Filters
+        </button>
+      </div>
+    {{else}}
       {{!-- Empty State --}}
-      {{#unless @model.permits.all.length}}
-        <div class="empty-state text-center p-5">
-          <div class="empty-icon mb-3">📋</div>
-          <h3 class="text-muted mb-3">No Permits Found</h3>
-          <p class="text-muted mb-4">You haven't applied for any permits for this property yet.</p>
-          <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
-            Apply for Your First Permit
-          </button>
-        </div>
-      {{/unless}}
-
-    </div>
+      <div class="empty-state text-center p-5">
+        <div class="empty-icon mb-3">📋</div>
+        <h3 class="text-muted mb-3">No Permits Found</h3>
+        <p class="text-muted mb-4">You haven't applied for any permits for this property yet.</p>
+        <button type="button" class="btn btn-primary" {{on "click" this.applyForPermit}}>
+          Apply for Your First Permit
+        </button>
+      </div>
+    {{/if}}
   </div>
 </div>

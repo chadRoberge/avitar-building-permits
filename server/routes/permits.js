@@ -9,6 +9,8 @@ const Permit = require('../models/Permit');
 const PermitType = require('../models/PermitType');
 const PermitFile = require('../models/PermitFile');
 
+console.log('PERMITS ROUTE MODULE LOADED!');
+
 // Helper function to calculate completion date based on duration
 function calculateCompletionDate(startDate, duration) {
   const start = new Date(startDate);
@@ -59,7 +61,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      console.log('JWT verification failed:', err.message);
+      console.log('JWT verification failed:', err.message, 'Token length:', token.length);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
     console.log(
@@ -173,37 +175,111 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
   }
 });
 
-// Get all permits (for municipal users)
-router.get('/', authenticateToken, async (req, res) => {
+// Simple test endpoint
+router.get('/test', (req, res) => {
+  res.json({ message: 'Permits route is working!' });
+});
+
+// Get permits for a specific municipality (for municipal users)
+router.get('/municipality/:municipalityId', authenticateToken, async (req, res) => {
+  console.log('=== MUNICIPALITY PERMITS ROUTE CALLED ===');
   try {
-    // Only municipal users can view all permits
+    const { municipalityId } = req.params;
+    const { status, search } = req.query;
+    console.log('Municipality ID:', municipalityId);
+
+    // Only municipal users can view municipality permits
     if (req.user.userType !== 'municipal') {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Mock data for all permits
-    const mockPermits = [
-      {
-        id: '1',
-        type: 'Building Permit',
-        applicant: 'John Doe',
-        status: 'pending',
-        submittedDate: new Date('2024-01-15'),
-        fee: 150.0,
-      },
-      {
-        id: '2',
-        type: 'Electrical Permit',
-        applicant: 'Jane Smith',
-        status: 'approved',
-        submittedDate: new Date('2024-01-10'),
-        fee: 75.0,
-      },
-    ];
+    // For now, allow any authenticated municipal user to access any municipality's permits
+    // TODO: Add proper municipality access control if needed
 
-    res.json(mockPermits);
+    // Build query for permits in this municipality
+    let query = { municipality: municipalityId };
+
+    // Filter by status if provided
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Search functionality
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      query.$or = [
+        { permitNumber: searchRegex },
+        { 'applicant.firstName': searchRegex },
+        { 'applicant.lastName': searchRegex },
+        { 'applicant.email': searchRegex },
+        { projectDescription: searchRegex }
+      ];
+    }
+
+    console.log('Municipal permits query:', query);
+    console.log('User making request:', {
+      userId: req.user.userId,
+      userType: req.user.userType,
+      requestedMunicipalityId: municipalityId
+    });
+
+    // Get permits from database
+    const permits = await Permit.find(query)
+      .populate('permitType')
+      .populate('municipality')
+      .sort({ submittedDate: -1, applicationDate: -1 });
+
+    console.log(`Found ${permits.length} permits for municipality ${municipalityId}`);
+    
+    // Debug: Let's also check what permits exist in the database
+    const allPermitsCount = await Permit.countDocuments({});
+    console.log(`Total permits in database: ${allPermitsCount}`);
+    
+    // Show a sample permit if any exist
+    if (permits.length > 0) {
+      console.log('Sample permit:', {
+        id: permits[0]._id,
+        permitNumber: permits[0].permitNumber,
+        municipality: permits[0].municipality,
+        status: permits[0].status
+      });
+    }
+
+    // Transform permits to match frontend expectations
+    const transformedPermits = permits.map((permit) => ({
+      id: permit._id,
+      permitNumber: permit.permitNumber,
+      applicationId: permit.permitNumber,
+      type: permit.permitType?.name || 'Unknown',
+      category: permit.permitType?.category || 'general',
+      status: permit.status,
+      submittedDate: permit.submittedDate || permit.applicationDate,
+      approvedDate: permit.approvedDate,
+      completedDate: permit.completionDate,
+      expiryDate: permit.expirationDate,
+      fee: permit.totalFees || 0,
+      projectValue: permit.estimatedValue || 0,
+      description: permit.projectDescription,
+      projectDescription: permit.projectDescription,
+      workDescription: permit.workDescription,
+      municipality: permit.municipality?.name,
+      applicant: {
+        name: `${permit.applicant?.firstName || ''} ${permit.applicant?.lastName || ''}`.trim(),
+        email: permit.applicant?.email,
+        phone: permit.applicant?.phone
+      },
+      contractor: permit.contractor ? {
+        name: `${permit.contractor?.firstName || ''} ${permit.contractor?.lastName || ''}`.trim() || permit.contractor?.businessName,
+        email: permit.contractor?.email,
+        phone: permit.contractor?.phone,
+        licenseNumber: permit.contractor?.licenseNumber
+      } : null,
+      property: permit.projectAddress
+    }));
+
+    res.json(transformedPermits);
   } catch (error) {
-    console.error('Error fetching all permits:', error);
+    console.error('Error fetching municipality permits:', error);
     res.status(500).json({ error: 'Failed to fetch permits' });
   }
 });
@@ -417,55 +493,108 @@ router.get('/:permitId', authenticateToken, async (req, res) => {
       fees: permit.fees || [],
       customFields: permit.customFields || {},
 
-      // Review process status
+      // Review process status - use permit type workflow if available
       reviewProcess: {
         currentStep: permit.status,
-        steps: [
-          {
-            name: 'Application Submitted',
-            status: 'completed',
-            date: permit.submittedDate,
-            department: 'System',
-          },
-          {
-            name: 'Initial Review',
-            status: ['submitted', 'under_review'].includes(permit.status)
-              ? 'in_progress'
-              : ['pending_corrections', 'rejected'].includes(permit.status)
-                ? 'failed'
-                : 'completed',
-            date: permit.status === 'under_review' ? new Date() : null,
-            department: 'Building Department',
-          },
-          {
-            name: 'Fire Department Review',
-            status:
-              permit.status === 'approved'
-                ? 'completed'
-                : permit.status === 'under_review'
-                  ? 'pending'
-                  : 'not_started',
-            date: null,
-            department: 'Fire Department',
-          },
-          {
-            name: 'Public Works Review',
-            status:
-              permit.status === 'approved'
-                ? 'completed'
-                : permit.status === 'under_review'
-                  ? 'pending'
-                  : 'not_started',
-            date: null,
-            department: 'Public Works',
-          },
-          {
-            name: 'Final Approval',
-            status: permit.status === 'approved' ? 'completed' : 'not_started',
-            date: permit.approvedDate,
-            department: 'Building Department',
-          },
-        ],
+        steps: permit.permitType?.workflow?.length > 0 
+          ? permit.permitType.workflow.map((workflowStep, index) => {
+              // Determine status based on permit status and workflow order
+              let stepStatus = 'not_started';
+              let stepDate = null;
+              
+              // Map common workflow step names to permit statuses
+              const stepName = workflowStep.name.toLowerCase();
+              if (stepName.includes('submit') || stepName.includes('application')) {
+                stepStatus = 'completed';
+                stepDate = permit.submittedDate;
+              } else if (stepName.includes('review') || stepName.includes('initial')) {
+                if (['submitted', 'under-review', 'under_review'].includes(permit.status)) {
+                  stepStatus = 'in_progress';
+                  stepDate = permit.submittedDate; // When review started
+                } else if (['approved', 'inspections', 'completed'].includes(permit.status)) {
+                  stepStatus = 'completed';
+                  stepDate = permit.submittedDate;
+                } else if (['rejected', 'denied'].includes(permit.status)) {
+                  stepStatus = 'failed';
+                  stepDate = permit.submittedDate;
+                }
+              } else if (stepName.includes('approve') || stepName.includes('approval')) {
+                if (permit.status === 'approved') {
+                  stepStatus = 'completed';
+                  stepDate = permit.approvedDate;
+                } else if (['under-review', 'under_review'].includes(permit.status)) {
+                  stepStatus = 'pending';
+                }
+              } else if (stepName.includes('inspection')) {
+                if (permit.status === 'inspections') {
+                  stepStatus = 'in_progress';
+                } else if (permit.status === 'completed') {
+                  stepStatus = 'completed';
+                  stepDate = permit.completionDate;
+                } else if (['approved'].includes(permit.status)) {
+                  stepStatus = 'pending';
+                }
+              }
+              
+              return {
+                name: workflowStep.name,
+                description: workflowStep.description,
+                status: stepStatus,
+                date: stepDate,
+                department: workflowStep.department || 'Municipal Staff',
+                order: workflowStep.order,
+                allowedRoles: workflowStep.allowedRoles,
+                requiredDocuments: workflowStep.requiredDocuments,
+              };
+            })
+          : [
+              // Fallback to simplified workflow if no permit type workflow
+              {
+                name: 'Application Submitted',
+                status: 'completed',
+                date: permit.submittedDate,
+                department: 'System',
+                order: 1,
+              },
+              {
+                name: 'Under Review',
+                status: ['submitted', 'under-review', 'under_review'].includes(permit.status)
+                  ? 'in_progress'
+                  : ['approved', 'inspections', 'completed'].includes(permit.status)
+                    ? 'completed'
+                    : 'pending',
+                date: permit.submittedDate,
+                department: 'Building Department',
+                order: 2,
+              },
+              {
+                name: 'Approved',
+                status: permit.status === 'approved' || permit.status === 'inspections' || permit.status === 'completed'
+                  ? 'completed'
+                  : 'pending',
+                date: permit.approvedDate,
+                department: 'Building Department',
+                order: 3,
+              },
+              {
+                name: 'Inspections',
+                status: permit.status === 'inspections'
+                  ? 'in_progress'
+                  : permit.status === 'completed'
+                    ? 'completed'
+                    : 'pending',
+                date: permit.status === 'inspections' ? new Date() : null,
+                department: 'Inspections',
+                order: 4,
+              },
+              {
+                name: 'Completed',
+                status: permit.status === 'completed' ? 'completed' : 'pending',
+                date: permit.completionDate,
+                department: 'System',
+                order: 5,
+              },
+            ],
       },
     };
 
@@ -1059,6 +1188,401 @@ router.get('/:permitId/files/stats', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching file stats:', error);
     res.status(500).json({ error: 'Failed to fetch file statistics' });
+  }
+});
+
+// ===== PERMIT STATUS UPDATE FUNCTIONALITY =====
+
+// Update permit status (for municipal users)
+router.put('/:permitId/status', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+    const { status, comment } = req.body;
+
+    console.log('Updating permit status:', { permitId, status, comment, userId: req.user.userId });
+
+    // Only municipal users can update permit status
+    if (req.user.userType !== 'municipal') {
+      return res.status(403).json({ error: 'Access denied - municipal access required' });
+    }
+
+    // Validate status
+    const validStatuses = [
+      'submitted', 'under-review', 'approved', 'denied', 
+      'pending-corrections', 'inspections', 'completed', 'expired'
+    ];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+
+    // Find the permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Validate status transitions with business rules
+    if (status === 'approved') {
+      const approvalCheck = permit.canBeApproved();
+      if (!approvalCheck.canApprove) {
+        return res.status(400).json({ 
+          error: `Cannot approve permit: ${approvalCheck.reason}` 
+        });
+      }
+    }
+
+    if (status === 'completed') {
+      const completionCheck = await permit.canBeCompleted();
+      if (!completionCheck.canComplete) {
+        return res.status(400).json({ 
+          error: `Cannot complete permit: ${completionCheck.reason}` 
+        });
+      }
+    }
+
+    // Update permit status and set appropriate dates
+    const oldStatus = permit.status;
+    permit.status = status;
+    permit.updatedAt = new Date();
+
+    // Set status-specific dates
+    switch (status) {
+      case 'approved':
+        if (!permit.approvedDate) {
+          permit.approvedDate = new Date();
+        }
+        // Set expiration date (typically 6 months from approval)
+        permit.expirationDate = new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000);
+        break;
+      case 'completed':
+        if (!permit.completionDate) {
+          permit.completionDate = new Date();
+        }
+        break;
+      case 'denied':
+        permit.deniedDate = new Date();
+        break;
+      case 'under-review':
+        // Clear dates when returning to review status
+        permit.approvedDate = undefined;
+        permit.completionDate = undefined;
+        permit.deniedDate = undefined;
+        permit.expirationDate = undefined;
+        break;
+      case 'submitted':
+        // Clear dates when returning to submitted status
+        permit.approvedDate = undefined;
+        permit.completionDate = undefined;
+        permit.deniedDate = undefined;
+        permit.expirationDate = undefined;
+        break;
+    }
+
+    // Save permit
+    await permit.save();
+
+    console.log(`Permit ${permitId} status updated from ${oldStatus} to ${status}`);
+
+    res.json({
+      success: true,
+      message: 'Permit status updated successfully',
+      permit: {
+        id: permit._id,
+        status: permit.status,
+        updatedAt: permit.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating permit status:', error);
+    res.status(500).json({ error: 'Failed to update permit status' });
+  }
+});
+
+// ===== DEPARTMENT REVIEW FUNCTIONALITY =====
+
+// Submit department review for a permit
+router.post('/:permitId/department-review', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+    const { status, notes, conditions } = req.body;
+
+    // Only municipal users can submit department reviews
+    if (req.user.userType !== 'municipal') {
+      return res.status(403).json({ error: 'Access denied - municipal access required' });
+    }
+
+    // Fetch full user data to get department information
+    const fullUser = await User.findById(req.user.userId);
+    if (!fullUser || !fullUser.department) {
+      return res.status(403).json({ error: 'Access denied - municipal department access required' });
+    }
+
+    // Validate review status
+    const validStatuses = ['approved', 'rejected', 'changes-requested'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid review status' });
+    }
+
+    // Find the permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Check if user can review this permit
+    if (!permit.canUserReview(fullUser)) {
+      return res.status(403).json({ 
+        error: `Department ${fullUser.department} cannot review this permit or has already reviewed it` 
+      });
+    }
+
+    // Submit the department review
+    await permit.submitDepartmentReview(
+      fullUser.department, 
+      fullUser._id, 
+      fullUser, 
+      { status, notes, conditions }
+    );
+
+    res.json({
+      success: true,
+      message: `Department review submitted successfully`,
+      permit: {
+        id: permit._id,
+        status: permit.status,
+        departmentReviews: permit.departmentReviews
+      }
+    });
+
+  } catch (error) {
+    console.error('Error submitting department review:', error);
+    res.status(500).json({ error: 'Failed to submit department review' });
+  }
+});
+
+// Get department review status for a permit
+router.get('/:permitId/department-reviews', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+
+    console.log('Fetching department reviews for permit:', permitId);
+
+    // Find the permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      console.log('Permit not found:', permitId);
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    console.log('Found permit:', {
+      id: permit._id,
+      status: permit.status,
+      departmentReviewsCount: permit.departmentReviews ? permit.departmentReviews.length : 0,
+      requiredDepartmentsCount: permit.requiredDepartments ? permit.requiredDepartments.length : 0
+    });
+
+    // Only municipal users or permit owners can view review status
+    if (req.user.userType !== 'municipal' && permit.applicant?.id !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Initialize department reviews if not present but permit is submitted
+    if (permit.status !== 'draft' && (!permit.departmentReviews || permit.departmentReviews.length === 0)) {
+      console.log('Initializing department reviews for submitted permit');
+      await permit.initializeDepartmentReviews();
+      await permit.save();
+    }
+
+    const reviewStatus = {
+      departmentReviews: permit.departmentReviews || [],
+      requiredDepartments: permit.requiredDepartments || [],
+      pendingDepartments: permit.getPendingDepartments(),
+      approvedDepartments: permit.getApprovedDepartments(),
+      canCurrentUserReview: permit.canUserReview(req.user)
+    };
+
+    console.log('Returning review status:', reviewStatus);
+    res.json(reviewStatus);
+
+  } catch (error) {
+    console.error('Error fetching department reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch department reviews', details: error.message });
+  }
+});
+
+// Get permits pending review for current user's department
+router.get('/pending-review', authenticateToken, async (req, res) => {
+  try {
+    // Only municipal users can access this endpoint
+    if (req.user.userType !== 'municipal') {
+      return res.status(403).json({ error: 'Access denied - municipal access required' });
+    }
+
+    // Fetch full user data to get department information
+    const fullUser = await User.findById(req.user.userId);
+    if (!fullUser || !fullUser.department) {
+      return res.status(403).json({ error: 'Access denied - municipal department access required' });
+    }
+
+    // Find permits that need review by this user's department
+    const permits = await Permit.find({
+      municipality: fullUser.municipality._id,
+      status: 'under-review',
+      'departmentReviews.department': fullUser.department,
+      'departmentReviews.status': 'pending'
+    })
+    .populate('permitType', 'name category')
+    .sort({ submittedDate: 1 });
+
+    // Filter to only permits this user can actually review
+    const reviewablePermits = permits.filter(permit => permit.canUserReview(fullUser));
+
+    res.json({
+      permits: reviewablePermits,
+      count: reviewablePermits.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching pending reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch pending reviews' });
+  }
+});
+
+// Reset department reviews for a permit
+router.post('/:permitId/reset-department-reviews', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+    const { departments, notes } = req.body;
+
+    // Only municipal users can reset department reviews
+    if (req.user.userType !== 'municipal') {
+      return res.status(403).json({ error: 'Access denied - municipal access required' });
+    }
+
+    if (!departments || !Array.isArray(departments) || departments.length === 0) {
+      return res.status(400).json({ error: 'Departments array is required' });
+    }
+
+    // Find the permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Reset specified department reviews
+    departments.forEach(department => {
+      const review = permit.departmentReviews.find(r => r.department === department);
+      if (review) {
+        review.status = 'pending';
+        review.reviewer = undefined;
+        review.reviewedAt = undefined;
+        review.notes = undefined;
+        review.conditions = [];
+      }
+    });
+
+    // Add internal note about the reset
+    permit.notes.push({
+      author: { 
+        id: req.user.userId,
+        name: req.user.firstName + ' ' + req.user.lastName,
+        role: 'municipal'
+      },
+      content: `Department reviews reset for: ${departments.join(', ')}${notes ? '. ' + notes : ''}`,
+      isPublic: false,
+      createdAt: new Date()
+    });
+
+    // If permit was previously approved/denied, move back to under-review
+    if (['approved', 'denied', 'additional-info'].includes(permit.status)) {
+      permit.status = 'under-review';
+      permit.approvedDate = undefined;
+      permit.deniedDate = undefined;
+    }
+
+    await permit.save();
+
+    res.json({
+      success: true,
+      message: `Reset reviews for ${departments.length} department(s)`,
+      resetDepartments: departments,
+      newStatus: permit.status
+    });
+
+  } catch (error) {
+    console.error('Error resetting department reviews:', error);
+    res.status(500).json({ error: 'Failed to reset department reviews' });
+  }
+});
+
+// Check permit validation status
+router.get('/:permitId/validation', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+
+    // Find the permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Only municipal users or permit owners can view validation status
+    if (req.user.userType !== 'municipal' && permit.applicant?.id !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const approvalCheck = permit.canBeApproved();
+    const completionCheck = await permit.canBeCompleted();
+    const inspectionStatus = await permit.getInspectionStatus();
+    const requiredInspections = await permit.getRequiredInspections();
+
+    res.json({
+      canBeApproved: approvalCheck.canApprove,
+      approvalReason: approvalCheck.reason,
+      canBeCompleted: completionCheck.canComplete,
+      completionReason: completionCheck.reason,
+      inspectionStatus: inspectionStatus,
+      requiredInspections: requiredInspections,
+      currentStatus: permit.status
+    });
+
+  } catch (error) {
+    console.error('Error checking permit validation:', error);
+    res.status(500).json({ error: 'Failed to check permit validation' });
+  }
+});
+
+// Get inspection requirements for a permit
+router.get('/:permitId/inspection-requirements', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+
+    // Find the permit
+    const permit = await Permit.findById(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Only municipal users or permit owners can view requirements
+    if (req.user.userType !== 'municipal' && permit.applicant?.id !== req.user.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const requiredInspections = await permit.getRequiredInspections();
+    const inspectionStatus = await permit.getInspectionStatus();
+
+    res.json({
+      requiredInspections: requiredInspections,
+      inspectionStatus: inspectionStatus,
+      completedInspections: permit.inspections,
+      canComplete: (await permit.canBeCompleted()).canComplete
+    });
+
+  } catch (error) {
+    console.error('Error fetching inspection requirements:', error);
+    res.status(500).json({ error: 'Failed to fetch inspection requirements' });
   }
 });
 

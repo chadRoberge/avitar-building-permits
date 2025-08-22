@@ -1,0 +1,17 @@
+{{page-title "System Administration"}}
+
+{{#unless (eq this.router.currentRouteName "system-admin.login")}}
+  <div class="system-admin-layout">
+    <SystemAdminNavigation />
+    
+    <main class="system-admin-main">
+      <div class="main-content">
+        {{outlet}}
+      </div>
+    </main>
+  </div>
+{{else}}
+  <div class="login-layout">
+    {{outlet}}
+  </div>
+{{/unless}}

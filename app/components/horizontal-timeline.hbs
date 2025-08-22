@@ -1,0 +1,34 @@
+{{!-- Horizontal Timeline Component --}}
+<div class="horizontal-timeline {{@class}}">
+  <div class="timeline-container">
+    {{#each this.orderedSteps as |step index|}}
+      <div class="{{this.getTimelineItemClass step}}">
+        <div class="step-marker">{{this.getStepMarker step index}}</div>
+        <div class="step-content">
+          <h6>{{step.name}}</h6>
+          <small>
+            {{#if step.date}}
+              {{this.formatDateTime step.date}}
+            {{else if (eq step.status "pending")}}
+              Pending
+            {{else if (eq step.status "in_progress")}}
+              In Progress
+            {{else if (eq step.status "failed")}}
+              Failed
+            {{else}}
+              Not Started
+            {{/if}}
+          </small>
+          {{#if step.department}}
+            <div class="step-department">{{step.department}}</div>
+          {{/if}}
+        </div>
+      </div>
+      
+      {{!-- Connector line between steps --}}
+      {{#if (lt index (sub this.orderedSteps.length 1))}}
+        <div class="{{this.getConnectorClass step (get this.orderedSteps (add index 1))}}"></div>
+      {{/if}}
+    {{/each}}
+  </div>
+</div>

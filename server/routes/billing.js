@@ -50,7 +50,7 @@ router.get('/', authenticateToken, async (req, res) => {
       if (municipality) {
         const limitsCheck = municipality.isWithinLimits();
 
-        billingInfo.subscription = {
+        let subscriptionData = {
           plan: municipality.subscription.plan,
           status: municipality.subscription.status,
           currentPeriodStart: municipality.subscription.currentPeriodStart,
@@ -63,6 +63,55 @@ router.get('/', authenticateToken, async (req, res) => {
             municipality.subscription.plan.charAt(0).toUpperCase() +
             municipality.subscription.plan.slice(1),
         };
+
+        // If there's a Stripe subscription, get real-time data
+        if (municipality.subscription.stripeSubscriptionId) {
+          try {
+            const { stripe } = require('../config/stripe');
+            const stripeSubscription = await stripe.subscriptions.retrieve(
+              municipality.subscription.stripeSubscriptionId,
+              {
+                expand: ['latest_invoice', 'items.data.price.product']
+              }
+            );
+
+            // Update with real-time Stripe data
+            subscriptionData = {
+              ...subscriptionData,
+              status: stripeSubscription.status,
+              currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+              cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+              
+              // Add additional Stripe-specific data
+              stripeSubscriptionId: stripeSubscription.id,
+              nextPaymentDate: stripeSubscription.current_period_end,
+              lastPaymentDate: stripeSubscription.latest_invoice?.created 
+                ? new Date(stripeSubscription.latest_invoice.created * 1000) 
+                : null,
+              
+              // Price information from Stripe
+              pricePerPeriod: stripeSubscription.items.data[0]?.price.unit_amount,
+              currency: stripeSubscription.items.data[0]?.price.currency || 'usd',
+              interval: stripeSubscription.items.data[0]?.price.recurring?.interval || 'year',
+            };
+
+            // Update municipality with latest Stripe data if it differs
+            if (municipality.subscription.status !== stripeSubscription.status ||
+                municipality.subscription.cancelAtPeriodEnd !== stripeSubscription.cancel_at_period_end) {
+              municipality.subscription.status = stripeSubscription.status;
+              municipality.subscription.currentPeriodStart = subscriptionData.currentPeriodStart;
+              municipality.subscription.currentPeriodEnd = subscriptionData.currentPeriodEnd;
+              municipality.subscription.cancelAtPeriodEnd = stripeSubscription.cancel_at_period_end;
+              await municipality.save();
+            }
+
+          } catch (stripeError) {
+            console.warn('Could not fetch real-time Stripe data:', stripeError.message);
+          }
+        }
+
+        billingInfo.subscription = subscriptionData;
 
         billingInfo.usage = {
           permits: {
@@ -119,59 +168,45 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Get available subscription plans (for municipal users)
+// Get available subscription plans from Stripe (for municipal users)
 router.get('/plans', authenticateToken, async (req, res) => {
   try {
-    const plans = {
-      basic: {
-        name: 'Basic',
-        price: 2400, // Annual price in cents ($24.00)
-        permits: 500,
-        users: 5,
-        features: [
-          'Basic permit workflows',
-          'Email notifications',
-          'Basic reporting',
-          'Email support',
-        ],
-        popular: false,
-      },
-      professional: {
-        name: 'Professional',
-        price: 4800, // Annual price in cents ($48.00)
-        permits: 2000,
-        users: 15,
-        features: [
-          'Advanced permit workflows',
-          'Custom forms',
-          'Advanced reporting & analytics',
-          'API access',
-          'Custom branding',
-          'Phone support',
-        ],
-        popular: true,
-      },
-      enterprise: {
-        name: 'Enterprise',
-        price: null, // Custom pricing
-        permits: 'Unlimited',
-        users: 'Unlimited',
-        features: [
-          'Custom workflows',
-          'Full API access',
-          'Advanced integrations',
-          'Dedicated account manager',
-          'Custom training',
-          '24/7 priority support',
-        ],
-        popular: false,
-      },
-    };
+    const userType = req.user.userType;
 
+    if (userType !== 'municipal') {
+      return res.json({});
+    }
+
+    const StripePlansService = require('../services/stripe-plans');
+    const forceRefresh = req.query.refresh === 'true';
+    
+    const plans = await StripePlansService.getAvailablePlans(forceRefresh);
     res.json(plans);
+    
   } catch (error) {
     console.error('Error fetching subscription plans:', error);
     res.status(500).json({ error: 'Failed to fetch subscription plans' });
+  }
+});
+
+// Debug endpoint to check what plans are actually being loaded
+router.get('/debug-plans', authenticateToken, async (req, res) => {
+  try {
+    const StripePlansService = require('../services/stripe-plans');
+    
+    // Force refresh to get fresh data
+    const plans = await StripePlansService.getAvailablePlans(true);
+    
+    res.json({
+      timestamp: new Date().toISOString(),
+      plans_count: Object.keys(plans).length,
+      plan_keys: Object.keys(plans),
+      plans: plans,
+      source: Object.keys(plans).length > 0 ? 'stripe_or_service' : 'fallback_default'
+    });
+  } catch (error) {
+    console.error('Error in debug-plans:', error);
+    res.status(500).json({ error: 'Debug failed', details: error.message });
   }
 });
 
@@ -224,38 +259,66 @@ router.put('/subscription/plan', authenticateToken, async (req, res) => {
   }
 });
 
-// Get billing history (mock data for now)
+// Get billing history from Stripe
 router.get('/history', authenticateToken, async (req, res) => {
   try {
     const userType = req.user.userType;
+    const userId = req.user.userId;
 
     if (userType !== 'municipal') {
       return res.json([]);
     }
 
-    // Mock billing history - in production this would come from payment processor
-    const mockHistory = [
-      {
-        id: 'inv_001',
-        date: new Date('2024-01-01'),
-        amount: 2400,
-        status: 'paid',
-        plan: 'Basic',
-        period: '2024-01-01 to 2024-12-31',
-        downloadUrl: '/api/billing/invoice/inv_001.pdf',
-      },
-      {
-        id: 'inv_002',
-        date: new Date('2023-01-01'),
-        amount: 2400,
-        status: 'paid',
-        plan: 'Basic',
-        period: '2023-01-01 to 2023-12-31',
-        downloadUrl: '/api/billing/invoice/inv_002.pdf',
-      },
-    ];
+    const user = await User.findById(userId);
+    if (!user || !user.municipality) {
+      return res.status(404).json({ error: 'User or municipality not found' });
+    }
 
-    res.json(mockHistory);
+    const municipality = await Municipality.findById(user.municipality);
+    if (!municipality || !municipality.subscription.stripeCustomerId) {
+      return res.json([]);
+    }
+
+    try {
+      // Import Stripe here to avoid dependency issues if not configured
+      const { stripe } = require('../config/stripe');
+      
+      // Fetch invoices from Stripe
+      const invoices = await stripe.invoices.list({
+        customer: municipality.subscription.stripeCustomerId,
+        limit: 50,
+        status: 'paid',
+      });
+
+      const billingHistory = invoices.data.map(invoice => {
+        const lineItem = invoice.lines.data[0];
+        const planName = lineItem ? lineItem.description || 'Subscription' : 'Subscription';
+        
+        // Format period dates
+        let period = 'N/A';
+        if (lineItem && lineItem.period) {
+          const startDate = new Date(lineItem.period.start * 1000).toLocaleDateString();
+          const endDate = new Date(lineItem.period.end * 1000).toLocaleDateString();
+          period = `${startDate} to ${endDate}`;
+        }
+
+        return {
+          id: invoice.id,
+          date: new Date(invoice.created * 1000),
+          amount: invoice.amount_paid,
+          status: invoice.status === 'paid' ? 'paid' : invoice.status,
+          plan: planName,
+          period: period,
+          downloadUrl: invoice.hosted_invoice_url || invoice.invoice_pdf,
+        };
+      });
+
+      res.json(billingHistory);
+    } catch (stripeError) {
+      console.error('Error fetching invoices from Stripe:', stripeError);
+      // Fallback to empty array if Stripe is not configured or fails
+      res.json([]);
+    }
   } catch (error) {
     console.error('Error fetching billing history:', error);
     res.status(500).json({ error: 'Failed to fetch billing history' });

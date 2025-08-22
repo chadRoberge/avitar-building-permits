@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const buildingDepartmentSchema = new mongoose.Schema({
   name: {
@@ -228,13 +229,26 @@ const municipalitySchema = new mongoose.Schema(
         default: true,
       },
     },
+
+    // API Access
+    apiKey: {
+      type: String,
+      unique: true,
+      select: false, // Don't include in queries by default for security
+    },
+    apiKeyCreatedAt: {
+      type: Date,
+    },
+    apiKeyLastUsed: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
   },
 );
 
-// Generate portal URL from municipality name
+// Generate portal URL and API key from municipality name
 municipalitySchema.pre('save', function (next) {
   if (!this.portalUrl && this.name) {
     // Create URL-friendly slug from municipality name
@@ -245,6 +259,11 @@ municipalitySchema.pre('save', function (next) {
       .replace(/^-+|-+$/g, '');
 
     this.portalUrl = slug;
+  }
+
+  // Generate API key if new document and no API key exists
+  if (this.isNew && !this.apiKey) {
+    this.generateApiKey();
   }
 
   this.lastUpdated = new Date();
@@ -347,9 +366,31 @@ municipalitySchema.methods.getDaysUntilRenewal = function () {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
+// API Key management methods
+municipalitySchema.methods.generateApiKey = function () {
+  // Generate a secure 32-byte random string and encode as base64
+  const buffer = crypto.randomBytes(32);
+  this.apiKey = `avitar_${buffer.toString('base64').replace(/[/+=]/g, '').substring(0, 32)}`;
+  this.apiKeyCreatedAt = new Date();
+  return this.apiKey;
+};
+
+municipalitySchema.methods.regenerateApiKey = function () {
+  return this.generateApiKey();
+};
+
+municipalitySchema.methods.updateApiKeyLastUsed = function () {
+  this.apiKeyLastUsed = new Date();
+  return this.save();
+};
+
 // Static methods
 municipalitySchema.statics.findByPortalUrl = function (portalUrl) {
   return this.findOne({ portalUrl, isActive: true });
+};
+
+municipalitySchema.statics.findByApiKey = function (apiKey) {
+  return this.findOne({ apiKey, isActive: true }).select('+apiKey');
 };
 
 municipalitySchema.statics.searchMunicipalities = function (

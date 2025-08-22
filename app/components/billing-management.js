@@ -91,7 +91,12 @@ export default class BillingManagementComponent extends Component {
   }
 
   @action
-  async updateSubscriptionPlan(planName) {
+  stopPropagation(event) {
+    event.stopPropagation();
+  }
+
+  @action
+  async updateSubscriptionPlan(planKey) {
     if (this.isUpdatingPlan) return;
 
     this.isUpdatingPlan = true;
@@ -100,6 +105,19 @@ export default class BillingManagementComponent extends Component {
     try {
       const token = localStorage.getItem('auth_token');
       const municipalityId = this.billingData.municipalityId;
+      
+      // Get the plan details to pass price ID if available
+      const plan = this.availablePlans[planKey];
+      const requestData = {
+        planType: planKey.toLowerCase(),
+        municipalityId: municipalityId,
+      };
+
+      // If we have a Stripe price ID, use it directly
+      if (plan?.priceId) {
+        requestData.priceId = plan.priceId;
+        requestData.productId = plan.id;
+      }
 
       // Create Stripe checkout session for municipal users
       const response = await fetch(
@@ -110,10 +128,7 @@ export default class BillingManagementComponent extends Component {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            planType: planName.toLowerCase(),
-            municipalityId: municipalityId,
-          }),
+          body: JSON.stringify(requestData),
         },
       );
 
@@ -266,6 +281,14 @@ export default class BillingManagementComponent extends Component {
   }
 
   get formattedPrice() {
+    // First try to get price from real-time Stripe data
+    if (this.billingData?.subscription?.pricePerPeriod) {
+      const amount = this.billingData.subscription.pricePerPeriod / 100;
+      const interval = this.billingData.subscription.interval || 'year';
+      return `$${amount.toFixed(2)}/${interval === 'year' ? 'year' : interval}`;
+    }
+    
+    // Fallback to plan limits
     if (!this.planLimits?.price) return 'Custom';
     return `$${(this.planLimits.price / 100).toFixed(2)}`;
   }
@@ -275,14 +298,52 @@ export default class BillingManagementComponent extends Component {
   }
 
   get canUpgrade() {
-    return this.currentPlan === 'basic' && this.availablePlans?.professional;
+    // Can upgrade from basic to city
+    return this.currentPlan === 'basic' && this.availablePlans?.city;
   }
 
   get canDowngrade() {
-    return this.currentPlan === 'professional' && this.availablePlans?.basic;
+    // Can downgrade from city to basic
+    return this.currentPlan === 'city' && this.availablePlans?.basic;
   }
 
   get willCancelAtPeriodEnd() {
     return this.billingData?.subscription?.cancelAtPeriodEnd;
+  }
+
+  get lastPaymentDate() {
+    if (!this.billingData?.subscription?.lastPaymentDate) return null;
+    return new Date(this.billingData.subscription.lastPaymentDate);
+  }
+
+  get formattedLastPayment() {
+    if (!this.lastPaymentDate) return 'N/A';
+    return this.lastPaymentDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+
+  get nextPaymentDate() {
+    if (!this.billingData?.subscription?.nextPaymentDate) return this.renewalDate;
+    return new Date(this.billingData.subscription.nextPaymentDate * 1000);
+  }
+
+  get formattedNextPayment() {
+    if (!this.nextPaymentDate) return 'N/A';
+    return this.nextPaymentDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+
+  get subscriptionId() {
+    return this.billingData?.subscription?.stripeSubscriptionId;
+  }
+
+  get hasActiveStripeSubscription() {
+    return this.subscriptionId && this.isSubscriptionActive;
   }
 }

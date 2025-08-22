@@ -196,6 +196,7 @@ const permitSchema = new mongoose.Schema(
         'additional-info', // Waiting for additional information
         'approved', // Approved, ready for work
         'active', // Work in progress
+        'inspection-requested', // Inspection has been requested
         'inspections', // Undergoing inspections
         'completed', // All work and inspections complete
         'cancelled', // Cancelled by applicant
@@ -223,6 +224,55 @@ const permitSchema = new mongoose.Schema(
     },
     reviewNotes: String,
     approvalConditions: [String],
+
+    // Department Review Tracking
+    departmentReviews: [
+      {
+        department: {
+          type: String,
+          enum: [
+            'building',
+            'planning',
+            'fire',
+            'health',
+            'engineering',
+            'zoning',
+            'environmental',
+            'finance'
+          ],
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'approved', 'rejected', 'changes-requested'],
+          default: 'pending',
+        },
+        reviewer: {
+          name: String,
+          id: mongoose.Schema.Types.ObjectId,
+        },
+        reviewedAt: Date,
+        notes: String,
+        conditions: [String],
+      },
+    ],
+
+    // Required departments for this permit type
+    requiredDepartments: [
+      {
+        type: String,
+        enum: [
+          'building',
+          'planning',
+          'fire',
+          'health',
+          'engineering',
+          'zoning',
+          'environmental',
+          'finance'
+        ],
+      },
+    ],
 
     // Financial
     fees: [feeSchema],
@@ -339,6 +389,11 @@ permitSchema.pre('save', async function (next) {
     this.totalFees = this.fees.reduce((total, fee) => total + fee.amount, 0);
   }
 
+  // Initialize department reviews when permit is submitted for the first time
+  if (this.isModified('status') && this.status === 'submitted' && !this.departmentReviews.length) {
+    await this.initializeDepartmentReviews();
+  }
+
   next();
 });
 
@@ -378,6 +433,231 @@ permitSchema.methods.addInspection = function (inspectionData) {
 permitSchema.methods.isOverdue = function () {
   if (!this.expirationDate) return false;
   return new Date() > this.expirationDate && this.status !== 'completed';
+};
+
+// Department review methods
+permitSchema.methods.initializeDepartmentReviews = async function () {
+  try {
+    // Get the permit type to determine required departments
+    const PermitType = mongoose.model('PermitType');
+    const permitType = await PermitType.findById(this.permitType);
+    
+    if (!permitType || !permitType.requiredDepartments || permitType.requiredDepartments.length === 0) {
+      // If no required departments, initialize with default building department
+      this.requiredDepartments = ['building'];
+      this.departmentReviews = [{
+        department: 'building',
+        status: 'pending'
+      }];
+      return;
+    }
+    
+    this.requiredDepartments = permitType.requiredDepartments;
+    this.departmentReviews = permitType.requiredDepartments.map(dept => ({
+      department: dept,
+      status: 'pending'
+    }));
+  } catch (error) {
+    console.error('Error initializing department reviews:', error);
+    // Fallback to building department
+    this.requiredDepartments = ['building'];
+    this.departmentReviews = [{
+      department: 'building',
+      status: 'pending'
+    }];
+  }
+};
+
+permitSchema.methods.submitDepartmentReview = function (department, userId, userDetails, reviewData) {
+  const review = this.departmentReviews.find(r => r.department === department);
+  if (!review) {
+    throw new Error(`Department ${department} is not required for this permit`);
+  }
+  
+  review.status = reviewData.status;
+  review.reviewer = {
+    id: userId,
+    name: userDetails.firstName + ' ' + userDetails.lastName
+  };
+  review.reviewedAt = new Date();
+  review.notes = reviewData.notes;
+  review.conditions = reviewData.conditions || [];
+  
+  // Check if all required departments have approved
+  this.checkOverallApprovalStatus();
+  
+  return this.save();
+};
+
+permitSchema.methods.checkOverallApprovalStatus = function () {
+  if (!this.departmentReviews || this.departmentReviews.length === 0) return;
+  
+  const approvalCheck = this.canBeApproved();
+  const anyRejected = this.departmentReviews.some(review => review.status === 'rejected');
+  const anyChangesRequested = this.departmentReviews.some(review => review.status === 'changes-requested');
+  
+  if (approvalCheck.canApprove && this.status === 'under-review') {
+    this.status = 'approved';
+    this.approvedDate = new Date();
+    // Set expiration date (typically 6 months from approval)
+    this.expirationDate = new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000);
+  } else if (anyRejected && this.status === 'under-review') {
+    this.status = 'denied';
+  } else if (anyChangesRequested && this.status === 'under-review') {
+    this.status = 'additional-info';
+  }
+};
+
+permitSchema.methods.getPendingDepartments = function () {
+  return this.departmentReviews
+    .filter(review => review.status === 'pending')
+    .map(review => review.department);
+};
+
+permitSchema.methods.getApprovedDepartments = function () {
+  return this.departmentReviews
+    .filter(review => review.status === 'approved')
+    .map(review => review.department);
+};
+
+permitSchema.methods.canUserReview = function (user) {
+  if (user.userType !== 'municipal') return false;
+  if (!user.department) return false;
+  
+  const departmentReview = this.departmentReviews.find(
+    review => review.department === user.department
+  );
+  
+  return departmentReview && departmentReview.status === 'pending';
+};
+
+// Validation methods for permit progression
+permitSchema.methods.canBeApproved = function () {
+  // Check if all required departments have approved
+  if (!this.departmentReviews || this.departmentReviews.length === 0) {
+    return { canApprove: false, reason: 'No department reviews initialized' };
+  }
+  
+  const pendingReviews = this.departmentReviews.filter(review => review.status === 'pending');
+  const rejectedReviews = this.departmentReviews.filter(review => review.status === 'rejected');
+  
+  if (rejectedReviews.length > 0) {
+    return { 
+      canApprove: false, 
+      reason: `Rejected by: ${rejectedReviews.map(r => r.department).join(', ')}` 
+    };
+  }
+  
+  if (pendingReviews.length > 0) {
+    return { 
+      canApprove: false, 
+      reason: `Pending review by: ${pendingReviews.map(r => r.department).join(', ')}` 
+    };
+  }
+  
+  return { canApprove: true, reason: 'All departments have approved' };
+};
+
+permitSchema.methods.canBeCompleted = async function () {
+  try {
+    // First check if permit is approved
+    if (this.status !== 'approved' && this.status !== 'active' && this.status !== 'inspections') {
+      return { canComplete: false, reason: 'Permit must be approved before completion' };
+    }
+    
+    // Check if all required departments have approved
+    const approvalCheck = this.canBeApproved();
+    if (!approvalCheck.canApprove && this.status !== 'approved') {
+      return { canComplete: false, reason: approvalCheck.reason };
+    }
+    
+    // Get required inspections from permit type
+    const PermitType = mongoose.model('PermitType');
+    const permitType = await PermitType.findById(this.permitType);
+    
+    if (permitType && permitType.requiredInspections && permitType.requiredInspections.length > 0) {
+      const requiredInspectionTypes = permitType.requiredInspections
+        .filter(inspection => inspection.required !== false)
+        .map(inspection => inspection.type);
+      
+      // Check if all required inspections are completed and passed
+      const completedInspections = this.inspections.filter(
+        inspection => inspection.status === 'passed'
+      );
+      
+      const missingInspections = requiredInspectionTypes.filter(
+        requiredType => !completedInspections.some(
+          inspection => inspection.type === requiredType
+        )
+      );
+      
+      if (missingInspections.length > 0) {
+        return { 
+          canComplete: false, 
+          reason: `Missing required inspections: ${missingInspections.join(', ')}` 
+        };
+      }
+      
+      // Check if any required inspections failed
+      const failedInspections = this.inspections.filter(
+        inspection => inspection.status === 'failed' && 
+        requiredInspectionTypes.includes(inspection.type)
+      );
+      
+      if (failedInspections.length > 0) {
+        return { 
+          canComplete: false, 
+          reason: `Failed required inspections: ${failedInspections.map(i => i.type).join(', ')}` 
+        };
+      }
+    }
+    
+    return { canComplete: true, reason: 'All requirements met for completion' };
+    
+  } catch (error) {
+    console.error('Error checking permit completion requirements:', error);
+    return { canComplete: false, reason: 'Error checking requirements' };
+  }
+};
+
+permitSchema.methods.getRequiredInspections = async function () {
+  try {
+    const PermitType = mongoose.model('PermitType');
+    const permitType = await PermitType.findById(this.permitType);
+    
+    if (!permitType || !permitType.requiredInspections) {
+      return [];
+    }
+    
+    return permitType.requiredInspections.filter(inspection => inspection.required !== false);
+  } catch (error) {
+    console.error('Error getting required inspections:', error);
+    return [];
+  }
+};
+
+permitSchema.methods.getInspectionStatus = async function () {
+  try {
+    const requiredInspections = await this.getRequiredInspections();
+    
+    return requiredInspections.map(required => {
+      const completedInspection = this.inspections.find(
+        inspection => inspection.type === required.type
+      );
+      
+      return {
+        type: required.type,
+        name: required.name,
+        description: required.description,
+        required: required.required,
+        status: completedInspection ? completedInspection.status : 'not-scheduled',
+        inspection: completedInspection || null
+      };
+    });
+  } catch (error) {
+    console.error('Error getting inspection status:', error);
+    return [];
+  }
 };
 
 // Static methods

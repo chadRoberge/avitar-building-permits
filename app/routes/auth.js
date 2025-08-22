@@ -1,7 +1,9 @@
 import Route from '@ember/routing/route';
+import { inject as service } from '@ember/service';
 import config from 'avitar-building-permits/config/environment';
 
 export default class AuthRoute extends Route {
+  @service router;
   queryParams = {
     municipality_id: {
       refreshModel: true,

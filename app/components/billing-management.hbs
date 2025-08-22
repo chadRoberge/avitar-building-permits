@@ -43,14 +43,32 @@
             <div class="plan-info">
               <div class="plan-name">{{this.billingData.planName}}</div>
               {{#if this.isMunicipalUser}}
-                <div class="plan-price">{{this.formattedPrice}}/year</div>
+                <div class="plan-price">{{this.formattedPrice}}</div>
                 {{#if this.willCancelAtPeriodEnd}}
                   <div class="plan-notice warning">
                     ⚠️ Subscription will end on {{this.formattedRenewalDate}}
                   </div>
                 {{else}}
                   <div class="plan-renewal">
-                    Renews {{this.formattedRenewalDate}} ({{this.daysUntilRenewal}} days)
+                    {{#if this.hasActiveStripeSubscription}}
+                      Next payment: {{this.formattedNextPayment}} ({{this.daysUntilRenewal}} days)
+                    {{else}}
+                      Renews {{this.formattedRenewalDate}} ({{this.daysUntilRenewal}} days)
+                    {{/if}}
+                  </div>
+                {{/if}}
+                
+                {{!-- Enhanced subscription status display --}}
+                {{#if this.hasActiveStripeSubscription}}
+                  <div class="plan-meta">
+                    <div class="subscription-status">
+                      <span class="status-indicator {{this.subscriptionStatus}}"></span>
+                      <small>Status: {{capitalize this.subscriptionStatus}}</small>
+                    </div>
+                    {{#if this.lastPaymentDate}}
+                      <small>Last payment: {{this.formattedLastPayment}}</small>
+                    {{/if}}
+                    <small>Subscription ID: {{this.subscriptionId}}</small>
                   </div>
                 {{/if}}
               {{/if}}
@@ -183,7 +201,7 @@
       {{!-- Plan Comparison Modal --}}
       {{#if this.showPlanComparison}}
         <div class="modal-backdrop" {{on "click" this.togglePlanComparison}}>
-          <div class="modal-content plan-comparison-modal" {{on "click" (fn (mut false))}}>
+          <div class="modal-content plan-comparison-modal" {{on "click" (fn this.stopPropagation)}}>
             <div class="modal-header">
               <h2>Choose Your Plan</h2>
               <button type="button" class="modal-close" {{on "click" this.togglePlanComparison}}>×</button>
@@ -204,7 +222,7 @@
                     <div class="plan-pricing">
                       {{#if plan.price}}
                         <span class="price">${{mul plan.price 0.01}}</span>
-                        <span class="period">/year</span>
+                        <span class="period">/{{plan.interval}}</span>
                       {{else}}
                         <span class="price">Custom</span>
                         <span class="period">pricing</span>
@@ -229,7 +247,7 @@
                     <div class="plan-action">
                       {{#if (eq planKey this.currentPlan)}}
                         <button type="button" class="btn btn-outline" disabled>Current Plan</button>
-                      {{else if (eq planKey "enterprise")}}
+                      {{else if (not plan.price)}}
                         <button type="button" class="btn btn-primary">Contact Sales</button>
                       {{else}}
                         <button 
@@ -257,7 +275,7 @@
       {{!-- Cancel Confirmation Modal --}}
       {{#if this.showCancelConfirmation}}
         <div class="modal-backdrop" {{on "click" this.hideCancelDialog}}>
-          <div class="modal-content cancel-confirmation-modal" {{on "click" (fn (mut false))}}>
+          <div class="modal-content cancel-confirmation-modal" {{on "click" (fn this.stopPropagation)}}>
             <div class="modal-header">
               <h2>Cancel Subscription</h2>
               <button type="button" class="modal-close" {{on "click" this.hideCancelDialog}}>×</button>

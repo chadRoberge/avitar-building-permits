@@ -66,6 +66,12 @@ router.post('/', auth, async (req, res) => {
         .json({ message: 'Municipality not found for user' });
     }
 
+    console.log('Creating permit type with data:', {
+      requiredDepartments: req.body.requiredDepartments,
+      requiredInspections: req.body.requiredInspections,
+      name: req.body.name
+    });
+
     // Map frontend data to backend model structure
     const permitTypeData = {
       name: req.body.name,
@@ -104,16 +110,11 @@ router.post('/', auth, async (req, res) => {
           ]
         : [],
 
-      // Set inspection requirement
-      requiredInspections: req.body.requiresInspection
-        ? [
-            {
-              name: 'Standard Inspection',
-              description: 'Required inspection for this permit type',
-              triggerCondition: 'approval',
-            },
-          ]
-        : [],
+      // Set required inspections from frontend
+      requiredInspections: req.body.requiredInspections || [],
+
+      // Set required departments from frontend  
+      requiredDepartments: req.body.requiredDepartments || [],
 
       // Custom category handling
       ...(req.body.category === 'custom' && req.body.customCategory
@@ -163,7 +164,48 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // Update fields
+    console.log('Updating permit type with data:', {
+      requiredDepartments: req.body.requiredDepartments,
+      requiredInspections: req.body.requiredInspections,
+      name: req.body.name,
+      baseFee: req.body.baseFee
+    });
+
+    // Handle baseFee specially - convert to fees array structure
+    if (req.body.baseFee !== undefined) {
+      const baseFee = parseFloat(req.body.baseFee) || 0;
+      if (baseFee > 0) {
+        permitType.fees = [{
+          name: 'Application Fee',
+          type: 'fixed',
+          amount: baseFee,
+          description: 'Standard application fee'
+        }];
+      } else {
+        permitType.fees = [];
+      }
+      // Remove baseFee from the request body since it's not a direct field
+      delete req.body.baseFee;
+    }
+
+    // Handle formFields specially - convert to applicationFields
+    if (req.body.formFields) {
+      permitType.applicationFields = req.body.formFields.map((field, index) => ({
+        name: field.id || `field_${index}`,
+        label: field.label,
+        type: field.type,
+        required: field.isRequired || false,
+        helpText: field.description,
+        options: field.options
+          ? field.options.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt))
+          : [],
+        order: index,
+      }));
+      // Remove formFields from the request body since it's converted to applicationFields
+      delete req.body.formFields;
+    }
+
+    // Update remaining fields
     Object.keys(req.body).forEach((key) => {
       if (req.body[key] !== undefined) {
         permitType[key] = req.body[key];

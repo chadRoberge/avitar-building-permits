@@ -1,0 +1,442 @@
+{{page-title "My Profile - Municipal Portal"}}
+
+{{! Initialize data when template loads }}
+{{this.initializeData}}
+
+<div class="profile-container">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>My Profile</h1>
+      <p>Manage your account information and preferences</p>
+    </div>
+  </header>
+
+  {{#if this.errorMessage}}
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      <span class="alert-text">{{this.errorMessage}}</span>
+    </div>
+  {{/if}}
+
+  {{#if this.successMessage}}
+    <div class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      <span class="alert-text">{{this.successMessage}}</span>
+    </div>
+  {{/if}}
+
+  <div class="profile-layout">
+    {{! Profile Summary Card }}
+    <div class="profile-summary-card">
+      <div class="profile-avatar">
+        <div class="avatar-circle">
+          <span class="avatar-initials">
+            {{this.userInitials}}
+          </span>
+        </div>
+      </div>
+      
+      <div class="profile-info">
+        <h2 class="profile-name">{{this.userProfile.firstName}} {{this.userProfile.lastName}}</h2>
+        <p class="profile-role">{{this.currentUserRoleName}}</p>
+        <p class="profile-department">{{this.departmentName}}</p>
+        <p class="profile-municipality">{{this.municipalityName}}</p>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-item">
+          <span class="stat-number">{{this.userActivity.permitReviews}}</span>
+          <span class="stat-label">Permit Reviews</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">{{this.userActivity.inspectionCount}}</span>
+          <span class="stat-label">Inspections</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">{{this.userActivity.departmentReviews}}</span>
+          <span class="stat-label">Department Reviews</span>
+        </div>
+      </div>
+
+      <div class="profile-meta">
+        <p class="member-since">Member since {{this.memberSince}}</p>
+      </div>
+    </div>
+
+    {{! Main Profile Content }}
+    <div class="profile-main">
+      <div class="profile-tabs">
+        <nav class="tab-navigation">
+          <button 
+            type="button" 
+            class="tab-btn {{if (eq this.activeTab 'profile') 'active'}}" 
+            {{on "click" (fn this.setActiveTab 'profile')}}
+          >
+            <span class="tab-icon">👤</span>
+            Profile Information
+          </button>
+          
+          <button 
+            type="button" 
+            class="tab-btn {{if (eq this.activeTab 'security') 'active'}}" 
+            {{on "click" (fn this.setActiveTab 'security')}}
+          >
+            <span class="tab-icon">🔒</span>
+            Security
+          </button>
+
+          <button 
+            type="button" 
+            class="tab-btn {{if (eq this.activeTab 'activity') 'active'}}" 
+            {{on "click" (fn this.setActiveTab 'activity')}}
+          >
+            <span class="tab-icon">📊</span>
+            Activity
+          </button>
+        </nav>
+
+        <div class="tab-content">
+          {{#if (eq this.activeTab 'profile')}}
+            <div class="profile-information">
+              <div class="section-header">
+                <h3>Profile Information</h3>
+                {{#unless this.isEditing}}
+                  <button type="button" class="btn btn-primary" {{on "click" this.startEditProfile}}>
+                    <span class="btn-icon">✏️</span>
+                    Edit Profile
+                  </button>
+                {{/unless}}
+              </div>
+
+              {{#if this.isEditing}}
+                <form class="profile-edit-form" {{on "submit" this.preventSubmit}}>
+                  <div class="form-section">
+                    <h4>Personal Information</h4>
+                    <div class="form-grid">
+                      <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <Input 
+                          id="firstName" 
+                          @value={{this.profileFormData.firstName}} 
+                          {{on "input" (fn this.updateProfileField "firstName")}}
+                          placeholder="Enter first name" 
+                          required 
+                          class="form-input"
+                        />
+                      </div>
+
+                      <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <Input 
+                          id="lastName" 
+                          @value={{this.profileFormData.lastName}} 
+                          {{on "input" (fn this.updateProfileField "lastName")}}
+                          placeholder="Enter last name" 
+                          required 
+                          class="form-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <h4>Contact Information</h4>
+                    <div class="form-group">
+                      <label for="email">Email Address</label>
+                      <Input 
+                        id="email" 
+                        @type="email" 
+                        @value={{this.profileFormData.email}} 
+                        {{on "input" (fn this.updateProfileField "email")}}
+                        placeholder="Enter email address" 
+                        required 
+                        class="form-input"
+                      />
+                      <small class="form-help">This email is used for notifications and system communications</small>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="phone">Phone Number</label>
+                      <Input 
+                        id="phone" 
+                        @type="tel" 
+                        @value={{this.profileFormData.phone}} 
+                        {{on "input" (fn this.updateProfileField "phone")}}
+                        placeholder="(555) 123-4567" 
+                        class="form-input"
+                      />
+                      <small class="form-help">Optional: Used for urgent communications</small>
+                    </div>
+                  </div>
+
+                  {{#if this.canEditDepartment}}
+                    <div class="form-section">
+                      <h4>Department Assignment</h4>
+                      <div class="form-group">
+                        <label for="department">Department</label>
+                        <select 
+                          id="department" 
+                          class="form-select" 
+                          value={{this.profileFormData.department}}
+                          {{on "change" (fn this.updateProfileField "department")}}
+                        >
+                          <option value="">Select Department</option>
+                          {{#each this.availableDepartments as |dept|}}
+                            <option value={{dept.id}}>{{dept.name}}</option>
+                          {{/each}}
+                        </select>
+                        <small class="form-help">Your department determines access to specific permit types</small>
+                      </div>
+                    </div>
+                  {{/if}}
+
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" {{on "click" this.cancelEdit}}>
+                      Cancel
+                    </button>
+                    <button 
+                      type="button" 
+                      class="btn btn-primary" 
+                      {{on "click" this.saveProfile}}
+                      disabled={{this.isSubmitting}}
+                    >
+                      {{#if this.isSubmitting}}
+                        <span class="btn-spinner"></span>
+                        Saving Changes...
+                      {{else}}
+                        Save Changes
+                      {{/if}}
+                    </button>
+                  </div>
+                </form>
+              {{else}}
+                <div class="profile-details-modern">
+                  <div class="details-grid">
+                    <div class="detail-card">
+                      <div class="card-icon">👤</div>
+                      <div class="card-content">
+                        <h5>Personal Information</h5>
+                        <div class="detail-item">
+                          <span class="detail-label">Full Name</span>
+                          <span class="detail-value">{{this.userProfile.firstName}} {{this.userProfile.lastName}}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Member Since</span>
+                          <span class="detail-value">{{this.memberSince}}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="detail-card">
+                      <div class="card-icon">📧</div>
+                      <div class="card-content">
+                        <h5>Contact Information</h5>
+                        <div class="detail-item">
+                          <span class="detail-label">Email Address</span>
+                          <span class="detail-value">{{this.userProfile.email}}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Phone Number</span>
+                          <span class="detail-value">{{if this.userProfile.phone this.userProfile.phone "Not provided"}}</span>
+                        </div>
+                        {{#if this.userProfile.lastLoginDate}}
+                          <div class="detail-item">
+                            <span class="detail-label">Last Login</span>
+                            <span class="detail-value">{{this.formatLastLogin this.userProfile.lastLoginDate}}</span>
+                          </div>
+                        {{/if}}
+                      </div>
+                    </div>
+
+                    <div class="detail-card">
+                      <div class="card-icon">🏛️</div>
+                      <div class="card-content">
+                        <h5>Work Information</h5>
+                        <div class="detail-item">
+                          <span class="detail-label">Municipality</span>
+                          <span class="detail-value">{{this.municipalityName}}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Department</span>
+                          <span class="detail-value">{{this.departmentName}}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Role</span>
+                          <span class="detail-value">{{this.currentUserRoleName}}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="detail-card">
+                      <div class="card-icon">🔑</div>
+                      <div class="card-content">
+                        <h5>Access Level</h5>
+                        <div class="detail-item">
+                          <span class="detail-label">Permission Level</span>
+                          <span class="detail-value permission-badge level-{{this.userProfile.permissionLevel}}">
+                            Level {{this.userProfile.permissionLevel}}
+                          </span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="detail-label">Account Status</span>
+                          <span class="detail-value status-badge {{if this.userProfile.isActive 'active' 'inactive'}}">
+                            {{if this.userProfile.isActive 'Active' 'Inactive'}}
+                          </span>
+                        </div>
+                        {{#if this.userActivity.permitReviews}}
+                          <div class="detail-item">
+                            <span class="detail-label">Permits Reviewed</span>
+                            <span class="detail-value">{{this.userActivity.permitReviews}}</span>
+                          </div>
+                        {{/if}}
+                      </div>
+                    </div>
+                  </div>
+
+                  {{#if this.hasSystemPermissions}}
+                    <div class="permissions-info">
+                      <h4>System Permissions</h4>
+                      <div class="permissions-grid">
+                        {{#each this.userPermissions as |permission|}}
+                          <div class="permission-item {{if permission.granted 'granted' 'denied'}}">
+                            <span class="permission-icon">{{if permission.granted '✅' '❌'}}</span>
+                            <span class="permission-name">{{permission.name}}</span>
+                          </div>
+                        {{/each}}
+                      </div>
+                    </div>
+                  {{/if}}
+                </div>
+              {{/if}}
+            </div>
+          {{/if}}
+
+          {{#if (eq this.activeTab 'security')}}
+            <div class="security-settings">
+              <div class="section-header">
+                <h3>Security Settings</h3>
+              </div>
+
+              <div class="security-section">
+                <h4>Change Password</h4>
+                <p>Update your password to keep your account secure.</p>
+
+                <form class="password-change-form" {{on "submit" this.preventSubmit}}>
+                  <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <Input 
+                      id="currentPassword" 
+                      @type="password" 
+                      @value={{this.passwordFormData.currentPassword}} 
+                      {{on "input" (fn this.updatePasswordField "currentPassword")}}
+                      placeholder="Enter current password" 
+                      required 
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <Input 
+                      id="newPassword" 
+                      @type="password" 
+                      @value={{this.passwordFormData.newPassword}} 
+                      {{on "input" (fn this.updatePasswordField "newPassword")}}
+                      placeholder="Enter new password" 
+                      required 
+                    />
+                    <small class="form-help">Password must be at least 6 characters</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <Input 
+                      id="confirmPassword" 
+                      @type="password" 
+                      @value={{this.passwordFormData.confirmPassword}} 
+                      {{on "input" (fn this.updatePasswordField "confirmPassword")}}
+                      placeholder="Confirm new password" 
+                      required 
+                    />
+                  </div>
+
+                  <div class="form-actions">
+                    <button 
+                      type="button" 
+                      class="btn btn-primary" 
+                      {{on "click" this.changePassword}}
+                      disabled={{this.isSubmitting}}
+                    >
+                      {{#if this.isSubmitting}}
+                        <span class="btn-spinner"></span>
+                        Changing Password...
+                      {{else}}
+                        Change Password
+                      {{/if}}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          {{/if}}
+
+          {{#if (eq this.activeTab 'activity')}}
+            <div class="activity-history">
+              <div class="section-header">
+                <h3>Recent Activity</h3>
+              </div>
+
+              <div class="activity-stats">
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-content">
+                      <span class="stat-number">{{this.userActivity.permitReviews}}</span>
+                      <span class="stat-label">Total Permit Reviews</span>
+                    </div>
+                  </div>
+
+                  <div class="stat-card">
+                    <div class="stat-icon">🔍</div>
+                    <div class="stat-content">
+                      <span class="stat-number">{{this.userActivity.inspectionCount}}</span>
+                      <span class="stat-label">Inspections Completed</span>
+                    </div>
+                  </div>
+
+                  <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                      <span class="stat-number">{{this.userActivity.departmentReviews}}</span>
+                      <span class="stat-label">Department Reviews</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {{#if this.userActivity.recentActivity.length}}
+                <div class="recent-activity-list">
+                  <h4>Recent Actions</h4>
+                  {{#each this.userActivity.recentActivity as |activity|}}
+                    <div class="activity-item">
+                      <div class="activity-icon">{{activity.icon}}</div>
+                      <div class="activity-content">
+                        <span class="activity-description">{{activity.description}}</span>
+                        <span class="activity-time">{{this.formatDate activity.timestamp}}</span>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              {{else}}
+                <div class="empty-activity">
+                  <div class="empty-icon">📊</div>
+                  <h4>No Recent Activity</h4>
+                  <p>Your recent actions and activities will appear here.</p>
+                </div>
+              {{/if}}
+            </div>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

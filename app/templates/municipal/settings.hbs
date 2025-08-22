@@ -1,0 +1,347 @@
+{{page-title "Municipal Settings"}}
+
+<div class="settings-container">
+  <header class="page-header">
+    <div class="header-content">
+      <h1>Municipal Settings</h1>
+      <p>Manage users, permissions, and system configuration</p>
+    </div>
+  </header>
+
+  {{#if this.errorMessage}}
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      <span class="alert-text">{{this.errorMessage}}</span>
+    </div>
+  {{/if}}
+
+  {{#if this.successMessage}}
+    <div class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      <span class="alert-text">{{this.successMessage}}</span>
+    </div>
+  {{/if}}
+
+  <div class="settings-tabs">
+    <nav class="tab-navigation">
+      <button 
+        type="button" 
+        class="tab-btn {{if (eq this.activeTab 'users') 'active'}}" 
+        {{on "click" (fn this.setActiveTab 'users')}}
+      >
+        <span class="tab-icon">👥</span>
+        User Management
+      </button>
+      
+      {{#if (can-manage-users this.model.currentUser.permissionLevel)}}
+        <button 
+          type="button" 
+          class="tab-btn {{if (eq this.activeTab 'permissions') 'active'}}" 
+          {{on "click" (fn this.setActiveTab 'permissions')}}
+        >
+          <span class="tab-icon">🔐</span>
+          Permissions
+        </button>
+      {{/if}}
+
+      {{#if (has-permission-level this.model.currentUser.permissionLevel 22)}}
+        <button 
+          type="button" 
+          class="tab-btn {{if (eq this.activeTab 'system') 'active'}}" 
+          {{on "click" (fn this.setActiveTab 'system')}}
+        >
+          <span class="tab-icon">⚙️</span>
+          System Config
+        </button>
+      {{/if}}
+    </nav>
+
+    <div class="tab-content">
+      {{#if (eq this.activeTab 'users')}}
+        <div class="users-management">
+          <div class="section-header">
+            <h2>Municipal Users</h2>
+            {{#if this.canManageUsers}}
+              <button type="button" class="btn btn-primary" {{on "click" this.openNewUserModal}}>
+                <span class="btn-icon">➕</span>
+                Add User
+              </button>
+            {{/if}}
+          </div>
+
+          <div class="users-table-container">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Department</th>
+                  <th>Permission Level</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each this.municipalUsers as |user|}}
+                  <tr class="user-row {{unless user.isActive 'inactive'}}">
+                    <td class="user-name">
+                      <div class="name-info">
+                        <span class="full-name">{{user.firstName}} {{user.lastName}}</span>
+                        <small class="role-name">{{user.roleName}}</small>
+                      </div>
+                    </td>
+                    <td class="user-email">{{user.email}}</td>
+                    <td class="user-department">
+                      <span class="department-badge">
+                        {{this.getDepartmentName user.department}}
+                      </span>
+                    </td>
+                    <td class="user-permission">
+                      <span class="permission-level level-{{user.permissionLevel}}">
+                        Level {{user.permissionLevel}}
+                      </span>
+                    </td>
+                    <td class="user-status">
+                      <span class="status-badge {{if user.isActive 'active' 'inactive'}}">
+                        {{if user.isActive 'Active' 'Inactive'}}
+                      </span>
+                    </td>
+                    <td class="user-actions">
+                      {{#if this.canManageUsers}}
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-outline" 
+                          {{on "click" (fn this.openEditUserModal user)}}
+                          title="Edit user"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          type="button" 
+                          class="btn btn-sm {{if user.isActive 'btn-warning' 'btn-success'}}" 
+                          {{on "click" (fn this.toggleUserStatus user)}}
+                          title="{{if user.isActive 'Deactivate' 'Activate'}} user"
+                        >
+                          {{if user.isActive '⏸️' '▶️'}}
+                        </button>
+                      {{else}}
+                        <span class="text-muted">No access</span>
+                      {{/if}}
+                    </td>
+                  </tr>
+                {{else}}
+                  <tr>
+                    <td colspan="6" class="empty-state">
+                      <div class="empty-content">
+                        <div class="empty-icon">👥</div>
+                        <h3>No Users Found</h3>
+                        <p>No municipal users are currently configured.</p>
+                      </div>
+                    </td>
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if (eq this.activeTab 'permissions')}}
+        <div class="permissions-management">
+          <div class="section-header">
+            <h2>Permission Levels</h2>
+            <p>Understanding municipal user permission levels</p>
+          </div>
+
+          <div class="permission-levels-grid">
+            {{#each this.availablePermissionLevels as |permLevel|}}
+              <div class="permission-card level-{{permLevel.level}}">
+                <div class="permission-header">
+                  <h3 class="permission-name">{{permLevel.name}}</h3>
+                  <span class="permission-level">Level {{permLevel.level}}</span>
+                </div>
+                <p class="permission-description">{{permLevel.description}}</p>
+                
+                <div class="permission-capabilities">
+                  <h4>Capabilities:</h4>
+                  <ul class="capabilities-list">
+                    <li>✅ View permits and basic functions</li>
+                    {{#if (has-permission-level permLevel.level 13)}}
+                      <li>✅ Edit permits and update status</li>
+                    {{/if}}
+                    {{#if (has-permission-level permLevel.level 13)}}
+                      <li>✅ Manage permit types</li>
+                    {{/if}}
+                    {{#if (has-permission-level permLevel.level 14)}}
+                      <li>✅ Department-specific approvals</li>
+                    {{/if}}
+                    {{#if (has-permission-level permLevel.level 15)}}
+                      <li>✅ Schedule and conduct inspections</li>
+                    {{/if}}
+                    {{#if (has-permission-level permLevel.level 17)}}
+                      <li>✅ Department supervision</li>
+                    {{/if}}
+                    {{#if (has-permission-level permLevel.level 19)}}
+                      <li>✅ Municipal management</li>
+                    {{/if}}
+                    {{#if (has-permission-level permLevel.level 21)}}
+                      <li>✅ User management and billing</li>
+                    {{/if}}
+                    {{#if (has-permission-level permLevel.level 22)}}
+                      <li>✅ System configuration</li>
+                    {{/if}}
+                  </ul>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if (eq this.activeTab 'system')}}
+        <div class="system-configuration">
+          <div class="section-header">
+            <h2>System Configuration</h2>
+            <p>Advanced system settings and integrations</p>
+          </div>
+
+          <div class="config-sections">
+            <div class="config-card">
+              <h3>API Settings</h3>
+              <p>Configure external integrations and API access</p>
+              <button type="button" class="btn btn-outline">Configure APIs</button>
+            </div>
+
+            <div class="config-card">
+              <h3>Notification Settings</h3>
+              <p>Email templates and notification preferences</p>
+              <button type="button" class="btn btn-outline">Manage Notifications</button>
+            </div>
+
+            <div class="config-card">
+              <h3>Backup & Security</h3>
+              <p>Data backup and security configurations</p>
+              <button type="button" class="btn btn-outline">Security Settings</button>
+            </div>
+          </div>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
+
+{{! User Modal }}
+{{#if this.showUserModal}}
+  <div class="modal-overlay" {{on "click" this.closeUserModal}}>
+    <div class="modal-dialog user-modal" {{on "click" (fn (mut false))}} onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{if this.editingUser 'Edit User' 'Add New User'}}</h3>
+        <button type="button" class="modal-close" {{on "click" this.closeUserModal}}>×</button>
+      </div>
+
+      <div class="modal-body">
+        <form class="user-form" {{on "submit" (fn (mut false))}} onsubmit="event.preventDefault()">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="firstName">First Name</label>
+              <Input 
+                id="firstName" 
+                @value={{this.userFormData.firstName}} 
+                {{on "input" (fn this.updateUserFormField "firstName")}}
+                placeholder="Enter first name" 
+                required 
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <Input 
+                id="lastName" 
+                @value={{this.userFormData.lastName}} 
+                {{on "input" (fn this.updateUserFormField "lastName")}}
+                placeholder="Enter last name" 
+                required 
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <Input 
+              id="email" 
+              @type="email" 
+              @value={{this.userFormData.email}} 
+              {{on "input" (fn this.updateUserFormField "email")}}
+              placeholder="Enter email address" 
+              required 
+            />
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="department">Department</label>
+              <select 
+                id="department" 
+                class="form-select" 
+                value={{this.userFormData.department}}
+                {{on "change" (fn this.updateUserFormField "department")}}
+                required
+              >
+                <option value="">Select Department</option>
+                {{#each this.availableDepartments as |dept|}}
+                  <option value={{dept.id}}>{{dept.name}}</option>
+                {{/each}}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="permissionLevel">Permission Level</label>
+              <select 
+                id="permissionLevel" 
+                class="form-select" 
+                value={{this.userFormData.permissionLevel}}
+                {{on "change" (fn this.updateUserFormField "permissionLevel")}}
+                required
+              >
+                {{#each this.availablePermissionLevels as |permLevel|}}
+                  <option value={{permLevel.level}}>{{permLevel.name}} (Level {{permLevel.level}})</option>
+                {{/each}}
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <Input 
+                @type="checkbox" 
+                @checked={{this.userFormData.isActive}}
+                {{on "change" (fn this.updateUserFormField "isActive")}}
+              />
+              <span class="checkbox-text">Active User</span>
+            </label>
+            <small class="form-help">Inactive users cannot access the system</small>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" {{on "click" this.closeUserModal}}>
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          {{on "click" this.saveUser}}
+          disabled={{this.isSubmitting}}
+        >
+          {{#if this.isSubmitting}}
+            <span class="btn-spinner"></span>
+            Saving...
+          {{else}}
+            {{if this.editingUser 'Update User' 'Create User'}}
+          {{/if}}
+        </button>
+      </div>
+    </div>
+  </div>
+{{/if}}

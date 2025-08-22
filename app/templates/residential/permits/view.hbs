@@ -11,68 +11,126 @@
       </button>
     </div>
   {{else if @model.permit}}
-    {{!-- Header --}}
-    <header class="permit-header">
-      <div class="header-content">
-        <button type="button" class="back-btn" {{on "click" this.goBack}}>
-          ← Back to My Permits
-        </button>
-        <div class="permit-title">
-          <h1>{{@model.permit.type}} Permit</h1>
-          <div class="permit-meta">
-            <span class="permit-number">Application ID: {{@model.permit.permitNumber}}</span>
-            <span class="permit-status">
-              <span class="status-badge {{get-status-badge-class @model.permit.status}}">
-                {{@model.permit.status}}
-              </span>
+    {{!-- Compact Professional Header --}}
+    <div class="permit-header-compact">
+      <div class="header-layout">
+        {{!-- Left: Back Button --}}
+        <div class="header-left">
+          <button type="button" class="btn btn-outline-secondary btn-sm" {{on "click" this.goBack}}>
+            ← Back
+          </button>
+        </div>
+
+        {{!-- Center: Permit Info --}}
+        <div class="header-center">
+          <h1 class="permit-number">{{@model.permit.permitNumber}}</h1>
+          <span class="permit-details">
+            {{@model.permit.type}} • 
+            <span class="status-badge {{get-status-badge-class @model.permit.status}}">
+              {{@model.permit.status}}
             </span>
-          </div>
+          </span>
+        </div>
+
+        {{!-- Right: Actions --}}
+        <div class="header-right">
+          {{#if (eq @model.permit.status "approved")}}
+            <div class="inspection-request-container">
+              <button type="button" class="btn btn-primary btn-sm" {{on "click" this.toggleInspectionRequest}}>
+                📋 Request Inspection
+              </button>
+              {{#if this.showInspectionForm}}
+                <div class="inspection-dropdown">
+                  <div class="inspection-form">
+                    <h6>Request Inspection</h6>
+                    <div class="form-group">
+                      <label class="form-label">When would you like the inspection?</label>
+                      <div class="radio-options">
+                        <label class="radio-option">
+                          <input type="radio" name="requestType" value="asap" {{on "change" this.setRequestType}}>
+                          <span>As soon as possible</span>
+                        </label>
+                        <label class="radio-option">
+                          <input type="radio" name="requestType" value="within_week" {{on "change" this.setRequestType}}>
+                          <span>Within a week</span>
+                        </label>
+                        <label class="radio-option">
+                          <input type="radio" name="requestType" value="specific_date" {{on "change" this.setRequestType}}>
+                          <span>Specific date</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {{#if (eq this.requestType "specific_date")}}
+                      <div class="form-group">
+                        <label class="form-label" for="preferred-date">Preferred Date:</label>
+                        <input 
+                          type="date" 
+                          id="preferred-date"
+                          value={{this.preferredDate}}
+                          {{on "input" this.setPreferredDate}}
+                          min={{format-date-input (add-days (now) 1)}}
+                          class="form-input"
+                        >
+                      </div>
+                    {{/if}}
+                    
+                    <div class="form-group">
+                      <label class="form-label" for="inspection-notes">Notes (optional):</label>
+                      <textarea 
+                        id="inspection-notes"
+                        value={{this.inspectionNotes}}
+                        {{on "input" this.setInspectionNotes}}
+                        placeholder="Any additional information..."
+                        class="form-textarea"
+                        rows="2"
+                      ></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                      <button 
+                        type="button" 
+                        class="btn btn-primary btn-sm"
+                        {{on "click" this.requestInspection}}
+                        disabled={{or this.isSubmittingInspection (not this.requestType)}}
+                      >
+                        {{#if this.isSubmittingInspection}}
+                          Requesting...
+                        {{else}}
+                          Submit Request
+                        {{/if}}
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" {{on "click" this.toggleInspectionRequest}}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              {{/if}}
+            </div>
+          {{else if (eq @model.permit.status "inspection-requested")}}
+            <span class="status-text">
+              🕒 Inspection Pending
+            </span>
+          {{else if (eq @model.permit.status "inspections")}}
+            <span class="status-text">
+              🔍 Under Inspection
+            </span>
+          {{else if (eq @model.permit.status "completed")}}
+            <button type="button" class="btn btn-outline-success btn-sm">
+              ✓ Completed
+            </button>
+          {{/if}}
         </div>
       </div>
-    </header>
+    </div>
+
+    {{!-- Horizontal Review Process Timeline (Sticky) --}}
+    <HorizontalTimeline @steps={{@model.permit.reviewProcess.steps}} @class="sticky" />
 
     <div class="permit-content">
       {{!-- Review Process and Chat Side by Side --}}
       <div class="review-and-chat-container">
-        {{!-- Review Process Status --}}
-        <section class="review-process">
-          <h2>Review Process</h2>
-          <div class="process-timeline">
-            {{#each @model.permit.reviewProcess.steps as |step index|}}
-              <div class="timeline-item {{step.status}}">
-                <div class="timeline-marker">
-                  {{#if (eq step.status "completed")}}
-                    ✅
-                  {{else if (eq step.status "in_progress")}}
-                    🔄
-                  {{else if (eq step.status "failed")}}
-                    ❌
-                  {{else if (eq step.status "pending")}}
-                    ⏳
-                  {{else}}
-                    ⚪
-                  {{/if}}
-                </div>
-                <div class="timeline-content">
-                  <h4>{{step.name}}</h4>
-                  <p class="department">{{step.department}}</p>
-                  {{#if step.date}}
-                    <p class="date">{{format-date step.date}}</p>
-                  {{/if}}
-                  {{#if (eq step.status "in_progress")}}
-                    <p class="status-text">Currently under review</p>
-                  {{else if (eq step.status "pending")}}
-                    <p class="status-text">Waiting for review</p>
-                  {{else if (eq step.status "failed")}}
-                    <p class="status-text">Requires attention</p>
-                  {{else if (eq step.status "completed")}}
-                    <p class="status-text">Completed</p>
-                  {{/if}}
-                </div>
-              </div>
-            {{/each}}
-          </div>
-        </section>
 
         {{!-- Permit Chat/Messaging --}}
         <section class="permit-messaging">
@@ -151,6 +209,22 @@
             </div>
           </div>
         </section>
+
+        {{!-- Inspection Status Display (Non-Approved Status) --}}
+        {{#if (eq @model.permit.status "inspection-requested")}}
+          <section class="details-card">
+            <h3>Inspection Status</h3>
+            <div class="details-content">
+              <div class="status-message">
+                <span class="status-icon">🔍</span>
+                <div>
+                  <h4>Inspection Requested</h4>
+                  <p>Your inspection request has been submitted. The municipality will schedule your inspection and notify you with the date and time.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        {{/if}}
 
         {{!-- Payment Information --}}
         <section class="details-card">

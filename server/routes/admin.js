@@ -223,6 +223,52 @@ router.put('/municipalities/:id/payment-config', async (req, res) => {
   }
 });
 
+// Update municipality information
+router.put('/municipalities/:id', async (req, res) => {
+  try {
+    const { name, type, population, website, address, settings } = req.body;
+    
+    const municipality = await Municipality.findById(req.params.id);
+    if (!municipality) {
+      return res.status(404).json({ error: 'Municipality not found' });
+    }
+
+    // Update municipality fields
+    if (name !== undefined) municipality.name = name;
+    if (type !== undefined) municipality.type = type;
+    if (population !== undefined) municipality.population = population;
+    if (website !== undefined) municipality.website = website;
+    if (address !== undefined) municipality.address = address;
+
+    await municipality.save();
+
+    // Update settings if provided
+    let updatedSettings = municipality.settings || {};
+    if (settings) {
+      updatedSettings = { ...updatedSettings, ...settings };
+      municipality.settings = updatedSettings;
+      await municipality.save();
+    }
+
+    res.json({
+      message: 'Municipality updated successfully',
+      municipality: {
+        _id: municipality._id,
+        name: municipality.name,
+        type: municipality.type,
+        population: municipality.population,
+        website: municipality.website,
+        address: municipality.address,
+        isActive: municipality.isActive
+      },
+      settings: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error updating municipality:', error);
+    res.status(500).json({ error: 'Failed to update municipality' });
+  }
+});
+
 // Update municipality status (activate/deactivate)
 router.put('/municipalities/:id/status', async (req, res) => {
   try {
@@ -367,6 +413,211 @@ router.get('/users/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user details:', error);
     res.status(500).json({ error: 'Failed to fetch user details' });
+  }
+});
+
+// ===== MUNICIPALITY USER MANAGEMENT =====
+
+// Get users for a specific municipality
+router.get('/municipalities/:id/users', async (req, res) => {
+  try {
+    const { userType = 'all', limit = 50 } = req.query;
+    const municipalityId = req.params.id;
+
+    // Build query
+    let query = {
+      $or: [
+        { 'municipality._id': municipalityId },
+        { 'municipality': municipalityId }
+      ]
+    };
+
+    if (userType !== 'all') {
+      query.userType = userType;
+    }
+
+    const users = await User.find(query)
+      .select('-password')
+      .sort({ lastName: 1, firstName: 1 })
+      .limit(parseInt(limit));
+
+    res.json({ users });
+  } catch (error) {
+    console.error('Error fetching municipality users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Create a new user for a municipality
+router.post('/municipalities/:id/users', async (req, res) => {
+  try {
+    const municipalityId = req.params.id;
+    const { email, firstName, lastName, phone, userType, department, permissionLevel, businessInfo, propertyAddress } = req.body;
+
+    // Validate required fields
+    if (!email || !firstName || !lastName || !userType) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+
+    // Get municipality details
+    const municipality = await Municipality.findById(municipalityId);
+    if (!municipality) {
+      return res.status(404).json({ error: 'Municipality not found' });
+    }
+
+    // Generate temporary password
+    const tempPassword = `TempPass${Math.random().toString(36).slice(2, 8)}!`;
+
+    // Create user data
+    const userData = {
+      email: email.toLowerCase(),
+      firstName,
+      lastName,
+      phone: phone || '',
+      userType,
+      password: tempPassword,
+      municipality: {
+        _id: municipality._id,
+        name: municipality.name
+      },
+      isActive: true
+    };
+
+    // Add type-specific data
+    if (userType === 'municipal' && department && permissionLevel) {
+      userData.department = department;
+      userData.permissionLevel = parseInt(permissionLevel);
+      userData.role = permissionLevel >= 21 ? 'admin' : 'user';
+    } else if (userType === 'commercial' && businessInfo) {
+      userData.businessInfo = businessInfo;
+      userData.permissionLevel = permissionLevel || 5;
+    } else if (userType === 'residential' && propertyAddress) {
+      userData.propertyAddress = propertyAddress;
+      userData.permissionLevel = permissionLevel || 1;
+    }
+
+    const newUser = new User(userData);
+    await newUser.save();
+
+    // Remove password from response
+    const userResponse = newUser.toJSON();
+    delete userResponse.password;
+
+    console.log('Created user for municipality:', {
+      userId: newUser._id,
+      email: newUser.email,
+      userType: newUser.userType,
+      municipalityId
+    });
+
+    res.status(201).json({
+      ...userResponse,
+      tempPassword // Send temp password for admin to share
+    });
+
+  } catch (error) {
+    console.error('Error creating user:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'User with this email already exists' });
+    }
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// Update a user
+router.put('/municipalities/:municipalityId/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { firstName, lastName, phone, department, permissionLevel, businessInfo, propertyAddress, isActive } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user fields
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (phone !== undefined) user.phone = phone;
+    if (isActive !== undefined) user.isActive = isActive;
+
+    // Update type-specific data
+    if (user.userType === 'municipal') {
+      if (department) user.department = department;
+      if (permissionLevel !== undefined) {
+        user.permissionLevel = parseInt(permissionLevel);
+        user.role = permissionLevel >= 21 ? 'admin' : 'user';
+      }
+    } else if (user.userType === 'commercial' && businessInfo) {
+      user.businessInfo = businessInfo;
+    } else if (user.userType === 'residential' && propertyAddress) {
+      user.propertyAddress = propertyAddress;
+    }
+
+    await user.save();
+
+    const userResponse = user.toJSON();
+    res.json(userResponse);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Send user invitation email
+router.post('/municipalities/:municipalityId/users/:userId/send-invitation', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Generate a new temporary password
+    const tempPassword = `Welcome${Math.random().toString(36).slice(2, 8)}!`;
+    user.password = tempPassword; // Will be hashed by pre-save middleware
+    await user.save();
+
+    // In a real application, you would send an actual email here
+    // For now, we'll just log the invitation details and return them
+    const invitationDetails = {
+      email: user.email,
+      tempPassword: tempPassword,
+      loginUrl: process.env.APP_URL || 'http://localhost:4200',
+      userName: `${user.firstName} ${user.lastName}`,
+      userType: user.userType
+    };
+
+    console.log('User invitation sent:', {
+      userId: user._id,
+      email: user.email,
+      tempPassword: tempPassword
+    });
+
+    // TODO: Implement actual email sending here
+    // await sendEmail({
+    //   to: user.email,
+    //   subject: 'Welcome to Municipal Permit System',
+    //   template: 'user-invitation',
+    //   data: invitationDetails
+    // });
+
+    res.json({
+      message: `Invitation email would be sent to ${user.email}`,
+      tempPassword: tempPassword, // In production, don't return this
+      loginInstructions: `Please use email: ${user.email} and temporary password: ${tempPassword}`
+    });
+
+  } catch (error) {
+    console.error('Error sending user invitation:', error);
+    res.status(500).json({ error: 'Failed to send invitation' });
   }
 });
 

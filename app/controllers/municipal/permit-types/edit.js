@@ -19,9 +19,72 @@ export default class MunicipalPermitTypesEditController extends Controller {
   @tracked defaultQuestions = [];
   @tracked customQuestions = [];
 
+  // Department review tracking
+  @tracked selectedDepartments = [];
+
   @tracked isSubmitting = false;
   @tracked errorMessage = '';
   @tracked originalCategory = '';
+
+  constructor() {
+    super(...arguments);
+    // Ensure selectedDepartments is always initialized as an array
+    this.selectedDepartments = [];
+  }
+
+  get safeSelectedDepartments() {
+    try {
+      // Handle case where 'this' might not be fully initialized
+      if (!this || typeof this !== 'object') {
+        return [];
+      }
+      
+      // Check if selectedDepartments exists and is an array
+      if (this.selectedDepartments && Array.isArray(this.selectedDepartments)) {
+        return this.selectedDepartments;
+      }
+      
+      // Return empty array as fallback
+      return [];
+    } catch (error) {
+      console.error('Error in safeSelectedDepartments getter:', error);
+      return [];
+    }
+  }
+
+  // Available review departments
+  availableDepartments = [
+    {
+      id: 'zoning',
+      name: 'Zoning Department',
+      description: 'Reviews compliance with zoning regulations and land use requirements',
+      icon: '📋'
+    },
+    {
+      id: 'planning',
+      name: 'Planning Department', 
+      description: 'Reviews site plans, development standards, and comprehensive plan compliance',
+      icon: '🗺️'
+    },
+    {
+      id: 'public-works',
+      name: 'Public Works',
+      description: 'Reviews infrastructure, utilities, drainage, and traffic impact',
+      icon: '🚧'
+    },
+    {
+      id: 'fire',
+      name: 'Fire Department',
+      description: 'Reviews fire safety, access, and code compliance',
+      icon: '🚒'
+    },
+    {
+      id: 'building',
+      name: 'Building Department',
+      description: 'Reviews building codes, structural plans, and construction standards',
+      icon: '🏗️'
+    }
+  ];
 
   // Load predefined categories (same as new controller)
   predefinedCategories = [
@@ -65,27 +128,49 @@ export default class MunicipalPermitTypesEditController extends Controller {
 
   // Initialize form with existing permit type data
   initializeForm(permitType) {
+    console.log('initializeForm called with:', permitType);
+    
     if (!permitType) {
       console.error('initializeForm called with undefined permitType');
       return;
     }
 
-    this.permitName = permitType.name || '';
-    this.permitCode = permitType.code || '';
-    this.permitDescription = permitType.description || '';
-    this.baseFee =
-      permitType.fees && permitType.fees[0]
-        ? permitType.fees[0].amount.toString()
-        : '';
-    this.processingTime = permitType.estimatedProcessingTime || 14;
-    this.requiresInspection =
-      permitType.requiredInspections &&
-      permitType.requiredInspections.length > 0;
-    this.isActive = permitType.isActive !== false;
-    this.originalCategory = permitType.category;
+    try {
+      // Initialize all tracked properties first - ensure selectedDepartments is always an array
+      this.selectedDepartments = Array.isArray(permitType.requiredDepartments) 
+        ? permitType.requiredDepartments 
+        : [];
+      
+      console.log('Initialized selectedDepartments:', this.selectedDepartments);
+      
+      this.permitName = permitType.name || '';
+      this.permitCode = permitType.code || '';
+      this.permitDescription = permitType.description || '';
+      this.baseFee =
+        permitType.fees && permitType.fees[0]
+          ? permitType.fees[0].amount.toString()
+          : '';
+      this.processingTime = permitType.estimatedProcessingTime || 14;
+      this.requiresInspection =
+        permitType.requiredInspections &&
+        permitType.requiredInspections.length > 0;
+      this.isActive = permitType.isActive !== false;
+      this.originalCategory = permitType.category;
 
-    // Load form fields into appropriate tabs
-    this.loadFormFields(permitType.applicationFields || []);
+      // Load form fields into appropriate tabs
+      this.loadFormFields(permitType.applicationFields || []);
+      
+      // Initialize visual state for departments after a short delay to ensure DOM is ready
+      setTimeout(() => this.initializeDepartmentVisualState(), 100);
+      
+      console.log('Form initialization completed successfully');
+    } catch (error) {
+      console.error('Error during form initialization:', error);
+      // Ensure selectedDepartments is set even if there's an error
+      if (!this.selectedDepartments) {
+        this.selectedDepartments = [];
+      }
+    }
   }
 
   loadFormFields(applicationFields) {
@@ -131,6 +216,110 @@ export default class MunicipalPermitTypesEditController extends Controller {
         description: 'Custom permit type',
       }
     );
+  }
+
+  // Initialize visual state for departments that are already selected
+  initializeDepartmentVisualState() {
+    try {
+      const selectedDepts = this.safeSelectedDepartments || [];
+      console.log('Initializing visual state for departments:', selectedDepts);
+      
+      // Find all department cards and update their visual state
+      const departmentCards = document.querySelectorAll('.department-card');
+      departmentCards.forEach(card => {
+        // Extract department ID from the card's data or find it through the click handler
+        const clickHandler = card.getAttribute('data-department-id');
+        
+        // Alternative: check each available department
+        this.availableDepartments.forEach(dept => {
+          const isSelected = selectedDepts.includes(dept.id);
+          const deptIcon = card.querySelector('.department-icon');
+          
+          // Match by department icon text to identify the card
+          if (deptIcon && deptIcon.textContent.trim() === dept.icon) {
+            if (isSelected) {
+              card.classList.add('selected');
+              const indicator = card.querySelector('.selection-indicator');
+              if (indicator) {
+                indicator.innerHTML = '<span class="selected-icon">✓</span>';
+              }
+            } else {
+              card.classList.remove('selected');
+              const indicator = card.querySelector('.selection-indicator');
+              if (indicator) {
+                indicator.innerHTML = '<span class="unselected-icon">+</span>';
+              }
+            }
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error initializing department visual state:', error);
+    }
+  }
+
+  @action
+  toggleDepartment(departmentId, event) {
+    try {
+      if (!this || !departmentId) {
+        console.error('toggleDepartment called with invalid parameters');
+        return;
+      }
+
+      // Ensure selectedDepartments is initialized
+      if (!this.selectedDepartments) {
+        this.selectedDepartments = [];
+      }
+
+      const currentDepartments = this.safeSelectedDepartments || [];
+      console.log('Toggling department:', departmentId, 'Current:', currentDepartments);
+      
+      // Find the clicked department card element
+      let departmentCard = event.target;
+      while (departmentCard && !departmentCard.classList.contains('department-card')) {
+        departmentCard = departmentCard.parentElement;
+      }
+
+      const isCurrentlySelected = currentDepartments.includes(departmentId);
+      
+      if (isCurrentlySelected) {
+        console.log('Removing department:', departmentId);
+        this.selectedDepartments = currentDepartments.filter(id => id !== departmentId);
+        
+        // Remove visual selection immediately
+        if (departmentCard) {
+          departmentCard.classList.remove('selected');
+          // Update the selection indicator
+          const indicator = departmentCard.querySelector('.selection-indicator');
+          if (indicator) {
+            indicator.innerHTML = '<span class="unselected-icon">+</span>';
+          }
+        }
+      } else {
+        console.log('Adding department:', departmentId);
+        this.selectedDepartments = [...currentDepartments, departmentId];
+        
+        // Add visual selection immediately
+        if (departmentCard) {
+          departmentCard.classList.add('selected');
+          // Update the selection indicator
+          const indicator = departmentCard.querySelector('.selection-indicator');
+          if (indicator) {
+            indicator.innerHTML = '<span class="selected-icon">✓</span>';
+          }
+        }
+      }
+      
+      console.log('New departments:', this.selectedDepartments);
+    } catch (error) {
+      console.error('Error in toggleDepartment:', error);
+      // Fallback - initialize as empty array and add the department
+      try {
+        this.selectedDepartments = [departmentId];
+      } catch (fallbackError) {
+        console.error('Even fallback failed:', fallbackError);
+      }
+    }
   }
 
   @action
@@ -245,29 +434,31 @@ export default class MunicipalPermitTypesEditController extends Controller {
         description: this.permitDescription,
         estimatedProcessingTime: parseInt(this.processingTime) || 14,
         isActive: this.isActive,
+        requiredDepartments: this.safeSelectedDepartments,
 
-        // Update form fields
-        applicationFields: this.buildFormFields(),
+        // Update form fields - map to expected backend format
+        formFields: this.buildFormFields().map((field) => ({
+          id: field.name,
+          label: field.label,
+          type: field.type,
+          isRequired: field.required,
+          description: field.helpText,
+          options: field.options ? field.options.map(opt => opt.value) : []
+        })),
 
         // Update fee structure if baseFee is provided
-        fees: this.baseFee
-          ? [
-              {
-                name: 'Application Fee',
-                type: 'fixed',
-                amount: parseFloat(this.baseFee),
-                description: 'Standard application fee',
-              },
-            ]
-          : [],
+        baseFee: this.baseFee ? parseFloat(this.baseFee) : 0,
 
         // Set inspection requirement
+        requiresInspection: this.requiresInspection,
         requiredInspections: this.requiresInspection
           ? [
               {
-                name: 'Standard Inspection',
-                description: 'Required inspection for this permit type',
-                triggerCondition: 'approval',
+                type: 'final-inspection',
+                name: 'Final Inspection',
+                description: 'Required final inspection for this permit type',
+                estimatedDuration: 60,
+                required: true
               },
             ]
           : [],
@@ -305,6 +496,28 @@ export default class MunicipalPermitTypesEditController extends Controller {
         error.message || 'An error occurred while updating the permit type';
     } finally {
       this.isSubmitting = false;
+    }
+  }
+
+  // Helper method to check if question type needs options
+  questionTypeNeedsOptions = (questionType) => {
+    return ['select', 'radio', 'checkbox'].includes(questionType);
+  }
+
+  // Helper method to check if department is selected
+  isDepartmentSelected = (departmentId) => {
+    try {
+      if (!this || !departmentId) {
+        return false;
+      }
+      
+      const departments = this.safeSelectedDepartments || [];
+      const isSelected = departments.includes(departmentId);
+      console.log(`isDepartmentSelected(${departmentId}):`, isSelected, 'departments:', departments);
+      return isSelected;
+    } catch (error) {
+      console.error('Error in isDepartmentSelected:', error, 'departmentId:', departmentId);
+      return false;
     }
   }
 

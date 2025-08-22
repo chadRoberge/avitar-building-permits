@@ -38,6 +38,7 @@ Router.map(function () {
     });
     this.route('billing');
     this.route('settings');
+    this.route('profile');
   });
 
   // Residential user routes

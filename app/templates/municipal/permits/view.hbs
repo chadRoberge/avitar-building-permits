@@ -1,0 +1,600 @@
+{{page-title "Permit Review - Municipal Portal"}}
+
+<div class="municipal-permit-review">
+  <div class="container-fluid">
+    
+    {{!-- Compact Header with Horizontal Layout --}}
+    <div class="review-header mb-3">
+      <div class="d-flex align-items-center justify-content-between flex-wrap">
+        <div class="d-flex align-items-center">
+          <button type="button" class="btn btn-outline-secondary btn-sm me-3" {{on "click" this.goBack}}>
+            ← Back
+          </button>
+          <div class="permit-info">
+            <h1 class="permit-number mb-0">{{@model.permit.permitNumber}}</h1>
+            <span class="permit-details">{{@model.permit.type}} • {{this.formatStatus @model.permit.status}}</span>
+          </div>
+        </div>
+        <div class="permit-actions">
+          {{#if (eq @model.permit.status "submitted")}}
+            <button type="button" class="btn btn-success btn-sm me-2" {{on "click" this.approvePermit}}>
+              ✓ Approve
+            </button>
+            <button type="button" class="btn btn-warning btn-sm me-2" {{on "click" this.requestChanges}}>
+              ↻ Changes
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" {{on "click" this.denyPermit}}>
+              ✗ Deny
+            </button>
+          {{else if (eq @model.permit.status "approved")}}
+            <button type="button" class="btn btn-primary btn-sm me-2" {{on "click" this.sendToInspections}}>
+              🔍 Inspections
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" {{on "click" this.markCompleted}}>
+              ✓ Complete
+            </button>
+          {{else if (eq @model.permit.status "inspection-requested")}}
+            <button type="button" class="btn btn-primary btn-sm me-2" {{on "click" this.scheduleInspection}}>
+              📅 Schedule Inspection
+            </button>
+          {{else if (eq @model.permit.status "inspections")}}
+            <button type="button" class="btn btn-primary btn-sm me-2" {{on "click" this.scheduleInspection}}>
+              📅 Schedule
+            </button>
+            <button type="button" class="btn btn-success btn-sm me-2" {{on "click" this.passInspection}}>
+              ✓ Pass
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm" {{on "click" this.editPermit}}>
+              ✏️ Edit
+            </button>
+          {{else}}
+            <button type="button" class="btn btn-outline-primary btn-sm" {{on "click" this.editPermit}}>
+              ✏️ Edit
+            </button>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+
+    {{!-- Horizontal Status Timeline --}}
+    <div class="horizontal-timeline mb-4">
+      <div class="timeline-container">
+        <div class="timeline-step {{this.getTimelineItemClass 'submitted' @model.permit.status}}">
+          <div class="step-marker">1</div>
+          <div class="step-content">
+            <h6>Submitted</h6>
+            <small>{{this.formatDateTime @model.permit.submittedDate}}</small>
+          </div>
+        </div>
+        
+        <div class="timeline-connector {{this.getTimelineItemClass 'under-review' @model.permit.status}}"></div>
+        
+        <div class="timeline-step {{this.getTimelineItemClass 'under-review' @model.permit.status}}">
+          <div class="step-marker">2</div>
+          <div class="step-content">
+            <h6>Under Review</h6>
+            <small>Department Reviews</small>
+          </div>
+        </div>
+        
+        <div class="timeline-connector {{this.getTimelineItemClass 'approved' @model.permit.status}}"></div>
+        
+        <div class="timeline-step {{this.getTimelineItemClass 'approved' @model.permit.status}}">
+          <div class="step-marker">3</div>
+          <div class="step-content">
+            <h6>Approved</h6>
+            <small>{{#if @model.permit.approvedDate}}{{this.formatDateTime @model.permit.approvedDate}}{{else}}Pending{{/if}}</small>
+          </div>
+        </div>
+        
+        <div class="timeline-connector {{this.getTimelineItemClass 'inspections' @model.permit.status}}"></div>
+        
+        <div class="timeline-step {{this.getTimelineItemClass 'inspections' @model.permit.status}}">
+          <div class="step-marker">4</div>
+          <div class="step-content">
+            <h6>Inspections</h6>
+            <small>Field Review</small>
+          </div>
+        </div>
+        
+        <div class="timeline-connector {{this.getTimelineItemClass 'completed' @model.permit.status}}"></div>
+        
+        <div class="timeline-step {{this.getTimelineItemClass 'completed' @model.permit.status}}">
+          <div class="step-marker">5</div>
+          <div class="step-content">
+            <h6>Completed</h6>
+            <small>{{#if @model.permit.completedDate}}{{this.formatDateTime @model.permit.completedDate}}{{else}}Pending{{/if}}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{!-- Department Review Status Section --}}
+    {{#if (eq @model.permit.status "under-review")}}
+      <div class="department-reviews-section mb-4">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Department Reviews</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" {{on "click" this.loadDepartmentReviews}}>
+              🔄 Refresh
+            </button>
+          </div>
+          <div class="card-body">
+            {{#if this.departmentReviews}}
+              {{#if this.departmentReviews.departmentReviews.length}}
+                <div class="row">
+                  {{#each this.departmentReviews.departmentReviews as |review|}}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                      <div class="department-review-card border rounded p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                          <h6 class="department-name mb-0">{{this.formatDepartmentName review.department}}</h6>
+                          <span class="badge {{this.getReviewStatusClass review.status}}">
+                            {{this.formatReviewStatus review.status}}
+                          </span>
+                        </div>
+                        {{#if review.reviewer.name}}
+                          <small class="text-muted d-block">Reviewed by: {{review.reviewer.name}}</small>
+                        {{/if}}
+                        {{#if review.reviewedAt}}
+                          <small class="text-muted d-block">{{this.formatDateTime review.reviewedAt}}</small>
+                        {{/if}}
+                        {{#if review.notes}}
+                          <p class="mt-2 mb-0 small">{{review.notes}}</p>
+                        {{/if}}
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+
+                {{!-- Current User Department Review Panel --}}
+                {{#if this.canUserReviewPermit}}
+                  <div class="mt-4 pt-4 border-top">
+                    <h6>Review for {{this.formatDepartmentName this.currentUser.department}} Department</h6>
+                    <div class="row">
+                      <div class="col-md-8">
+                        <div class="mb-3">
+                          <label for="departmentReviewNotes" class="form-label">Review Notes</label>
+                          <textarea 
+                            id="departmentReviewNotes"
+                            class="form-control" 
+                            rows="3"
+                            placeholder="Add your department's review notes..."
+                            value={{this.departmentReviewNotes}}
+                            {{on "input" this.updateDepartmentReviewNotes}}
+                          ></textarea>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">Department Review Actions</label>
+                        <div class="d-grid gap-2">
+                          <button 
+                            type="button" 
+                            class="btn btn-primary btn-sm"
+                            {{on "click" this.openApprovalModal}}
+                          >
+                            📋 Review with Checklist
+                          </button>
+                          <small class="text-muted mt-2">
+                            Complete the department-specific checklist to ensure all requirements are met before approval or rejection.
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {{else if this.userDepartmentReview}}
+                  <div class="mt-4 pt-4 border-top">
+                    <div class="alert alert-info">
+                      <strong>Your Department Review:</strong> 
+                      {{this.formatReviewStatus this.userDepartmentReview.status}}
+                      {{#if this.userDepartmentReview.notes}}
+                        <br><small>Notes: {{this.userDepartmentReview.notes}}</small>
+                      {{/if}}
+                    </div>
+                  </div>
+                {{/if}}
+
+              {{else}}
+                <div class="text-center text-muted">
+                  <p>No department reviews configured for this permit type.</p>
+                  <small>This permit may be approved automatically or require manual assignment of review departments.</small>
+                </div>
+              {{/if}}
+            {{else}}
+              <div class="text-center">
+                <button type="button" class="btn btn-primary" {{on "click" this.loadDepartmentReviews}}>
+                  Load Department Review Status
+                </button>
+              </div>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    {{/if}}
+
+    {{!-- Main Content Layout --}}
+    <div class="main-layout">
+      {{!-- Left Column - Permit Details --}}
+      <div class="permit-details-section">
+
+        {{!-- Permit Details --}}
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Permit Information</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="info-group mb-3">
+                  <label class="fw-semibold text-muted">Permit Type</label>
+                  <p class="mb-0">{{@model.permit.type}}</p>
+                </div>
+                <div class="info-group mb-3">
+                  <label class="fw-semibold text-muted">Project Value</label>
+                  <p class="mb-0">${{this.formatCurrency @model.permit.projectValue}}</p>
+                </div>
+                <div class="info-group mb-3">
+                  <label class="fw-semibold text-muted">Application Fee</label>
+                  <p class="mb-0">${{this.formatCurrency @model.permit.fee}}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-group mb-3">
+                  <label class="fw-semibold text-muted">Submitted Date</label>
+                  <p class="mb-0">{{this.formatDateTime @model.permit.submittedDate}}</p>
+                </div>
+                {{#if @model.permit.expiryDate}}
+                  <div class="info-group mb-3">
+                    <label class="fw-semibold text-muted">Expiry Date</label>
+                    <p class="mb-0">{{this.formatDateTime @model.permit.expiryDate}}</p>
+                  </div>
+                {{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {{!-- Project Details --}}
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Project Details</h5>
+          </div>
+          <div class="card-body">
+            <div class="info-group mb-3">
+              <label class="fw-semibold text-muted">Project Description</label>
+              <p class="mb-0">{{@model.permit.description}}</p>
+            </div>
+            {{#if @model.permit.workDescription}}
+              <div class="info-group mb-3">
+                <label class="fw-semibold text-muted">Work Description</label>
+                <p class="mb-0">{{@model.permit.workDescription}}</p>
+              </div>
+            {{/if}}
+            {{#if @model.permit.property}}
+              <div class="info-group mb-3">
+                <label class="fw-semibold text-muted">Project Address</label>
+                <p class="mb-0">
+                  {{@model.permit.property.street}}<br>
+                  {{@model.permit.property.city}}, {{@model.permit.property.state}} {{@model.permit.property.zip}}
+                  {{#if @model.permit.property.parcelId}}<br>Parcel: {{@model.permit.property.parcelId}}{{/if}}
+                </p>
+              </div>
+            {{/if}}
+          </div>
+        </div>
+
+        {{!-- Applicant & Contractor Info --}}
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">Contact Information</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="text-primary">Applicant</h6>
+                {{#if @model.permit.applicant}}
+                  <p class="mb-1"><strong>{{@model.permit.applicant.name}}</strong></p>
+                  {{#if @model.permit.applicant.email}}<p class="mb-1">{{@model.permit.applicant.email}}</p>{{/if}}
+                  {{#if @model.permit.applicant.phone}}<p class="mb-0">{{@model.permit.applicant.phone}}</p>{{/if}}
+                {{/if}}
+              </div>
+              {{#if @model.permit.contractor}}
+                <div class="col-md-6">
+                  <h6 class="text-primary">Contractor</h6>
+                  <p class="mb-1"><strong>{{@model.permit.contractor.name}}</strong></p>
+                  {{#if @model.permit.contractor.email}}<p class="mb-1">{{@model.permit.contractor.email}}</p>{{/if}}
+                  {{#if @model.permit.contractor.phone}}<p class="mb-1">{{@model.permit.contractor.phone}}</p>{{/if}}
+                  {{#if @model.permit.contractor.licenseNumber}}<p class="mb-0">License: {{@model.permit.contractor.licenseNumber}}</p>{{/if}}
+                </div>
+              {{/if}}
+            </div>
+          </div>
+        </div>
+
+        {{!-- Attached Files --}}
+        {{#if @model.files.length}}
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Attached Documents</h5>
+            </div>
+            <div class="card-body">
+              <div class="files-list">
+                {{#each @model.files as |file|}}
+                  <div class="file-item d-flex align-items-center justify-content-between py-2 px-3 mb-2 border rounded">
+                    <div class="file-info">
+                      <div class="fw-semibold">{{file.originalName}}</div>
+                      <small class="text-muted">{{file.fileType}} • {{this.formatFileSize file.size}} • {{this.formatDateTime file.createdAt}}</small>
+                    </div>
+                    <div class="file-actions">
+                      <button type="button" class="btn btn-sm btn-outline-primary" {{on "click" (fn this.downloadFile file.id)}}>
+                        📁 Download
+                      </button>
+                    </div>
+                  </div>
+                {{/each}}
+              </div>
+            </div>
+          </div>
+        {{/if}}
+
+      </div>
+
+      {{!-- Right Column - Sticky Chat/Messages --}}
+      <div class="chat-section">
+        <div class="sticky-chat">
+          
+          {{!-- Municipal Staff Chat --}}
+          <div class="chat-panel">
+            <div class="chat-header">
+              <h6 class="mb-0">Internal Notes</h6>
+              <small class="text-muted">Municipal staff only</small>
+            </div>
+            <div class="internal-chat-container">
+              <div class="chat-messages" id="internal-messages">
+                {{#each this.internalMessages as |message|}}
+                  <div class="chat-message {{if (eq message.senderId this.currentUserId) 'own' 'other'}}">
+                    <div class="message-header">
+                      <strong>{{message.senderName}}</strong>
+                      <small class="text-muted">{{this.formatDateTime message.createdAt}}</small>
+                    </div>
+                    <div class="message-content">{{message.content}}</div>
+                  </div>
+                {{/each}}
+              </div>
+              <div class="chat-input">
+                <div class="input-group">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Add internal note..."
+                    value={{this.internalMessage}}
+                    {{on "input" this.updateInternalMessage}}
+                    {{on "keyup" this.handleInternalKeyup}}
+                  />
+                  <button 
+                    type="button" 
+                    class="btn btn-primary"
+                    {{on "click" this.sendInternalMessage}}
+                    disabled={{not this.internalMessage.length}}
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {{!-- Public Communication --}}
+          <div class="chat-panel">
+            <div class="chat-header">
+              <h6 class="mb-0">Communication</h6>
+              <small class="text-muted">Visible to applicant</small>
+            </div>
+            <div class="public-chat-container">
+              <div class="chat-messages" id="public-messages">
+                {{#each this.publicMessages as |message|}}
+                  <div class="chat-message {{if (eq message.senderId this.currentUserId) 'own' 'other'}}">
+                    <div class="message-header">
+                      <strong>{{message.senderName}}</strong>
+                      <small class="text-muted">{{this.formatDateTime message.createdAt}}</small>
+                    </div>
+                    <div class="message-content">{{message.content}}</div>
+                  </div>
+                {{/each}}
+              </div>
+              <div class="chat-input">
+                <div class="input-group">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    placeholder="Message applicant..."
+                    value={{this.publicMessage}}
+                    {{on "input" this.updatePublicMessage}}
+                    {{on "keyup" this.handlePublicKeyup}}
+                  />
+                  <button 
+                    type="button" 
+                    class="btn btn-primary"
+                    {{on "click" this.sendPublicMessage}}
+                    disabled={{not this.publicMessage.length}}
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{{!-- Edit Permit Modal --}}
+{{#if this.showEditModal}}
+  <div class="modal-overlay" {{on "click" this.closeEditModal}}>
+    <div class="modal-dialog permit-edit-modal" {{on "click" this.preventModalClose}}> {{! Prevent modal close when clicking inside}}
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Permit</h3>
+        <button type="button" class="modal-close-btn" {{on "click" this.closeEditModal}}>×</button>
+      </div>
+
+      <div class="modal-body">
+        <form {{on "submit" this.savePermitChanges}}>
+          
+          {{!-- Status Change Section --}}
+          <div class="edit-section">
+            <h4 class="section-title">Status Management</h4>
+            <div class="form-group">
+              <label for="edit-status" class="form-label">Permit Status</label>
+              <select 
+                id="edit-status" 
+                class="form-control" 
+                value={{this.editingStatus}} 
+                {{on "change" this.updateEditingStatus}}
+              >
+                {{#each this.availableStatuses as |statusOption|}}
+                  <option value={{statusOption.value}}>
+                    {{statusOption.label}} {{#if statusOption.description}}- {{statusOption.description}}{{/if}}
+                  </option>
+                {{/each}}
+              </select>
+              {{#if (not (eq this.editingStatus @model.permit.status))}}
+                <small class="form-help text-info">
+                  Status will change from "{{this.formatStatus @model.permit.status}}" to "{{this.formatStatus this.editingStatus}}"
+                </small>
+              {{/if}}
+            </div>
+          </div>
+
+          {{!-- Department Review Management --}}
+          {{#if this.departmentReviews}}
+            {{#if this.departmentReviewsToReset.length}}
+              <div class="edit-section">
+                <h4 class="section-title">Department Review Management</h4>
+                <p class="section-description">Reset department reviews to allow re-evaluation</p>
+                
+                <div class="department-reset-grid">
+                  {{#each this.departmentReviewsToReset as |review|}}
+                    <label class="department-checkbox">
+                      <input 
+                        type="checkbox" 
+                        checked={{includes this.selectedDepartmentsToReset review.department}}
+                        {{on "change" (fn this.toggleDepartmentForReset review.department)}}
+                      >
+                      <div class="department-checkbox-content">
+                        <span class="department-name">{{this.formatDepartmentName review.department}}</span>
+                        <span class="department-status {{this.getReviewStatusClass review.status}}">
+                          {{this.formatReviewStatus review.status}}
+                        </span>
+                        {{#if review.reviewer.name}}
+                          <small class="reviewer-info">by {{review.reviewer.name}}</small>
+                        {{/if}}
+                      </div>
+                    </label>
+                  {{/each}}
+                </div>
+
+                {{#if this.selectedDepartmentsToReset.length}}
+                  <div class="reset-summary">
+                    <strong>{{this.selectedDepartmentsToReset.length}} department(s) will be reset to "Pending Review"</strong>
+                    <ul class="reset-list">
+                      {{#each this.selectedDepartmentsToReset as |dept|}}
+                        <li>{{this.formatDepartmentName dept}}</li>
+                      {{/each}}
+                    </ul>
+                  </div>
+                {{/if}}
+              </div>
+            {{else}}
+              <div class="edit-section">
+                <h4 class="section-title">Department Review Management</h4>
+                <p class="section-description text-muted">No department reviews available to reset. All departments are currently pending review.</p>
+              </div>
+            {{/if}}
+          {{else}}
+            <div class="edit-section">
+              <h4 class="section-title">Department Review Management</h4>
+              <p class="section-description text-muted">Loading department reviews...</p>
+            </div>
+          {{/if}}
+
+          {{!-- Bulk Actions --}}
+          {{#if this.departmentReviewsToReset.length}}
+            <div class="edit-section">
+              <h4 class="section-title">Quick Actions</h4>
+              <div class="bulk-actions">
+                <button 
+                  type="button" 
+                  class="btn btn-outline-warning btn-sm"
+                  {{on "click" this.selectAllDepartments}}
+                >
+                  Select All Departments
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-outline-secondary btn-sm"
+                  {{on "click" this.clearDepartmentSelection}}
+                >
+                  Clear Selection
+                </button>
+              </div>
+            </div>
+          {{/if}}
+
+          {{!-- Notes Section --}}
+          <div class="edit-section">
+            <h4 class="section-title">Change Notes</h4>
+            <div class="form-group">
+              <label for="edit-notes" class="form-label">Internal Notes</label>
+              <textarea 
+                id="edit-notes"
+                class="form-control" 
+                rows="3"
+                placeholder="Add notes about these changes (will be recorded in permit history)..."
+                value={{this.editingNotes}}
+                {{on "input" this.updateEditingNotes}}
+              ></textarea>
+              <small class="form-help">These notes will be added to the permit's internal communication log.</small>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          class="btn btn-secondary"
+          {{on "click" this.closeEditModal}}
+        >
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="btn btn-primary"
+          {{on "click" this.savePermitChanges}}
+          disabled={{this.isSubmitting}}
+        >
+          {{#if this.isSubmitting}}
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Saving...
+          {{else}}
+            Save Changes
+          {{/if}}
+        </button>
+      </div>
+    </div>
+  </div>
+{{/if}}
+
+{{!-- Permit Approval Modal --}}
+<PermitApprovalModal 
+  @isOpen={{this.showApprovalModal}}
+  @permit={{@model.permit}}
+  @currentUser={{this.currentUser}}
+  @onClose={{this.closeApprovalModal}}
+  @onApproval={{this.handleApproval}}
+  @onRejection={{this.handleRejection}}
+/>

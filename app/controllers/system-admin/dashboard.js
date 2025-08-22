@@ -45,8 +45,8 @@ export default class AdminDashboardController extends Controller {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     
-    // Navigate back to admin login
-    this.router.transitionTo('admin.login');
+    // Navigate back to system admin login
+    this.router.transitionTo('system-admin.login');
   }
 
   resetViews() {

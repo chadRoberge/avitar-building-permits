@@ -31,8 +31,8 @@ router.get('/stats/:municipalityId', auth, async (req, res) => {
     const currentYearStats = await Permit.aggregate([
       {
         $match: {
-          municipality: mongoose.Types.ObjectId(municipalityId),
-          applicationDate: { $gte: startOfYear, $lte: endOfYear },
+          municipality: new mongoose.Types.ObjectId(municipalityId),
+          createdAt: { $gte: startOfYear, $lte: endOfYear },
         },
       },
       {
@@ -67,8 +67,8 @@ router.get('/stats/:municipalityId', auth, async (req, res) => {
     const lastYearStats = await Permit.aggregate([
       {
         $match: {
-          municipality: mongoose.Types.ObjectId(municipalityId),
-          applicationDate: { $gte: startOfLastYear, $lte: endOfLastYear },
+          municipality: new mongoose.Types.ObjectId(municipalityId),
+          createdAt: { $gte: startOfLastYear, $lte: endOfLastYear },
         },
       },
       {
@@ -84,7 +84,7 @@ router.get('/stats/:municipalityId', auth, async (req, res) => {
     const statusBreakdown = await Permit.aggregate([
       {
         $match: {
-          municipality: mongoose.Types.ObjectId(municipalityId),
+          municipality: new mongoose.Types.ObjectId(municipalityId),
           status: { $nin: ['completed', 'cancelled', 'denied', 'expired'] },
         },
       },
@@ -100,13 +100,13 @@ router.get('/stats/:municipalityId', auth, async (req, res) => {
     const monthlyTrends = await Permit.aggregate([
       {
         $match: {
-          municipality: mongoose.Types.ObjectId(municipalityId),
-          applicationDate: { $gte: startOfYear, $lte: endOfYear },
+          municipality: new mongoose.Types.ObjectId(municipalityId),
+          createdAt: { $gte: startOfYear, $lte: endOfYear },
         },
       },
       {
         $group: {
-          _id: { $month: '$applicationDate' },
+          _id: { $month: '$createdAt' },
           count: { $sum: 1 },
         },
       },
@@ -231,8 +231,8 @@ router.get('/permit-types/:municipalityId', auth, async (req, res) => {
     const permitTypeCounts = await Permit.aggregate([
       {
         $match: {
-          municipality: mongoose.Types.ObjectId(municipalityId),
-          applicationDate: {
+          municipality: new mongoose.Types.ObjectId(municipalityId),
+          createdAt: {
             $gte: new Date(new Date().getFullYear(), 0, 1),
           },
         },

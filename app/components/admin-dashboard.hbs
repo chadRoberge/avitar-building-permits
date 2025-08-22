@@ -1,4 +1,4 @@
-<div class="admin-dashboard">
+<div class="municipal-dashboard admin-dashboard">
   <div class="dashboard-header">
     <h1>System Administration Dashboard</h1>
     <p>Manage municipalities, users, and system-wide settings</p>
@@ -21,158 +21,141 @@
     </div>
 
   {{else if this.dashboardData}}
-    {{! Overview Cards }}
-    <div class="overview-cards">
+    {{! Metrics Cards - Using municipal dashboard styling }}
+    <div class="metrics-grid">
       {{#each this.overviewCards as |card|}}
         <div 
-          class="overview-card {{card.color}} {{if card.action 'clickable'}}"
+          class="metric-card {{if card.action 'clickable'}}"
           {{on "click" card.action}}
         >
-          <div class="card-icon">{{card.icon}}</div>
-          <div class="card-content">
-            <div class="card-value">{{card.value}}</div>
-            <div class="card-title">{{card.title}}</div>
+          <div class="metric-icon">{{card.icon}}</div>
+          <div class="metric-content">
+            <h3>{{card.title}}</h3>
+            <div class="metric-value">{{card.value}}</div>
+            {{#if card.subtitle}}
+              <div class="metric-subtitle">{{card.subtitle}}</div>
+            {{/if}}
           </div>
         </div>
       {{/each}}
     </div>
 
-    <div class="dashboard-content">
+    {{! Main Dashboard Grid - Using municipal dashboard styling }}
+    <div class="dashboard-grid">
       {{! Analytics Section }}
-      <div class="analytics-section">
-        <div class="analytics-grid">
-          <div class="chart-container">
-            <h3>Users by Type</h3>
-            <div class="chart-content">
-              {{#each this.userTypeChart as |item|}}
-                <div class="chart-item">
-                  <div class="chart-bar">
-                    <div 
-                      class="chart-fill" 
-                      style="width: {{item.percentage}}%"
-                    ></div>
-                  </div>
-                  <div class="chart-label">
-                    <span class="label-text">{{item.label}}</span>
-                    <span class="label-value">{{item.value}} ({{item.percentage}}%)</span>
-                  </div>
-                </div>
-              {{/each}}
+      <div class="dashboard-section">
+        <h2>System Analytics</h2>
+        <div class="status-grid">
+          {{#each this.userTypeChart as |item|}}
+            <div class="status-item">
+              <div class="status-label">{{item.label}}</div>
+              <div class="status-value">{{item.value}}</div>
+              <div class="status-bar">
+                <div class="status-fill" style="width: {{item.percentage}}%"></div>
+              </div>
             </div>
-          </div>
+          {{/each}}
+        </div>
+      </div>
 
-          <div class="chart-container">
-            <h3>Permits by Status</h3>
-            <div class="chart-content">
-              {{#each this.permitStatusChart as |item|}}
-                <div class="chart-item">
-                  <div class="chart-bar">
-                    <div 
-                      class="chart-fill permit-status" 
-                      style="width: {{item.percentage}}%"
-                    ></div>
-                  </div>
-                  <div class="chart-label">
-                    <span class="label-text">{{item.label}}</span>
-                    <span class="label-value">{{item.value}} ({{item.percentage}}%)</span>
-                  </div>
-                </div>
-              {{/each}}
+      <div class="dashboard-section">
+        <h2>Permit Overview</h2>
+        <div class="status-grid">
+          {{#each this.permitStatusChart as |item|}}
+            <div class="status-item">
+              <div class="status-label">{{item.label}}</div>
+              <div class="status-value">{{item.value}}</div>
+              <div class="status-bar">
+                <div class="status-fill" style="width: {{item.percentage}}%"></div>
+              </div>
             </div>
-          </div>
+          {{/each}}
         </div>
       </div>
 
       {{! Recent Activity Section }}
-      <div class="recent-activity-section">
-        <div class="activity-grid">
-          <div class="activity-container">
-            <h3>Recent Users</h3>
-            <div class="activity-list">
-              {{#each this.dashboardData.recent.users as |user|}}
-                <div class="activity-item">
-                  <div class="activity-avatar">
-                    {{this.getInitials user.firstName user.lastName}}
-                  </div>
-                  <div class="activity-content">
-                    <div class="activity-title">
-                      {{user.firstName}} {{user.lastName}}
-                    </div>
-                    <div class="activity-meta">
-                      {{user.email}} • {{this.formatUserType user.userType}}
-                    </div>
-                    <div class="activity-date">
-                      {{format-datetime user.createdAt}}
-                    </div>
-                  </div>
+      <div class="dashboard-section">
+        <h2>Recent Users</h2>
+        <div class="activity-list">
+          {{#each this.dashboardData.recent.users as |user|}}
+            <div class="activity-item">
+              <div class="activity-icon">
+                {{this.getInitials user.firstName user.lastName}}
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">
+                  {{user.firstName}} {{user.lastName}}
                 </div>
-              {{else}}
-                <div class="empty-state">No recent users</div>
-              {{/each}}
+                <div class="activity-details">
+                  {{user.email}} • {{this.formatUserType user.userType}}
+                </div>
+                <div class="activity-time">
+                  {{format-datetime user.createdAt}}
+                </div>
+              </div>
             </div>
-          </div>
+          {{else}}
+            <div class="empty-state">No recent users</div>
+          {{/each}}
+        </div>
+      </div>
 
-          <div class="activity-container">
-            <h3>Recent Permits</h3>
-            <div class="activity-list">
-              {{#each this.dashboardData.recent.permits as |permit|}}
-                <div class="activity-item">
-                  <div class="activity-icon">📋</div>
-                  <div class="activity-content">
-                    <div class="activity-title">
-                      {{permit.permitNumber}} - {{permit.type}}
-                    </div>
-                    <div class="activity-meta">
-                      {{#if permit.municipalityId}}
-                        {{permit.municipalityId.name}}
-                      {{/if}}
-                      • Status: {{permit.status}}
-                    </div>
-                    <div class="activity-date">
-                      {{format-datetime permit.createdAt}}
-                    </div>
-                  </div>
+      <div class="dashboard-section">
+        <h2>Recent Permits</h2>
+        <div class="activity-list">
+          {{#each this.dashboardData.recent.permits as |permit|}}
+            <div class="activity-item">
+              <div class="activity-icon">📋</div>
+              <div class="activity-content">
+                <div class="activity-title">
+                  {{permit.permitNumber}} - {{permit.type}}
                 </div>
-              {{else}}
-                <div class="empty-state">No recent permits</div>
-              {{/each}}
+                <div class="activity-details">
+                  {{#if permit.municipalityId}}
+                    {{permit.municipalityId.name}}
+                  {{/if}}
+                  • Status: {{permit.status}}
+                </div>
+                <div class="activity-time">
+                  {{format-datetime permit.createdAt}}
+                </div>
+              </div>
             </div>
-          </div>
+          {{else}}
+            <div class="empty-state">No recent permits</div>
+          {{/each}}
         </div>
       </div>
 
       {{! Quick Actions }}
-      <div class="quick-actions-section">
-        <h3>Quick Actions</h3>
-        <div class="quick-actions">
-          <button 
-            type="button" 
-            class="btn btn-outline-primary"
-            {{on "click" this.navigateToMunicipalities}}
-          >
-            <span class="btn-icon">🏛️</span>
-            Manage Municipalities
-          </button>
+      <div class="dashboard-section quick-actions-section">
+        <h2>Quick Actions</h2>
+        <div class="activity-list">
+          <div class="activity-item clickable" {{on "click" this.navigateToMunicipalities}}>
+            <div class="activity-icon">🏛️</div>
+            <div class="activity-content">
+              <div class="activity-title">Manage Municipalities</div>
+              <div class="activity-details">View and configure municipality settings</div>
+            </div>
+          </div>
           
-          <button 
-            type="button" 
-            class="btn btn-outline-primary"
-            {{on "click" this.navigateToUsers}}
-          >
-            <span class="btn-icon">👥</span>
-            Manage Users
-          </button>
+          <div class="activity-item clickable" {{on "click" this.navigateToUsers}}>
+            <div class="activity-icon">👥</div>
+            <div class="activity-content">
+              <div class="activity-title">Manage Users</div>
+              <div class="activity-details">Monitor system-wide user activity</div>
+            </div>
+          </div>
           
-          <button 
-            type="button" 
-            class="btn btn-outline-primary"
-            {{on "click" this.navigateToSettings}}
-          >
-            <span class="btn-icon">⚙️</span>
-            System Settings
-          </button>
+          <div class="activity-item clickable" {{on "click" this.navigateToSettings}}>
+            <div class="activity-icon">⚙️</div>
+            <div class="activity-content">
+              <div class="activity-title">System Settings</div>
+              <div class="activity-details">Configure global system parameters</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   {{/if}}
-}</div>
+</div>

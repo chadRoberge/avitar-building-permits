@@ -4,7 +4,6 @@
     <p>Configure payment settings and manage municipalities</p>
   </div>
 
-  {{! Search and Filters }}
   <div class="manager-controls">
     <div class="search-controls">
       <input 
@@ -41,7 +40,6 @@
         <div class="spinner"></div>
         <p>Loading municipalities...</p>
       </div>
-
     {{else if this.error}}
       <div class="error-state">
         <div class="error-icon">⚠️</div>
@@ -51,266 +49,798 @@
           Retry
         </button>
       </div>
-
     {{else}}
-      <div class="manager-layout">
-        {{! Municipalities List }}
-        <div class="municipalities-list">
-          <h3>Municipalities ({{this.municipalities.length}})</h3>
-          <div class="list-container">
-            {{#each this.filteredMunicipalities as |municipality|}}
-              <div 
-                class="municipality-item {{if (eq municipality._id this.selectedMunicipality.municipality._id) 'selected'}}"
-                {{on "click" (fn this.selectMunicipality municipality)}}
-              >
-                <div class="municipality-header">
-                  <h4>{{municipality.name}}</h4>
-                  <div class="municipality-status">
-                    <span class="status-badge {{if municipality.isActive 'active' 'inactive'}}">
-                      {{if municipality.isActive 'Active' 'Inactive'}}
-                    </span>
+      <div class="municipalities-grid">
+        <h3>Municipalities ({{this.municipalities.length}})</h3>
+        <div class="grid-container">
+          {{#each this.filteredMunicipalities as |municipality|}}
+            <div class="municipality-card" {{on "click" (fn this.selectMunicipality municipality)}}>
+              <div class="card-header">
+                <h4 class="municipality-name">{{municipality.name}}</h4>
+                <span class="status-badge {{if municipality.isActive 'active' 'inactive'}}">
+                  {{if municipality.isActive 'Active' 'Inactive'}}
+                </span>
+              </div>
+              
+              <div class="card-body">
+                <div class="municipality-info">
+                  <div class="info-row">
+                    <span class="label">📍</span>
+                    <span class="value">{{municipality.address.city}}, {{municipality.address.state}}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">👥</span>
+                    <span class="value">{{municipality.userCount}} users</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">💼</span>
+                    <span class="value">{{this.formatSubscriptionPlan municipality.subscription.plan}}</span>
                   </div>
                 </div>
-                
-                <div class="municipality-meta">
-                  <div class="meta-item">
-                    <span class="meta-label">Plan:</span>
-                    <span class="meta-value">{{this.formatSubscriptionPlan municipality.subscription.plan}}</span>
-                  </div>
-                  <div class="meta-item">
-                    <span class="meta-label">Users:</span>
-                    <span class="meta-value">{{municipality.userCount}}</span>
-                  </div>
-                  <div class="meta-item">
-                    <span class="meta-label">Location:</span>
-                    <span class="meta-value">{{municipality.address.city}}, {{municipality.address.state}}</span>
-                  </div>
-                </div>
+              </div>
 
-                <div class="municipality-actions">
-                  <button 
-                    type="button" 
-                    class="btn {{if municipality.isActive 'btn-warning' 'btn-success'}} btn-sm"
-                    {{on "click" (fn this.toggleMunicipalityStatus municipality)}}
-                  >
-                    {{if municipality.isActive 'Deactivate' 'Activate'}}
-                  </button>
-                </div>
+              <div class="card-actions">
+                <button 
+                  type="button" 
+                  class="btn {{if municipality.isActive 'btn-warning' 'btn-success'}} btn-sm"
+                  {{on "click" (fn this.toggleMunicipalityStatus municipality)}}
+                >
+                  {{if municipality.isActive 'Deactivate' 'Activate'}}
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-primary btn-sm"
+                >
+                  Manage
+                </button>
+              </div>
+            </div>
+          {{else}}
+            <div class="empty-state">
+              <div class="empty-icon">🏛️</div>
+              <h4>No municipalities found</h4>
+              <p>No municipalities match your current filters.</p>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    {{/if}}
+  </div>
+
+  {{! Municipality Details Modal }}
+  {{#if this.selectedMunicipality}}
+    <div class="modal-backdrop" {{on "click" this.closeDetails}}></div>
+    <div class="municipality-modal">
+      <div class="modal-header">
+        <h3>{{this.selectedMunicipality.municipality.name}} - Settings</h3>
+        <button type="button" class="btn-close" {{on "click" this.closeDetails}}>✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="details-content">
+          <div class="details-section">
+            <h4>Basic Information</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="status-badge {{if this.selectedMunicipality.municipality.isActive 'active' 'inactive'}}">
+                  {{if this.selectedMunicipality.municipality.isActive 'Active' 'Inactive'}}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Type:</span>
+                <span class="info-value">{{this.selectedMunicipality.municipality.type}}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Population:</span>
+                <span class="info-value">{{this.selectedMunicipality.municipality.population}}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Website:</span>
+                <span class="info-value">{{this.selectedMunicipality.municipality.website}}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="details-section">
+            <div class="section-header">
+              <h4>Municipality Settings</h4>
+              <button type="button" class="btn btn-outline-primary btn-sm" {{on "click" this.editMunicipalitySettings}}>
+                {{if this.showMunicipalForm 'Cancel Edit' 'Edit Settings'}}
+              </button>
+            </div>
+            
+            {{#if this.showMunicipalForm}}
+              <div class="municipal-edit-form">
+                <form {{on "submit" this.saveMunicipalSettings}}>
+                  <div class="form-section">
+                    <h6>Basic Information</h6>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="municipal-name">Municipality Name:</label>
+                        <input 
+                          id="municipal-name"
+                          type="text" 
+                          value={{this.municipalForm.name}}
+                          {{on "input" (fn this.updateMunicipalField "name")}}
+                          class="form-control"
+                          required
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="municipal-type">Type:</label>
+                        <select 
+                          id="municipal-type"
+                          {{on "change" (fn this.updateMunicipalField "type")}}
+                          class="form-control"
+                        >
+                          <option value="city" selected={{eq this.municipalForm.type "city"}}>City</option>
+                          <option value="town" selected={{eq this.municipalForm.type "town"}}>Town</option>
+                          <option value="village" selected={{eq this.municipalForm.type "village"}}>Village</option>
+                          <option value="county" selected={{eq this.municipalForm.type "county"}}>County</option>
+                          <option value="township" selected={{eq this.municipalForm.type "township"}}>Township</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="municipal-population">Population:</label>
+                        <input 
+                          id="municipal-population"
+                          type="number" 
+                          value={{this.municipalForm.population}}
+                          {{on "input" (fn this.updateMunicipalField "population")}}
+                          class="form-control"
+                          min="0"
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="municipal-website">Website:</label>
+                        <input 
+                          id="municipal-website"
+                          type="url" 
+                          value={{this.municipalForm.website}}
+                          {{on "input" (fn this.updateMunicipalField "website")}}
+                          class="form-control"
+                          placeholder="https://municipality.gov"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <h6>Address</h6>
+                    <div class="form-group">
+                      <label for="municipal-street">Street Address:</label>
+                      <input 
+                        id="municipal-street"
+                        type="text" 
+                        value={{this.municipalForm.address.street}}
+                        {{on "input" (fn this.updateMunicipalField "address.street")}}
+                        class="form-control"
+                        required
+                      />
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="municipal-city">City:</label>
+                        <input 
+                          id="municipal-city"
+                          type="text" 
+                          value={{this.municipalForm.address.city}}
+                          {{on "input" (fn this.updateMunicipalField "address.city")}}
+                          class="form-control"
+                          required
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="municipal-state">State:</label>
+                        <input 
+                          id="municipal-state"
+                          type="text" 
+                          value={{this.municipalForm.address.state}}
+                          {{on "input" (fn this.updateMunicipalField "address.state")}}
+                          class="form-control"
+                          maxlength="2"
+                          placeholder="NY"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label for="municipal-county">County:</label>
+                        <input 
+                          id="municipal-county"
+                          type="text" 
+                          value={{this.municipalForm.address.county}}
+                          {{on "input" (fn this.updateMunicipalField "address.county")}}
+                          class="form-control"
+                          placeholder="County name"
+                          required
+                        />
+                      </div>
+                      <div class="form-group">
+                        <label for="municipal-zip">ZIP Code:</label>
+                        <input 
+                          id="municipal-zip"
+                          type="text" 
+                          value={{this.municipalForm.address.zip}}
+                          {{on "input" (fn this.updateMunicipalField "address.zip")}}
+                          class="form-control"
+                          placeholder="12345"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <h6>Portal Settings</h6>
+                    <div class="form-group">
+                      <label for="municipal-portal-url">Portal URL:</label>
+                      <input 
+                        id="municipal-portal-url"
+                        type="url" 
+                        value={{this.municipalForm.portalUrl}}
+                        {{on "input" (fn this.updateMunicipalField "portalUrl")}}
+                        class="form-control"
+                        placeholder="https://permits.municipality.gov"
+                      />
+                      <small class="form-text text-muted">URL where residents can access the permit portal</small>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                      Save Changes
+                    </button>
+                    <button type="button" class="btn btn-secondary" {{on "click" this.closeMunicipalForm}}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               </div>
             {{else}}
-              <div class="empty-state">
-                <div class="empty-icon">🏛️</div>
-                <h4>No municipalities found</h4>
-                <p>No municipalities match your current filters.</p>
+              <div class="settings-grid">
+                <div class="setting-item">
+                  <span class="setting-label">Portal URL:</span>
+                  <span class="setting-value">{{this.selectedMunicipality.settings.portalUrl}}</span>
+                </div>
+                <div class="setting-item">
+                  <span class="setting-label">Website:</span>
+                  <span class="setting-value">{{this.selectedMunicipality.settings.website}}</span>
+                </div>
               </div>
-            {{/each}}
+            {{/if}}
           </div>
-        </div>
 
-        {{! Municipality Details }}
-        {{#if this.selectedMunicipality}}
-          <div class="municipality-details">
-            <div class="details-header">
-              <h3>{{this.selectedMunicipality.municipality.name}}</h3>
-              <button type="button" class="btn-close" {{on "click" this.closeDetails}}>✕</button>
+          <div class="details-section">
+            <div class="section-header">
+              <h4>API Access</h4>
+              <button type="button" class="btn btn-warning btn-sm" {{on "click" this.regenerateApiKey}}>
+                Regenerate Key
+              </button>
             </div>
-
-            <div class="details-content">
-              {{! Basic Information }}
-              <div class="details-section">
-                <h4>Basic Information</h4>
-                <div class="info-grid">
-                  <div class="info-item">
-                    <span class="info-label">Status:</span>
-                    <span class="status-badge {{if this.selectedMunicipality.municipality.isActive 'active' 'inactive'}}">
-                      {{if this.selectedMunicipality.municipality.isActive 'Active' 'Inactive'}}
-                    </span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Type:</span>
-                    <span class="info-value">{{this.selectedMunicipality.municipality.type}}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Population:</span>
-                    <span class="info-value">{{this.selectedMunicipality.municipality.population}}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Website:</span>
-                    <span class="info-value">{{this.selectedMunicipality.municipality.website}}</span>
-                  </div>
-                </div>
-              </div>
-
-              {{! Subscription Information }}
-              <div class="details-section">
-                <h4>Subscription</h4>
-                <div class="info-grid">
-                  <div class="info-item">
-                    <span class="info-label">Plan:</span>
-                    <span class="info-value">{{this.formatSubscriptionPlan this.selectedMunicipality.municipality.subscription.plan}}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Status:</span>
-                    <span class="status-badge subscription-{{this.selectedMunicipality.municipality.subscription.status}}">
-                      {{this.formatSubscriptionStatus this.selectedMunicipality.municipality.subscription.status}}
-                    </span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Period Start:</span>
-                    <span class="info-value">{{format-date this.selectedMunicipality.municipality.subscription.currentPeriodStart}}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Period End:</span>
-                    <span class="info-value">{{format-date this.selectedMunicipality.municipality.subscription.currentPeriodEnd}}</span>
-                  </div>
-                </div>
-              </div>
-
-              {{! Payment Configuration }}
-              <div class="details-section">
-                <div class="section-header">
-                  <h4>Payment Configuration</h4>
-                  <button type="button" class="btn btn-primary btn-sm" {{on "click" this.showPaymentConfiguration}}>
-                    Configure Payments
-                  </button>
-                </div>
+            
+            <div class="api-key-section">
+              <div class="api-key-info">
+                <p class="section-description">
+                  External software (like assessing systems) can use this API key to access permit data securely.
+                </p>
                 
-                <div class="payment-config-status">
-                  <div class="config-item">
-                    <span class="config-label">InvoiceCloud:</span>
-                    <span class="status-badge {{if this.selectedMunicipality.municipality.paymentConfig.invoiceCloud.enabled 'active' 'inactive'}}">
-                      {{if this.selectedMunicipality.municipality.paymentConfig.invoiceCloud.enabled 'Enabled' 'Disabled'}}
-                    </span>
+                {{#if this.selectedMunicipality.apiKey.key}}
+                  <div class="api-key-display">
+                    <label for="api-key">API Key:</label>
+                    <div class="key-input-group">
+                      <input 
+                        id="api-key"
+                        type="text" 
+                        value={{this.selectedMunicipality.apiKey.key}}
+                        class="form-control api-key-input"
+                        readonly
+                      />
+                      <button type="button" class="btn btn-outline-primary btn-sm" {{on "click" this.copyApiKey}}>
+                        Copy
+                      </button>
+                    </div>
+                    <div class="api-key-meta">
+                      <small class="text-muted">
+                        Created: {{format-date this.selectedMunicipality.apiKey.createdAt}}
+                        {{#if this.selectedMunicipality.apiKey.lastUsed}}
+                          • Last used: {{format-date this.selectedMunicipality.apiKey.lastUsed}}
+                        {{else}}
+                          • Never used
+                        {{/if}}
+                      </small>
+                    </div>
                   </div>
-                  <div class="config-item">
-                    <span class="config-label">Test Mode:</span>
-                    <span class="config-value">
-                      {{if this.selectedMunicipality.municipality.paymentConfig.invoiceCloud.testMode 'Yes' 'No'}}
-                    </span>
+                {{else}}
+                  <div class="no-api-key">
+                    <p class="text-muted">No API key generated yet.</p>
                   </div>
-                </div>
+                {{/if}}
               </div>
+            </div>
+          </div>
 
-              {{! Users }}
-              <div class="details-section">
-                <h4>Users ({{this.selectedMunicipality.users.length}})</h4>
-                <div class="users-list">
-                  {{#each this.selectedMunicipality.users as |user|}}
-                    <div class="user-item">
-                      <div class="user-avatar">{{this.getInitials user.firstName user.lastName}}</div>
-                      <div class="user-info">
-                        <div class="user-name">{{user.firstName}} {{user.lastName}}</div>
-                        <div class="user-email">{{user.email}}</div>
-                        <div class="user-meta">
-                          {{user.userType}} • {{if user.isActive 'Active' 'Inactive'}}
+          <div class="details-section">
+            <div class="section-header">
+              <h4>Users Management</h4>
+              <div class="section-actions">
+                <select {{on "change" this.updateUserTypeFilter}} class="filter-select btn-sm">
+                  <option value="all">All Users</option>
+                  <option value="residential">Residential</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="municipal">Municipal Staff</option>
+                </select>
+                <button type="button" class="btn btn-primary btn-sm" {{on "click" this.toggleUserForm}}>
+                  {{if this.showUserForm 'Cancel' 'Add User'}}
+                </button>
+              </div>
+            </div>
+            
+            {{#if this.showUserForm}}
+              <div class="user-form">
+                <h5>{{if this.editingUser 'Edit User' 'Add New User'}}</h5>
+                <form {{on "submit" this.saveUser}}>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="user-email">Email:</label>
+                      <input 
+                        id="user-email"
+                        type="email" 
+                        value={{this.userForm.email}}
+                        {{on "input" (fn this.updateUserField "email")}}
+                        placeholder="user@example.com"
+                        class="form-control"
+                        required
+                        disabled={{this.editingUser}}
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="user-type">User Type:</label>
+                      <select 
+                        id="user-type"
+                        {{on "change" (fn this.updateUserField "userType")}}
+                        class="form-control"
+                        disabled={{this.editingUser}}
+                      >
+                        <option value="residential" selected={{eq this.userForm.userType "residential"}}>Residential</option>
+                        <option value="commercial" selected={{eq this.userForm.userType "commercial"}}>Commercial</option>
+                        <option value="municipal" selected={{eq this.userForm.userType "municipal"}}>Municipal Staff</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="user-firstName">First Name:</label>
+                      <input 
+                        id="user-firstName"
+                        type="text" 
+                        value={{this.userForm.firstName}}
+                        {{on "input" (fn this.updateUserField "firstName")}}
+                        class="form-control"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="user-lastName">Last Name:</label>
+                      <input 
+                        id="user-lastName"
+                        type="text" 
+                        value={{this.userForm.lastName}}
+                        {{on "input" (fn this.updateUserField "lastName")}}
+                        class="form-control"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="user-phone">Phone:</label>
+                      <input 
+                        id="user-phone"
+                        type="tel" 
+                        value={{this.userForm.phone}}
+                        {{on "input" (fn this.updateUserField "phone")}}
+                        class="form-control"
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                    {{#unless this.editingUser}}
+                      <div class="form-group">
+                        <label for="user-password">Password:</label>
+                        <input 
+                          id="user-password"
+                          type="password" 
+                          value={{this.userForm.password}}
+                          {{on "input" (fn this.updateUserField "password")}}
+                          class="form-control"
+                          placeholder="Leave blank for default"
+                        />
+                        <small class="form-text text-muted">Leave blank to use default: TempPassword123!</small>
+                      </div>
+                    {{/unless}}
+                  </div>
+
+                  {{#if (eq this.userForm.userType "municipal")}}
+                    <div class="form-section">
+                      <h6>Municipal User Settings</h6>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="user-department">Department:</label>
+                          <select 
+                            id="user-department"
+                            {{on "change" (fn this.updateUserField "department")}}
+                            class="form-control"
+                            required
+                          >
+                            <option value="">Select Department</option>
+                            {{#each this.availableDepartments as |dept|}}
+                              <option value={{dept.id}} selected={{eq this.userForm.department dept.id}}>
+                                {{dept.name}}
+                              </option>
+                            {{/each}}
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="user-permission-level">Permission Level:</label>
+                          <select 
+                            id="user-permission-level"
+                            {{on "change" (fn this.updateUserField "permissionLevel")}}
+                            class="form-control"
+                            required
+                          >
+                            {{#each this.availablePermissionLevels as |level|}}
+                              <option value={{level.level}} selected={{eq this.userForm.permissionLevel level.level}}>
+                                {{level.name}} (Level {{level.level}})
+                              </option>
+                            {{/each}}
+                          </select>
+                          <small class="form-text text-muted">
+                            {{#each this.availablePermissionLevels as |level|}}
+                              {{#if (eq this.userForm.permissionLevel level.level)}}
+                                {{level.description}}
+                              {{/if}}
+                            {{/each}}
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  {{/if}}
+
+                  {{#if (eq this.userForm.userType "commercial")}}
+                    <div class="form-section">
+                      <h6>Business Information</h6>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="business-name">Business Name:</label>
+                          <input 
+                            id="business-name"
+                            type="text" 
+                            value={{this.userForm.businessInfo.businessName}}
+                            {{on "input" (fn this.updateUserField "businessInfo.businessName")}}
+                            class="form-control"
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="business-type">Business Type:</label>
+                          <input 
+                            id="business-type"
+                            type="text" 
+                            value={{this.userForm.businessInfo.businessType}}
+                            {{on "input" (fn this.updateUserField "businessInfo.businessType")}}
+                            class="form-control"
+                            placeholder="e.g., General Contractor"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  {{/if}}
+
+                  {{#if (eq this.userForm.userType "residential")}}
+                    <div class="form-section">
+                      <h6>Property Address</h6>
+                      <div class="form-group">
+                        <label for="property-street">Street Address:</label>
+                        <input 
+                          id="property-street"
+                          type="text" 
+                          value={{this.userForm.propertyAddress.street}}
+                          {{on "input" (fn this.updateUserField "propertyAddress.street")}}
+                          class="form-control"
+                        />
+                      </div>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="property-city">City:</label>
+                          <input 
+                            id="property-city"
+                            type="text" 
+                            value={{this.userForm.propertyAddress.city}}
+                            {{on "input" (fn this.updateUserField "propertyAddress.city")}}
+                            class="form-control"
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="property-state">State:</label>
+                          <input 
+                            id="property-state"
+                            type="text" 
+                            value={{this.userForm.propertyAddress.state}}
+                            {{on "input" (fn this.updateUserField "propertyAddress.state")}}
+                            class="form-control"
+                            maxlength="2"
+                          />
+                        </div>
+                        <div class="form-group">
+                          <label for="property-zip">ZIP:</label>
+                          <input 
+                            id="property-zip"
+                            type="text" 
+                            value={{this.userForm.propertyAddress.zip}}
+                            {{on "input" (fn this.updateUserField "propertyAddress.zip")}}
+                            class="form-control"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  {{/if}}
+
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                      {{if this.editingUser 'Update User' 'Create User'}}
+                    </button>
+                    <button type="button" class="btn btn-secondary" {{on "click" this.toggleUserForm}}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            {{/if}}
+            
+            <div class="users-list">
+              {{#if this.usersLoading}}
+                <div class="loading-state">
+                  <div class="spinner"></div>
+                  <p>Loading users...</p>
+                </div>
+              {{else if this.municipalityUsers.length}}
+                <div class="professional-users-list">
+                  {{#each this.municipalityUsers as |user|}}
+                    <div class="professional-user-card">
+                      <div class="user-main-content">
+                        <div class="user-avatar-section">
+                          <div class="user-avatar">
+                            {{this.getUserInitials user.firstName user.lastName}}
+                          </div>
+                          <div class="user-status-indicator {{if user.isActive 'status-active' 'status-inactive'}}"></div>
+                        </div>
+                        
+                        <div class="user-details-section">
+                          <div class="user-compact-row">
+                            <div class="user-name-email-section">
+                              <h5 class="user-full-name">{{user.firstName}} {{user.lastName}}</h5>
+                              <div class="user-email">{{user.email}}</div>
+                            </div>
+                            
+                            <div class="user-badges-section">
+                              <div class="user-type-department-group">
+                                <span class="user-type-badge user-type-{{user.userType}}">
+                                  {{capitalize user.userType}}
+                                </span>
+                                {{#if (eq user.userType "municipal")}}
+                                  {{#if user.department}}
+                                    <span class="department-connector">-</span>
+                                    <span class="department-badge">
+                                      {{user.department}} Dept.
+                                    </span>
+                                  {{/if}}
+                                {{/if}}
+                              </div>
+                              
+                              {{#if user.businessInfo.businessName}}
+                                <span class="business-badge">
+                                  {{user.businessInfo.businessName}}
+                                </span>
+                              {{/if}}
+                              
+                              {{#if user.phone}}
+                                <span class="contact-item">
+                                  📞 {{user.phone}}
+                                </span>
+                              {{/if}}
+                            </div>
+                            
+                            <div class="user-permission-activity">
+                              {{#if user.permissionLevel}}
+                                <div class="permission-compact">
+                                  <span class="permission-label">Level:</span>
+                                  <span class="permission-value">{{user.permissionLevel}}</span>
+                                </div>
+                              {{/if}}
+                              
+                              {{#if user.lastLoginDate}}
+                                <span class="last-login-compact">
+                                  🕐 {{format-date user.lastLoginDate}}
+                                </span>
+                              {{else}}
+                                <span class="last-login-compact text-muted">
+                                  🕐 Never logged in
+                                </span>
+                              {{/if}}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="user-actions-section">
+                        <div class="actions-dropdown" {{on "click" (fn this.toggleUserActions user._id)}}>
+                          <button type="button" class="actions-ellipsis-btn" title="User actions">
+                            ⋯
+                          </button>
+                          
+                          {{#if (eq this.activeDropdownUserId user._id)}}
+                            <div class="actions-dropdown-menu" {{on "click" this.preventDropdownClose}}>
+                              <button 
+                                type="button" 
+                                class="dropdown-action-item" 
+                                {{on "click" (fn this.editUser user)}}
+                              >
+                                <span class="action-icon">✏️</span>
+                                <span class="action-text">Edit User</span>
+                              </button>
+                              
+                              <button 
+                                type="button" 
+                                class="dropdown-action-item {{if user.isActive 'action-warning' 'action-success'}}" 
+                                {{on "click" (fn this.toggleUserStatus user)}}
+                              >
+                                <span class="action-icon">{{if user.isActive '⏸️' '▶️'}}</span>
+                                <span class="action-text">{{if user.isActive 'Deactivate' 'Activate'}}</span>
+                              </button>
+                              
+                              <button 
+                                type="button" 
+                                class="dropdown-action-item" 
+                                {{on "click" (fn this.sendUserInvitation user)}}
+                              >
+                                <span class="action-icon">📧</span>
+                                <span class="action-text">Send Invitation</span>
+                              </button>
+                            </div>
+                          {{/if}}
                         </div>
                       </div>
                     </div>
                   {{/each}}
                 </div>
-              </div>
+              {{else}}
+                <div class="empty-users">
+                  <div class="empty-icon">👥</div>
+                  <h5>No Users Found</h5>
+                  <p class="text-muted">No users match the selected filter criteria.</p>
+                </div>
+              {{/if}}
             </div>
           </div>
-        {{/if}}
-      </div>
-    {{/if}}
-  </div>
 
-  {{! Payment Configuration Modal }}
-  {{#if this.showPaymentConfig}}
-    <div class="modal-overlay" {{on "click" this.hidePaymentConfiguration}}>
-      <div class="modal-content payment-config-modal" {{on "click" (fn (mut) (event) (halt-event))}} >
-        <div class="modal-header">
-          <h3>Payment Configuration</h3>
-          <button type="button" class="btn-close" {{on "click" this.hidePaymentConfiguration}}>✕</button>
-        </div>
-        
-        <div class="modal-body">
-          {{! InvoiceCloud Configuration }}
-          <div class="config-section">
-            <h4>InvoiceCloud Settings</h4>
-            
-            <div class="form-group">
-              <label>
-                <input 
-                  type="checkbox" 
-                  checked={{this.paymentConfigForm.invoiceCloud.enabled}}
-                  {{on "change" (fn this.updatePaymentConfigBoolean "invoiceCloud" "enabled")}}
-                />
-                Enable InvoiceCloud Payments
-              </label>
+          <div class="details-section">
+            <div class="section-header">
+              <h4>Webhooks & Integrations</h4>
+              <button type="button" class="btn btn-success btn-sm" {{on "click" this.toggleWebhookForm}}>
+                {{if this.showWebhookForm 'Cancel' 'Add Webhook'}}
+              </button>
             </div>
+            
+            {{#if this.showWebhookForm}}
+              <div class="webhook-form">
+                <h5>{{if this.editingWebhook 'Edit Webhook' 'Add New Webhook'}}</h5>
+                <form {{on "submit" this.saveWebhook}}>
+                  <div class="form-group">
+                    <label for="webhook-name">Webhook Name:</label>
+                    <input 
+                      id="webhook-name"
+                      type="text" 
+                      value={{this.webhookForm.name}}
+                      {{on "input" (fn this.updateWebhookField "name")}}
+                      placeholder="e.g., Permit Status Updates"
+                      class="form-control"
+                      required
+                    />
+                  </div>
 
-            {{#if this.paymentConfigForm.invoiceCloud.enabled}}
-              <div class="form-group">
-                <label for="ic-merchant-id">Merchant ID:</label>
-                <input 
-                  id="ic-merchant-id"
-                  type="text" 
-                  value={{this.paymentConfigForm.invoiceCloud.merchantId}}
-                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "merchantId")}}
-                  placeholder="InvoiceCloud Merchant ID"
-                  class="form-control"
-                />
-              </div>
+                  <div class="form-group">
+                    <label for="webhook-url">Webhook URL:</label>
+                    <input 
+                      id="webhook-url"
+                      type="url" 
+                      value={{this.webhookForm.url}}
+                      {{on "input" (fn this.updateWebhookField "url")}}
+                      placeholder="https://your-domain.com/webhook"
+                      class="form-control"
+                      required
+                    />
+                  </div>
 
-              <div class="form-group">
-                <label for="ic-api-key">API Key:</label>
-                <input 
-                  id="ic-api-key"
-                  type="password" 
-                  value={{this.paymentConfigForm.invoiceCloud.apiKey}}
-                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "apiKey")}}
-                  placeholder="InvoiceCloud API Key"
-                  class="form-control"
-                />
-              </div>
+                  <div class="form-group">
+                    <label for="webhook-events">Event Types (comma-separated):</label>
+                    <input 
+                      id="webhook-events"
+                      type="text" 
+                      value={{this.webhookForm.events}}
+                      {{on "input" (fn this.updateWebhookField "events")}}
+                      placeholder="permit.created, permit.approved, permit.rejected"
+                      class="form-control"
+                      required
+                    />
+                    <small class="form-text text-muted">
+                      Available events: permit.created, permit.updated, permit.approved, permit.rejected, permit.completed, user.registered
+                    </small>
+                  </div>
 
-              <div class="form-group">
-                <label for="ic-webhook-secret">Webhook Secret:</label>
-                <input 
-                  id="ic-webhook-secret"
-                  type="password" 
-                  value={{this.paymentConfigForm.invoiceCloud.webhookSecret}}
-                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "webhookSecret")}}
-                  placeholder="Webhook Secret for verification"
-                  class="form-control"
-                />
-              </div>
+                  <div class="form-group">
+                    <label>
+                      <input 
+                        type="checkbox" 
+                        checked={{this.webhookForm.active}}
+                        {{on "change" (fn this.updateWebhookBoolean "active")}}
+                      />
+                      Active (webhook will receive events)
+                    </label>
+                  </div>
 
-              <div class="form-group">
-                <label for="ic-base-url">Base URL:</label>
-                <input 
-                  id="ic-base-url"
-                  type="url" 
-                  value={{this.paymentConfigForm.invoiceCloud.baseUrl}}
-                  {{on "input" (fn this.updatePaymentConfigField "invoiceCloud" "baseUrl")}}
-                  placeholder="https://api.invoicecloud.com"
-                  class="form-control"
-                />
-              </div>
-
-              <div class="form-group">
-                <label>
-                  <input 
-                    type="checkbox" 
-                    checked={{this.paymentConfigForm.invoiceCloud.testMode}}
-                    {{on "change" (fn this.updatePaymentConfigBoolean "invoiceCloud" "testMode")}}
-                  />
-                  Test Mode (Use for development/testing)
-                </label>
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                      {{if this.editingWebhook 'Update Webhook' 'Create Webhook'}}
+                    </button>
+                    <button type="button" class="btn btn-secondary" {{on "click" this.cancelWebhookForm}}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               </div>
             {{/if}}
+            
+            <div class="webhooks-list">
+              {{#if this.selectedMunicipality.webhooks.length}}
+                {{#each this.selectedMunicipality.webhooks as |webhook|}}
+                  <div class="webhook-item {{unless webhook.active 'webhook-inactive'}}">
+                    <div class="webhook-info">
+                      <div class="webhook-name">{{webhook.name}}</div>
+                      <div class="webhook-url">{{webhook.url}}</div>
+                      <div class="webhook-events">Events: {{join webhook.events ", "}}</div>
+                      <div class="webhook-status">
+                        Status: 
+                        <span class="status-badge {{if webhook.active 'active' 'inactive'}}">
+                          {{if webhook.active 'Active' 'Inactive'}}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="webhook-actions">
+                      <button type="button" class="btn btn-outline-info btn-xs" {{on "click" (fn this.testWebhook webhook)}}>
+                        Test
+                      </button>
+                      <button type="button" class="btn btn-outline-warning btn-xs" {{on "click" (fn this.editWebhook webhook)}}>
+                        Edit
+                      </button>
+                      <button type="button" class="btn btn-outline-danger btn-xs" {{on "click" (fn this.removeWebhook webhook)}}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                {{/each}}
+              {{else}}
+                <div class="empty-webhooks">
+                  <p class="text-muted">No webhooks configured</p>
+                </div>
+              {{/if}}
+            </div>
           </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" {{on "click" this.hidePaymentConfiguration}}>
-            Cancel
-          </button>
-          <button type="button" class="btn btn-primary" {{on "click" this.savePaymentConfiguration}}>
-            Save Configuration
-          </button>
         </div>
       </div>
     </div>

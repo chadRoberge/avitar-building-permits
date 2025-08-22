@@ -1,286 +1,215 @@
 {{page-title "Permits Management - Municipal Portal"}}
 
-<div class="permits-container">
-  <header class="permits-header">
-    <div class="header-content">
-      <h1>Permits Management</h1>
-      <p>View and manage all building permits</p>
-    </div>
-    <div class="header-actions">
-      <button type="button" class="btn btn-secondary" {{on "click" this.exportPermits}}>
-        📊 Export Data
-      </button>
-      <button type="button" class="btn btn-primary" {{on "click" this.createNewPermit}}>
-        ➕ New Permit
-      </button>
-    </div>
-  </header>
-
-  {{!-- Filters and Search --}}
-  <div class="permits-filters">
-    <div class="filter-row">
-      <div class="search-filter">
-        <input
-          type="text"
-          placeholder="Search permits by number, applicant, or address..."
-          value={{this.searchTerm}}
-          {{on "input" this.updateSearchTerm}}
-          class="search-input"
-        />
-      </div>
-      
-      <div class="status-filter">
-        <select 
-          value={{this.selectedStatus}}
-          {{on "change" this.updateStatusFilter}}
-          class="filter-select"
-        >
-          <option value="">All Statuses</option>
-          <option value="submitted">Submitted</option>
-          <option value="under-review">Under Review</option>
-          <option value="additional-info">Additional Info Needed</option>
-          <option value="approved">Approved</option>
-          <option value="active">Active</option>
-          <option value="inspections">Pending Inspections</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="denied">Denied</option>
-          <option value="expired">Expired</option>
-        </select>
-      </div>
-
-      <div class="type-filter">
-        <select 
-          value={{this.selectedType}}
-          {{on "change" this.updateTypeFilter}}
-          class="filter-select"
-        >
-          <option value="">All Types</option>
-          {{#each this.permitTypes as |type|}}
-            <option value={{type._id}}>{{type.name}}</option>
-          {{/each}}
-        </select>
-      </div>
-
-      <div class="date-filter">
-        <select 
-          value={{this.selectedDateRange}}
-          {{on "change" this.updateDateFilter}}
-          class="filter-select"
-        >
-          <option value="">All Dates</option>
-          <option value="today">Today</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-          <option value="quarter">This Quarter</option>
-          <option value="year">This Year</option>
-          <option value="custom">Custom Range</option>
-        </select>
-      </div>
-
-      {{#if (eq this.selectedDateRange "custom")}}
-        <div class="custom-date-range">
-          <input
-            type="date"
-            value={{this.startDate}}
-            {{on "change" this.updateStartDate}}
-            class="date-input"
-          />
-          <span class="date-separator">to</span>
-          <input
-            type="date"
-            value={{this.endDate}}
-            {{on "change" this.updateEndDate}}
-            class="date-input"
-          />
+<div class="permits-page">
+  <div class="container">
+    {{!-- Header --}}
+    <div class="page-header mb-4">
+      <div class="row items-center">
+        <div class="col-md-8">
+          <h1 class="text-primary mb-2">Permits Management</h1>
+          <p class="text-muted">Review and manage permit applications for {{@model.municipality.name}}</p>
         </div>
-      {{/if}}
-    </div>
-
-    <div class="filter-actions">
-      <span class="results-count">
-        {{this.filteredPermits.length}} of {{this.allPermits.length}} permits
-      </span>
-      <button type="button" class="clear-filters" {{on "click" this.clearFilters}}>
-        Clear Filters
-      </button>
-    </div>
-  </div>
-
-  {{!-- Permits Table --}}
-  <div class="permits-table-container">
-    {{#if this.isLoading}}
-      <div class="loading-state">
-        <div class="loading-spinner"></div>
-        <p>Loading permits...</p>
-      </div>
-    {{else if this.filteredPermits.length}}
-      <table class="permits-table">
-        <thead>
-          <tr>
-            <th>
-              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "permitNumber")}}>
-                Permit #
-                {{#if (eq this.sortField "permitNumber")}}
-                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
-                {{/if}}
-              </button>
-            </th>
-            <th>
-              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "permitType")}}>
-                Type
-                {{#if (eq this.sortField "permitType")}}
-                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
-                {{/if}}
-              </button>
-            </th>
-            <th>Applicant</th>
-            <th>Project Address</th>
-            <th>
-              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "status")}}>
-                Status
-                {{#if (eq this.sortField "status")}}
-                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
-                {{/if}}
-              </button>
-            </th>
-            <th>
-              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "applicationDate")}}>
-                Applied
-                {{#if (eq this.sortField "applicationDate")}}
-                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
-                {{/if}}
-              </button>
-            </th>
-            <th>
-              <button type="button" class="sort-header" {{on "click" (fn this.sortBy "estimatedValue")}}>
-                Project Value
-                {{#if (eq this.sortField "estimatedValue")}}
-                  <span class="sort-indicator {{if this.sortAsc 'asc' 'desc'}}">{{if this.sortAsc "↑" "↓"}}</span>
-                {{/if}}
-              </button>
-            </th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each this.paginatedPermits as |permit|}}
-            <tr class="permit-row {{permit.status}}">
-              <td class="permit-number">
-                <LinkTo @route="municipal.permits.view" @model={{permit._id}} class="permit-link">
-                  {{permit.permitNumber}}
-                </LinkTo>
-              </td>
-              <td class="permit-type">
-                <span class="type-badge {{permit.permitType.category}}">
-                  {{permit.permitType.name}}
-                </span>
-              </td>
-              <td class="applicant">
-                <div class="applicant-name">{{permit.applicant.firstName}} {{permit.applicant.lastName}}</div>
-                <div class="applicant-email">{{permit.applicant.email}}</div>
-              </td>
-              <td class="project-address">
-                <div class="address-line">{{permit.projectAddress.street}}</div>
-                <div class="address-city">{{permit.projectAddress.city}}, {{permit.projectAddress.state}} {{permit.projectAddress.zip}}</div>
-              </td>
-              <td class="status">
-                <span class="status-badge {{permit.status}}">
-                  {{this.formatStatus permit.status}}
-                </span>
-                {{#if permit.isOverdue}}
-                  <span class="overdue-indicator">⚠️ Overdue</span>
-                {{/if}}
-              </td>
-              <td class="application-date">
-                {{this.formatDate permit.applicationDate}}
-                <div class="days-ago">{{this.getDaysAgo permit.applicationDate}} days ago</div>
-              </td>
-              <td class="project-value">
-                ${{this.formatCurrency permit.estimatedValue}}
-              </td>
-              <td class="actions">
-                <div class="action-buttons">
-                  <LinkTo @route="municipal.permits.view" @model={{permit._id}} class="action-btn view">
-                    👁️
-                  </LinkTo>
-                  {{#if permit.canEdit}}
-                    <button type="button" class="action-btn edit" {{on "click" (fn this.editPermit permit)}}>
-                      ✏️
-                    </button>
-                  {{/if}}
-                  {{#if permit.needsApproval}}
-                    <button type="button" class="action-btn approve" {{on "click" (fn this.approvePermit permit)}}>
-                      ✅
-                    </button>
-                  {{/if}}
-                  {{#if permit.needsInspection}}
-                    <button type="button" class="action-btn inspect" {{on "click" (fn this.scheduleInspection permit)}}>
-                      🔍
-                    </button>
-                  {{/if}}
-                </div>
-              </td>
-            </tr>
-          {{/each}}
-        </tbody>
-      </table>
-
-      {{!-- Pagination --}}
-      {{#if this.showPagination}}
-        <div class="pagination">
-          <div class="pagination-info">
-            Showing {{this.startIndex}} - {{this.endIndex}} of {{this.filteredPermits.length}} permits
-          </div>
-          <div class="pagination-controls">
-            <button 
-              type="button" 
-              class="pagination-btn"
-              disabled={{this.isFirstPage}}
-              {{on "click" this.previousPage}}
-            >
-              ← Previous
+        <div class="col-md-4 text-right">
+          <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-outline-primary me-2" {{on "click" this.exportPermits}}>
+              Export Data
             </button>
-            
-            {{#each this.pageNumbers as |pageNum|}}
-              <button 
-                type="button" 
-                class="pagination-btn {{if (eq pageNum this.currentPage) 'active'}}"
-                {{on "click" (fn this.goToPage pageNum)}}
-              >
-                {{pageNum}}
-              </button>
-            {{/each}}
-            
-            <button 
-              type="button" 
-              class="pagination-btn"
-              disabled={{this.isLastPage}}
-              {{on "click" this.nextPage}}
-            >
-              Next →
+            <button type="button" class="btn btn-primary" {{on "click" this.viewDashboard}}>
+              Dashboard
             </button>
           </div>
         </div>
-      {{/if}}
+      </div>
+    </div>
+
+    {{!-- Filter and Search Controls --}}
+    <div class="permits-controls mb-4">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="search-box">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Search by permit number, applicant name, or description..."
+              value={{@model.searchTerm}}
+              {{on "input" this.updateSearchTerm}}
+              {{on "keyup" this.handleSearchKeyup}}
+            />
+            <div class="search-icon">🔍</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select" {{on "change" this.filterByStatus}} value={{@model.selectedStatus}}>
+            <option value="all">All Permits</option>
+            <option value="submitted">Submitted</option>
+            <option value="under-review">Under Review</option>
+            <option value="approved">Approved</option>
+            <option value="active">Active</option>
+            <option value="inspections">Inspections</option>
+            <option value="completed">Completed</option>
+            <option value="denied">Denied</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {{!-- Permits Summary Cards --}}
+    <div class="permits-summary mb-5">
+      <div class="summary-cards">
+        <div class="summary-card compact" {{on "click" (fn this.filterByStatus "submitted")}}>
+          <p class="card-label">Submitted</p>
+          <h3 class="card-number">{{@model.permits.submitted.length}}</h3>
+        </div>
+        <div class="summary-card compact" {{on "click" (fn this.filterByStatus "under-review")}}>
+          <p class="card-label">Under Review</p>
+          <h3 class="card-number">{{@model.permits.under-review.length}}</h3>
+        </div>
+        <div class="summary-card compact" {{on "click" (fn this.filterByStatus "approved")}}>
+          <p class="card-label">Approved</p>
+          <h3 class="card-number">{{@model.permits.approved.length}}</h3>
+        </div>
+        <div class="summary-card compact" {{on "click" (fn this.filterByStatus "inspections")}}>
+          <p class="card-label">Inspections</p>
+          <h3 class="card-number">{{@model.permits.inspections.length}}</h3>
+        </div>
+        <div class="summary-card compact" {{on "click" (fn this.filterByStatus "completed")}}>
+          <p class="card-label">Completed</p>
+          <h3 class="card-number">{{@model.permits.completed.length}}</h3>
+        </div>
+      </div>
+    </div>
+
+    {{!-- Error State --}}
+    {{#if @model.error}}
+      <div class="alert alert-danger mb-4">
+        <strong>Error loading permits:</strong> {{@model.error}}
+        <button type="button" class="btn btn-sm btn-outline-danger ms-2" {{on "click" this.retryLoad}}>
+          Retry
+        </button>
+      </div>
+    {{/if}}
+
+    {{!-- Permits Table/Grid --}}
+    {{#if @model.permits.all.length}}
+      <div class="permits-list">
+        <div class="list-header mb-3">
+          <h3>
+            {{#if (eq @model.selectedStatus "all")}}
+              All Permits ({{if @model.permits.all @model.permits.all.length 0}})
+            {{else}}
+              {{this.formatStatus @model.selectedStatus}} Permits ({{get (get @model.permits @model.selectedStatus) "length"}})
+            {{/if}}
+          </h3>
+        </div>
+
+        <div class="permits-table-wrapper">
+          <table class="table table-sm table-hover permits-table">
+            <thead class="table-light">
+              <tr>
+                <th width="15%">Permit #</th>
+                <th width="20%">Applicant & Type</th>
+                <th width="25%">Project Details</th>
+                <th width="12%">Status</th>
+                <th width="12%">Submitted</th>
+                <th width="8%">Value</th>
+                <th width="8%">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each (if (eq @model.selectedStatus "all") @model.permits.all (get @model.permits @model.selectedStatus)) as |permit|}}
+                <tr class="permit-row cursor-pointer" {{on "click" (fn this.viewPermit permit.id)}}>
+                  <td>
+                    <div class="permit-number">
+                      <strong class="text-primary">{{permit.permitNumber}}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="applicant-summary">
+                      <div class="fw-semibold text-dark">{{permit.applicant.name}}</div>
+                      <small class="text-muted">{{permit.type}}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="project-summary">
+                      <div class="project-desc text-truncate" title="{{permit.description}}">
+                        {{permit.description}}
+                      </div>
+                      {{#if permit.property.street}}
+                        <small class="text-muted">{{permit.property.street}}, {{permit.property.city}}</small>
+                      {{/if}}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge status-badge-{{permit.status}} rounded-pill">
+                      {{this.formatStatus permit.status}}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="date-info">
+                      <div>{{this.formatDate permit.submittedDate}}</div>
+                      <small class="text-muted">{{this.getDaysAgo permit.submittedDate}}d ago</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="fw-semibold">${{this.formatCurrency permit.projectValue}}</span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      {{#if (eq permit.status "submitted")}}
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-primary"
+                          title="Review Application"
+                          {{on "click" (fn this.reviewPermit permit.id)}}
+                          {{on "click" (fn this.stopPropagation)}}
+                        >
+                          Review
+                        </button>
+                      {{else}}
+                        <button 
+                          type="button" 
+                          class="btn btn-sm btn-outline-secondary"
+                          title="View Details"
+                          {{on "click" (fn this.viewPermit permit.id)}}
+                          {{on "click" (fn this.stopPropagation)}}
+                        >
+                          View
+                        </button>
+                      {{/if}}
+                    </div>
+                  </td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      </div>
     {{else}}
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <h3>No permits found</h3>
-        <p>
-          {{#if this.hasActiveFilters}}
-            Try adjusting your filters or search terms.
+      {{!-- Empty State --}}
+      <div class="empty-state text-center p-5">
+        <div class="empty-icon mb-3">📋</div>
+        <h3 class="text-muted mb-3">
+          {{#if @model.searchTerm}}
+            No permits match your search
+          {{else if (not (eq @model.selectedStatus "all"))}}
+            No {{@model.selectedStatus}} permits found
           {{else}}
-            No permits have been submitted yet.
+            No permits submitted yet
+          {{/if}}
+        </h3>
+        <p class="text-muted mb-4">
+          {{#if @model.searchTerm}}
+            Try adjusting your search terms or clearing the filter.
+          {{else if (not (eq @model.selectedStatus "all"))}}
+            No permits with status "{{@model.selectedStatus}}" have been submitted yet.
+          {{else}}
+            No permit applications have been submitted to your municipality yet.
           {{/if}}
         </p>
-        {{#if this.hasActiveFilters}}
-          <button type="button" class="btn btn-secondary" {{on "click" this.clearFilters}}>
-            Clear Filters
-          </button>
-        {{else}}
-          <button type="button" class="btn btn-primary" {{on "click" this.createNewPermit}}>
-            Create First Permit
+        {{#if @model.searchTerm}}
+          <button type="button" class="btn btn-outline-primary" {{on "click" this.clearSearch}}>
+            Clear Search
           </button>
         {{/if}}
       </div>
