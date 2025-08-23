@@ -7,6 +7,12 @@ export default class MunicipalPortalController extends Controller {
 
   @action
   selectUserType(userType) {
+    console.log('Selecting user type:', userType, 'for municipality:', this.model.id, this.model.name);
+    
+    // Store municipality info in localStorage for the auth process
+    localStorage.setItem('selected_municipality_id', this.model.id);
+    localStorage.setItem('selected_municipality_name', this.model.name);
+    
     // Navigate to auth page with municipality and user type
     this.router.transitionTo('auth', {
       queryParams: {

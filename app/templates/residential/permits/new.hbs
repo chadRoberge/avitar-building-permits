@@ -65,7 +65,8 @@
                       <div class="permit-type-header mb-3">
                         <h4 class="permit-type-name">{{permitType.name}}</h4>
                         <div class="permit-type-fee text-success font-weight-bold">
-                          {{format-currency permitType.fees "0.amount"}}
+                          <small class="text-muted d-block" style="font-size: 0.75rem; font-weight: normal; margin-bottom: 2px;">starting at</small>
+                          {{format-currency (get-base-fee permitType)}}
                         </div>
                       </div>
                       

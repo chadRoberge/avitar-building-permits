@@ -146,6 +146,13 @@
                   {{/each}}
                 </div>
 
+              {{else}}
+                <div class="text-center text-muted">
+                  <p>No department reviews configured for this permit type.</p>
+                  <small>This permit may be approved automatically or require manual assignment of review departments.</small>
+                </div>
+              {{/if}}
+
                 {{!-- Current User Department Review Panel --}}
                 {{#if this.canUserReviewPermit}}
                   <div class="mt-4 pt-4 border-top">
@@ -193,12 +200,6 @@
                   </div>
                 {{/if}}
 
-              {{else}}
-                <div class="text-center text-muted">
-                  <p>No department reviews configured for this permit type.</p>
-                  <small>This permit may be approved automatically or require manual assignment of review departments.</small>
-                </div>
-              {{/if}}
             {{else}}
               <div class="text-center">
                 <button type="button" class="btn btn-primary" {{on "click" this.loadDepartmentReviews}}>

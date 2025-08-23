@@ -131,13 +131,15 @@ export default class HomeController extends Controller {
 
   @action
   selectMunicipality(municipality) {
-    // Navigate to the municipal portal using portalUrl or ID
-    const identifier = municipality.portalUrl || municipality.id;
+    // Always use the municipality ID for the route parameter, not the portalUrl
+    const identifier = municipality.id;
     console.log(
       'Navigating to municipality:',
       municipality.name,
-      'with identifier:',
+      'with ID:',
       identifier,
+      'portalUrl:',
+      municipality.portalUrl,
     );
     this.router.transitionTo('municipal-portal', identifier);
   }

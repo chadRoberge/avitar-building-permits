@@ -22,7 +22,7 @@ const auth = async (req, res, next) => {
 
     // Support both old format (id) and new format (userId)
     const userId = decoded.userId || decoded.id;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).populate('municipality');
 
     if (!user || !user.isActive) {
       console.log('User not found or inactive for ID:', userId);

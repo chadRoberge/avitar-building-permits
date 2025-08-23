@@ -42,6 +42,10 @@ export default class SignInFormComponent extends Component {
         municipality: this.args.municipality.name,
       });
 
+      const selectedMunicipalityId = localStorage.getItem('selected_municipality_id') || this.args.municipality.id || this.args.municipality._id;
+      
+      console.log('Signing in with municipality:', selectedMunicipalityId, this.args.municipality.name);
+      
       const response = await fetch(`${config.APP.API_HOST}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -51,7 +55,8 @@ export default class SignInFormComponent extends Component {
           email: this.email,
           password: this.password,
           userType: this.args.userType,
-          municipality: this.args.municipality.id || this.args.municipality._id,
+          municipality: selectedMunicipalityId,
+          municipalityName: this.args.municipality.name,
         }),
       });
 
@@ -72,10 +77,19 @@ export default class SignInFormComponent extends Component {
       localStorage.setItem('auth_token', result.token);
       localStorage.setItem('user_type', result.user.userType);
       localStorage.setItem('user_id', result.user._id);
-      localStorage.setItem(
-        'municipality_id',
-        result.user.municipality._id || result.user.municipality,
-      );
+      localStorage.setItem('user_details', JSON.stringify(result.user));
+      
+      // Store municipality information
+      const municipalityData = result.user.municipality || {
+        _id: selectedMunicipalityId,
+        name: this.args.municipality.name,
+        city: this.args.municipality.city,
+        state: this.args.municipality.state,
+        zip: this.args.municipality.zip
+      };
+      
+      localStorage.setItem('municipality_id', municipalityData._id || municipalityData.id);
+      localStorage.setItem('municipality_data', JSON.stringify(municipalityData));
 
       console.log('Sign in successful:', result);
 

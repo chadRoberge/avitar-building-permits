@@ -50,6 +50,7 @@ router.post('/register', async (req, res) => {
       userType,
       municipality: municipality?.name || municipality,
       propertyAddress,
+      propertyInfo,
       businessInfo,
     });
 
@@ -137,15 +138,120 @@ router.post('/register', async (req, res) => {
 
     // Create user
     const user = new User(userData);
-    await user.save();
+    const savedUser = await user.save();
+    
+    console.log('User created successfully with ID:', savedUser._id);
+
+    // For residential users, create a Property record from their property address
+    console.log('Checking property creation conditions:', {
+      userType,
+      hasPropertyAddress: !!propertyAddress,
+      propertyAddress,
+      hasPropertyInfo: !!propertyInfo,
+      propertyInfo,
+      savedUserId: savedUser._id
+    });
+    
+    if (userType === 'residential' && propertyAddress) {
+      console.log('Creating property record for residential user');
+      
+      const Property = require('../models/Property');
+      const Municipality = require('../models/Municipality');
+      
+      try {
+        // Get the municipality data for proper property creation
+        const municipalityId = userData.municipality._id || municipality.id || municipality._id;
+        const fullMunicipality = await Municipality.findById(municipalityId);
+        
+        if (fullMunicipality) {
+          // Map frontend property type to database enum values
+          const frontendPropertyType = propertyInfo?.type || 'residential';
+          const propertyTypeMapping = {
+            'single-family': 'residential',
+            'multi-family': 'residential',
+            'townhouse': 'residential',
+            'condo': 'residential',
+            'residential': 'residential',
+            'commercial': 'commercial',
+            'industrial': 'industrial',
+            'mixed-use': 'mixed-use'
+          };
+          
+          const propertyType = propertyTypeMapping[frontendPropertyType] || 'residential';
+          
+          // Use the original frontend type for display name (more descriptive)
+          const propertyDisplayName = propertyInfo?.displayName || 
+            (frontendPropertyType.split('-').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join('-'));
+          
+          // Create property data matching the dashboard property creation structure
+          const propertyData = {
+            owner: savedUser._id,
+            displayName: propertyDisplayName,
+            address: {
+              street: propertyAddress.street,
+              city: propertyAddress.city,
+              state: propertyAddress.state || fullMunicipality.state,
+              zip: propertyAddress.zip,
+              county: propertyAddress.county,
+              parcelId: propertyAddress.parcelId,
+            },
+            municipality: municipalityId,
+            propertyType: propertyType,
+            details: propertyInfo?.details || {},
+            isPrimary: true, // First property is always primary during signup
+            notes: propertyInfo?.notes || 'Created during user registration',
+          };
+
+          console.log('Property data to create:', propertyData);
+          
+          // Create and save property using the same structure as dashboard
+          const property = new Property({
+            owner: propertyData.owner,
+            displayName: propertyData.displayName,
+            address: {
+              street: propertyData.address.street,
+              city: propertyData.address.city,
+              state: propertyData.address.state,
+              zip: propertyData.address.zip,
+              county: propertyData.address.county,
+              parcelId: propertyData.address.parcelId,
+            },
+            municipality: propertyData.municipality,
+            propertyType: propertyData.propertyType,
+            details: propertyData.details,
+            isPrimary: propertyData.isPrimary,
+            notes: propertyData.notes,
+          });
+          
+          const savedProperty = await property.save();
+          await savedProperty.populate('municipality');
+          
+          console.log('Property created successfully:', {
+            id: savedProperty._id,
+            displayName: savedProperty.displayName,
+            address: savedProperty.address,
+            municipality: savedProperty.municipality?.name,
+            propertyType: savedProperty.propertyType,
+            isPrimary: savedProperty.isPrimary
+          });
+        } else {
+          console.error('Municipality not found for property creation:', municipalityId);
+        }
+      } catch (propertyError) {
+        console.error('Error creating property during signup:', propertyError);
+        // Don't fail the user registration if property creation fails
+      }
+    }
 
     // Generate token
-    const token = generateToken(user);
+    const token = generateToken(savedUser);
 
     res.status(201).json({
       message: 'User created successfully',
       token,
-      user,
+      user: savedUser,
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -156,7 +262,7 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password, userType } = req.body;
+    const { email, password, userType, municipality, municipalityName } = req.body;
 
     // Debug logging for admin login attempts
     if (email === 'admin@avitarbuildingpermits.com') {
@@ -229,12 +335,61 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // For residential users, validate and potentially update municipality association
+    if (userType === 'residential' && municipality) {
+      console.log('Validating municipality for residential user:', {
+        userId: user._id,
+        requestedMunicipality: municipality,
+        requestedMunicipalityName: municipalityName,
+        currentMunicipality: user.municipality
+      });
+      
+      // If user doesn't have a municipality or it doesn't match the selected one,
+      // update it (this allows users to access different municipalities)
+      const currentMunicipalityId = user.municipality?._id?.toString() || user.municipality?.toString();
+      const requestedMunicipalityId = municipality.toString();
+      
+      if (!currentMunicipalityId || currentMunicipalityId !== requestedMunicipalityId) {
+        console.log('Updating user municipality association');
+        
+        // Fetch the full municipality object
+        try {
+          const Municipality = require('../models/Municipality');
+          const fullMunicipality = await Municipality.findById(municipality);
+          
+          if (fullMunicipality) {
+            user.municipality = fullMunicipality._id;
+            console.log('Updated user municipality to:', fullMunicipality.name);
+          } else {
+            console.warn('Municipality not found:', municipality);
+          }
+        } catch (municipalityError) {
+          console.error('Error updating municipality:', municipalityError);
+          // Don't fail the login if municipality update fails
+        }
+      }
+    }
+
     // Update last login date
     user.lastLoginDate = new Date();
-    await user.save();
+    
+    try {
+      await user.save();
+    } catch (saveError) {
+      console.error('Error saving user during login:', saveError);
+      // Continue with login even if save fails
+    }
 
     // Generate token
     const token = generateToken(user);
+
+    // Populate municipality information for the response
+    try {
+      await user.populate('municipality');
+    } catch (populateError) {
+      console.error('Error populating municipality during login:', populateError);
+      // Continue without municipality population if it fails
+    }
 
     res.json({
       message: 'Login successful',
