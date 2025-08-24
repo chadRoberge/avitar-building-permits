@@ -105,6 +105,81 @@ router.post('/municipal', auth, async (req, res) => {
   }
 });
 
+// Get current user profile
+router.get('/profile', auth, async (req, res) => {
+  try {
+    // req.user is already the full user object from auth middleware
+    const user = req.user;
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userResponse = user.toJSON();
+    res.json(userResponse);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile', details: error.message });
+  }
+});
+
+// Update current user profile
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { firstName, lastName, email, phone, department, propertyAddress } = req.body;
+    
+    // req.user is already the full user object from auth middleware
+    const user = req.user;
+
+    // Security check: User can only update their own profile
+    // This is already guaranteed by the auth middleware, but keeping for safety
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update user fields (only allow certain fields to be updated by user)
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (email) user.email = email.toLowerCase();
+    if (phone !== undefined) user.phone = phone;
+    
+    // Update property address for residential users
+    if (propertyAddress && user.userType === 'residential') {
+      user.propertyAddress = {
+        street: propertyAddress.street || user.propertyAddress?.street || '',
+        city: propertyAddress.city || user.propertyAddress?.city || '',
+        state: propertyAddress.state || user.propertyAddress?.state || '',
+        zip: propertyAddress.zip || user.propertyAddress?.zip || '',
+        county: propertyAddress.county || user.propertyAddress?.county || ''
+      };
+    }
+    
+    // Only allow municipal users to change department, and only if they're admin level
+    if (department && user.userType === 'municipal' && user.permissionLevel >= 21) {
+      user.department = department;
+    }
+
+    await user.save();
+    
+    console.log('Updated user profile:', {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName
+    });
+
+    const userResponse = user.toJSON();
+    res.json(userResponse);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ error: 'Email already in use by another user' });
+    }
+    
+    res.status(500).json({ error: 'Failed to update profile', details: error.message });
+  }
+});
+
 // Update municipal user (Admin only)
 router.put('/:userId', auth, async (req, res) => {
   try {
@@ -285,65 +360,6 @@ router.delete('/:userId', auth, async (req, res) => {
   } catch (error) {
     console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Failed to delete user', details: error.message });
-  }
-});
-
-// Get current user profile
-router.get('/profile', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const userResponse = user.toJSON();
-    res.json(userResponse);
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ error: 'Failed to fetch profile', details: error.message });
-  }
-});
-
-// Update current user profile
-router.put('/profile', auth, async (req, res) => {
-  try {
-    const { firstName, lastName, email, phone, department } = req.body;
-    
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Update user fields (only allow certain fields to be updated by user)
-    if (firstName) user.firstName = firstName;
-    if (lastName) user.lastName = lastName;
-    if (email) user.email = email.toLowerCase();
-    if (phone !== undefined) user.phone = phone;
-    
-    // Only allow municipal users to change department, and only if they're admin level
-    if (department && user.userType === 'municipal' && user.permissionLevel >= 21) {
-      user.department = department;
-    }
-
-    await user.save();
-    
-    console.log('Updated user profile:', {
-      id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName
-    });
-
-    const userResponse = user.toJSON();
-    res.json(userResponse);
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    
-    if (error.code === 11000) {
-      return res.status(400).json({ error: 'Email already in use by another user' });
-    }
-    
-    res.status(500).json({ error: 'Failed to update profile', details: error.message });
   }
 });
 

@@ -1,0 +1,204 @@
+{{#if @isVisible}}
+  <div class="modal-backdrop" {{on "click" this.closeModal}}>
+    <div class="modal-content" {{on "click" (fn this.stopPropagation)}} style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>Edit Profile Information</h2>
+        <button type="button" class="modal-close" {{on "click" this.closeModal}}>×</button>
+      </div>
+      
+      <form class="modal-body" {{on "submit" this.updateProfile}}>
+        {{#if this.errorMessage}}
+          <div class="error-message">
+            {{this.errorMessage}}
+          </div>
+        {{/if}}
+
+        {{#if this.successMessage}}
+          <div class="success-message">
+            {{this.successMessage}}
+          </div>
+        {{/if}}
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="edit-firstName">First Name *</label>
+            <Input 
+              id="edit-firstName" 
+              @value={{this.firstName}} 
+              placeholder="Enter your first name" 
+              required 
+              class={{if this.errors.firstName "error"}}
+            />
+            {{#if this.errors.firstName}}
+              <span class="field-error">{{this.errors.firstName}}</span>
+            {{/if}}
+          </div>
+
+          <div class="form-group">
+            <label for="edit-lastName">Last Name *</label>
+            <Input 
+              id="edit-lastName" 
+              @value={{this.lastName}} 
+              placeholder="Enter your last name" 
+              required
+              class={{if this.errors.lastName "error"}}
+            />
+            {{#if this.errors.lastName}}
+              <span class="field-error">{{this.errors.lastName}}</span>
+            {{/if}}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-email">Email Address *</label>
+          <Input 
+            id="edit-email" 
+            @type="email" 
+            @value={{this.email}} 
+            placeholder="Enter your email address" 
+            required
+            class={{if this.errors.email "error"}}
+          />
+          {{#if this.errors.email}}
+            <span class="field-error">{{this.errors.email}}</span>
+          {{/if}}
+          <small class="form-help">
+            ⚠️ Note: Changing your email will require you to log in again with the new email address.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-phone">Phone Number</label>
+          <Input 
+            id="edit-phone" 
+            @type="tel" 
+            @value={{this.phone}} 
+            placeholder="(555) 123-4567" 
+            class={{if this.errors.phone "error"}}
+          />
+          {{#if this.errors.phone}}
+            <span class="field-error">{{this.errors.phone}}</span>
+          {{/if}}
+          <small class="form-help">Optional - used for important account notifications</small>
+        </div>
+
+        {{#if (eq @user.userType "residential")}}
+          <div class="form-section">
+            <h3>Property Information</h3>
+            <p class="section-description">Update your primary property address information</p>
+            
+            <div class="form-group">
+              <label for="edit-property-nickname">Property Nickname</label>
+              <Input 
+                id="edit-property-nickname" 
+                @value={{this.propertyNickname}} 
+                placeholder="Home, Main House, etc."
+                class={{if this.errors.propertyNickname "error"}}
+              />
+              {{#if this.errors.propertyNickname}}
+                <span class="field-error">{{this.errors.propertyNickname}}</span>
+              {{/if}}
+              <small class="form-help">Optional - A friendly name to identify this property</small>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-street">Street Address</label>
+              <Input 
+                id="edit-street" 
+                @value={{this.propertyAddress.street}} 
+                placeholder="123 Main Street"
+                class={{if this.errors.street "error"}}
+              />
+              {{#if this.errors.street}}
+                <span class="field-error">{{this.errors.street}}</span>
+              {{/if}}
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="edit-city">City</label>
+                <Input 
+                  id="edit-city" 
+                  @value={{this.propertyAddress.city}} 
+                  placeholder="City"
+                  class={{if this.errors.city "error"}}
+                />
+                {{#if this.errors.city}}
+                  <span class="field-error">{{this.errors.city}}</span>
+                {{/if}}
+              </div>
+
+              <div class="form-group">
+                <label for="edit-state">State</label>
+                <Input 
+                  id="edit-state" 
+                  @value={{this.propertyAddress.state}} 
+                  placeholder="NH"
+                  maxlength="2"
+                  class={{if this.errors.state "error"}}
+                />
+                {{#if this.errors.state}}
+                  <span class="field-error">{{this.errors.state}}</span>
+                {{/if}}
+              </div>
+
+              <div class="form-group">
+                <label for="edit-zip">ZIP Code</label>
+                <Input 
+                  id="edit-zip" 
+                  @value={{this.propertyAddress.zip}} 
+                  placeholder="03037"
+                  maxlength="10"
+                  class={{if this.errors.zip "error"}}
+                />
+                {{#if this.errors.zip}}
+                  <span class="field-error">{{this.errors.zip}}</span>
+                {{/if}}
+              </div>
+            </div>
+          </div>
+        {{/if}}
+
+        {{#if (and (eq @user.userType "municipal") (has-permission-level @user.permissionLevel 21))}}
+          <div class="form-group">
+            <label for="edit-department">Department</label>
+            <select 
+              id="edit-department" 
+              class="form-select {{if this.errors.department "error"}}"
+              value={{this.department}}
+              {{on "change" this.updateDepartment}}
+            >
+              <option value="">Select Department</option>
+              <option value="building">Building Department</option>
+              <option value="planning">Planning Department</option>
+              <option value="fire">Fire Department</option>
+              <option value="health">Health Department</option>
+              <option value="engineering">Engineering Department</option>
+              <option value="zoning">Zoning Department</option>
+              <option value="environmental">Environmental Department</option>
+              <option value="finance">Finance Department</option>
+              <option value="admin">Administration</option>
+            </select>
+            {{#if this.errors.department}}
+              <span class="field-error">{{this.errors.department}}</span>
+            {{/if}}
+          </div>
+        {{/if}}
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" {{on "click" this.closeModal}}>
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" disabled={{this.isUpdating}}>
+            {{#if this.isUpdating}}
+              <span class="btn-spinner"></span>
+              Updating...
+            {{else}}
+              Save Changes
+            {{/if}}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{{/if}}

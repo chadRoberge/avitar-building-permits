@@ -18,7 +18,7 @@
       <section class="profile-section">
         <div class="section-header">
           <h2>Personal Information</h2>
-          <button type="button" class="btn btn-outline btn-sm">
+          <button type="button" class="btn btn-outline btn-sm" {{on "click" this.openEditModal}}>
             Edit Profile
           </button>
         </div>
@@ -37,7 +37,7 @@
             
             <div class="profile-field">
               <label>Phone Number</label>
-              <div class="field-value">{{or @model.user.phone "Not provided"}}</div>
+              <div class="field-value">{{if @model.user.phone (format-phone @model.user.phone) "Not provided"}}</div>
             </div>
             
             <div class="profile-field">
@@ -70,7 +70,7 @@
       <section class="profile-section">
         <div class="section-header">
           <h2>My Properties</h2>
-          <span class="property-count">{{@model.properties.length}} {{if (eq @model.properties.length 1) "property" "properties"}}</span>
+          <span class="property-count">{{if @model.properties @model.properties.length 0}} {{if (eq @model.properties.length 1) "property" "properties"}}</span>
         </div>
         
         <div class="properties-list">
@@ -82,7 +82,7 @@
                 {{/if}}
                 
                 <div class="property-info">
-                  <h4>{{or property.nickname property.address.street}}</h4>
+                  <h4>{{if property.displayName property.displayName property.address.street}}</h4>
                   <p class="property-address">
                     {{property.address.street}}<br>
                     {{property.address.city}}, {{property.address.state}} {{property.address.zip}}
@@ -121,9 +121,7 @@
           </LinkTo>
         </div>
         
-        <div class="billing-summary">
-          <BillingManagement />
-        </div>
+        <BillingManagement />
       </section>
 
       {{!-- Security Settings Section --}}
@@ -214,4 +212,13 @@
       <p>Loading profile information...</p>
     </div>
   {{/if}}
+
+  {{! Edit Profile Modal }}
+  <EditProfileModal 
+    @isVisible={{this.showEditModal}}
+    @user={{@model.user}}
+    @currentProperty={{this.currentProperty.currentProperty}}
+    @onClose={{this.closeEditModal}}
+    @onUpdated={{this.handleProfileUpdated}}
+  />
 </div>
