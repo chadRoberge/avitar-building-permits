@@ -14605,3 +14605,276 @@ div.system-admin-layout div.modal-backdrop {
     padding: 1rem;
   }
 }
+
+/* Building Codes Section */
+.building-codes-section {
+  margin-bottom: 2rem;
+}
+
+.section-subsection {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.section-subsection:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.subsection-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.subsection-description {
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.building-codes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.building-code-card {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.building-code-card:hover {
+  border-color: #007bff;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.building-code-card.selected {
+  border-color: #28a745;
+  background-color: #f8fff9;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+}
+
+.code-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.code-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.code-info {
+  flex-grow: 1;
+}
+
+.code-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.25rem;
+}
+
+.code-description {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.code-category-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+.code-category-badge.category-building { background-color: #e3f2fd; color: #1976d2; }
+.code-category-badge.category-residential { background-color: #e8f5e8; color: #388e3c; }
+.code-category-badge.category-electrical { background-color: #fff3e0; color: #f57c00; }
+.code-category-badge.category-plumbing { background-color: #e0f7fa; color: #0097a7; }
+.code-category-badge.category-mechanical { background-color: #fce4ec; color: #c2185b; }
+.code-category-badge.category-energy { background-color: #f3e5f5; color: #7b1fa2; }
+.code-category-badge.category-fire { background-color: #ffebee; color: #d32f2f; }
+.code-category-badge.category-local { background-color: #f1f8e9; color: #689f38; }
+.code-category-badge.category-accessibility { background-color: #e8eaf6; color: #3f51b5; }
+
+.selected-codes-summary {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.selected-codes-summary h4 {
+  color: #495057;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.code-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.code-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #28a745;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.code-tag .tag-remove {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.25rem;
+  font-weight: bold;
+}
+
+.special-requirements {
+  margin-top: 1rem;
+}
+
+/* Document Upload Section */
+.document-templates-section {
+  margin-bottom: 2rem;
+}
+
+.upload-area {
+  margin-bottom: 2rem;
+}
+
+.upload-zone {
+  position: relative;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.upload-zone:hover {
+  border-color: #007bff;
+  background-color: #f0f7ff;
+}
+
+.upload-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-label {
+  cursor: pointer;
+  margin: 0;
+}
+
+.upload-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #6c757d;
+}
+
+.upload-text h4 {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.upload-text p {
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.upload-text small {
+  color: #868e96;
+  font-size: 0.875rem;
+}
+
+.uploaded-documents {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.uploaded-documents h4 {
+  color: #495057;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.document-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.document-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.document-info {
+  flex-grow: 1;
+}
+
+.document-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 0.25rem;
+}
+
+.document-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.btn-icon.danger {
+  color: #dc3545;
+}
+
+.btn-icon.danger:hover {
+  background-color: #dc3545;
+  color: white;
+}

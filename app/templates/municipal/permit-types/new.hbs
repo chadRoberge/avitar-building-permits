@@ -119,10 +119,133 @@
         </div>
       </div>
 
-      {{! Step 3: Review Departments }}
+      {{! Step 3: Building Codes and Requirements }}
       <div class="form-section">
         <div class="section-header">
-          <h2>3. Review Departments</h2>
+          <h2>3. Building Codes & Requirements</h2>
+          <p>Select applicable building codes and special requirements</p>
+        </div>
+
+        <div class="building-codes-section">
+          <div class="section-subsection">
+            <h3 class="subsection-title">Applicable Building Codes</h3>
+            <p class="subsection-description">Select all building codes that apply to this permit type</p>
+            
+            <div class="building-codes-grid">
+              {{#each this.availableBuildingCodes as |code|}}
+                <div class="building-code-card {{if (this.isBuildingCodeSelected code.id) 'selected'}}" {{on "click" (fn this.toggleBuildingCode code.id)}}>
+                  <div class="code-header">
+                    <span class="code-icon">{{code.icon}}</span>
+                    <div class="code-info">
+                      <h4 class="code-name">{{code.name}}</h4>
+                      <p class="code-description">{{code.description}}</p>
+                      <span class="code-category-badge category-{{code.category}}">{{code.category}}</span>
+                    </div>
+                    <div class="selection-indicator">
+                      {{#if (this.isBuildingCodeSelected code.id)}}
+                        <span class="selected-icon">✓</span>
+                      {{else}}
+                        <span class="unselected-icon">+</span>
+                      {{/if}}
+                    </div>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+
+            {{#if this.selectedBuildingCodes.length}}
+              <div class="selected-codes-summary">
+                <h4>Selected Building Codes ({{this.selectedBuildingCodes.length}})</h4>
+                <div class="code-tags">
+                  {{#each this.selectedBuildingCodes as |codeId|}}
+                    {{#let (array-find this.availableBuildingCodes "id" codeId) as |code|}}
+                      <span class="code-tag">
+                        {{code.icon}} {{code.name}}
+                        <button type="button" class="tag-remove" {{on "click" (fn this.toggleBuildingCode codeId)}}>×</button>
+                      </span>
+                    {{/let}}
+                  {{/each}}
+                </div>
+              </div>
+            {{/if}}
+          </div>
+
+          <div class="section-subsection">
+            <h3 class="subsection-title">Special Requirements</h3>
+            <div class="special-requirements">
+              <label class="checkbox-label">
+                <Input @type="checkbox" @checked={{this.requiresResidentialEnergyCode}} {{on "change" this.toggleResidentialEnergyCode}} />
+                <span class="checkbox-text">Requires Residential Energy Code Application</span>
+              </label>
+              <small class="form-help">Check if applicants must also complete a separate Residential Energy Code compliance form</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{! Step 4: Document Templates }}
+      <div class="form-section">
+        <div class="section-header">
+          <h2>4. Document Templates</h2>
+          <p>Upload documents that applicants may need to fill out</p>
+        </div>
+
+        <div class="document-templates-section">
+          <div class="upload-area">
+            <div class="upload-zone">
+              <input 
+                type="file" 
+                id="document-upload" 
+                multiple 
+                accept=".pdf,.doc,.docx,.xls,.xlsx"
+                class="upload-input"
+                {{on "change" this.handleDocumentUpload}}
+              />
+              <label for="document-upload" class="upload-label">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">
+                  <h4>Upload Document Templates</h4>
+                  <p>Drag and drop files here or click to browse</p>
+                  <small>Supports: PDF, Word (.doc, .docx), Excel (.xls, .xlsx) - Max 10MB per file</small>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {{#if this.uploadedDocuments.length}}
+            <div class="uploaded-documents">
+              <h4>Uploaded Documents ({{this.uploadedDocuments.length}})</h4>
+              <div class="document-list">
+                {{#each this.uploadedDocuments as |document|}}
+                  <div class="document-item">
+                    <div class="document-icon">
+                      {{#if (includes document.type "pdf")}}📄
+                      {{else if (includes document.type "word")}}📝
+                      {{else if (includes document.type "sheet")}}📊
+                      {{else}}📎{{/if}}
+                    </div>
+                    <div class="document-info">
+                      <h5 class="document-name">{{document.name}}</h5>
+                      <div class="document-details">
+                        <span class="document-size">{{this.formatFileSize document.size}}</span>
+                        <span class="document-date">Uploaded {{moment-from-now document.uploadedAt}}</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-icon danger" {{on "click" (fn this.removeDocument document.id)}} title="Remove document">
+                      <span class="remove-icon">🗑️</span>
+                    </button>
+                  </div>
+                {{/each}}
+              </div>
+            </div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{! Step 5: Review Departments }}
+      <div class="form-section">
+        <div class="section-header">
+          <h2>5. Review Departments</h2>
           <p>Select which departments need to review this permit type before approval</p>
         </div>
 
@@ -150,10 +273,10 @@
         </div>
       </div>
 
-      {{! Step 4: Required Inspections }}
+      {{! Step 6: Required Inspections }}
       <div class="form-section">
         <div class="section-header">
-          <h2>4. Required Inspections</h2>
+          <h2>6. Required Inspections</h2>
           <p>Select which inspections are required for permit completion</p>
         </div>
 
@@ -198,10 +321,10 @@
         </div>
       </div>
 
-      {{! Step 5: Application Questions }}
+      {{! Step 7: Application Questions }}
       <div class="form-section">
         <div class="section-header">
-          <h2>5. Application Questions</h2>
+          <h2>7. Application Questions</h2>
           <p>Customize the information you collect from applicants</p>
         </div>
 

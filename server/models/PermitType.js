@@ -335,6 +335,25 @@ const permitTypeSchema = new mongoose.Schema(
     instructionsUrl: String,
     faqUrl: String,
 
+    // Building Codes and Requirements
+    selectedBuildingCodes: [String],
+    requiresResidentialEnergyCode: {
+      type: Boolean,
+      default: false,
+    },
+    documentTemplates: [
+      {
+        name: String,
+        size: Number,
+        type: String,
+        uploadedAt: Date,
+        required: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+
     // Compliance and Legal
     legalReferences: [String],
     codeReferences: [String],

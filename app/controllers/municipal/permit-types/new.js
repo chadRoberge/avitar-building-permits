@@ -20,6 +20,13 @@ export default class MunicipalPermitTypesNewController extends Controller {
   @tracked processingTime = 14;
   @tracked permitDescription = '';
   @tracked requiresInspection = true;
+  
+  // Building codes and energy requirements
+  @tracked selectedBuildingCodes = [];
+  @tracked requiresResidentialEnergyCode = false;
+  
+  // Document uploads
+  @tracked uploadedDocuments = [];
 
   // Department review tracking
   @tracked selectedDepartments = [];
@@ -83,6 +90,94 @@ export default class MunicipalPermitTypesNewController extends Controller {
       name: 'Finance Department',
       description: 'Reviews fees, bonds, and financial requirements',
       icon: '💰'
+    }
+  ];
+
+  // Available building codes
+  availableBuildingCodes = [
+    {
+      id: 'ibc-2021',
+      name: 'International Building Code (IBC) 2021',
+      description: 'Comprehensive model building code addressing safety, health and welfare of building occupants',
+      category: 'building',
+      icon: '🏗️'
+    },
+    {
+      id: 'ibc-2018',
+      name: 'International Building Code (IBC) 2018',
+      description: 'Previous edition of the International Building Code',
+      category: 'building',
+      icon: '🏗️'
+    },
+    {
+      id: 'irc-2021',
+      name: 'International Residential Code (IRC) 2021',
+      description: 'Comprehensive code addressing construction of one- and two-family dwellings',
+      category: 'residential',
+      icon: '🏠'
+    },
+    {
+      id: 'irc-2018',
+      name: 'International Residential Code (IRC) 2018',
+      description: 'Previous edition of the International Residential Code',
+      category: 'residential',
+      icon: '🏠'
+    },
+    {
+      id: 'nec-2020',
+      name: 'National Electrical Code (NEC) 2020',
+      description: 'Standard for the safe installation of electrical wiring and equipment',
+      category: 'electrical',
+      icon: '⚡'
+    },
+    {
+      id: 'nec-2017',
+      name: 'National Electrical Code (NEC) 2017',
+      description: 'Previous edition of the National Electrical Code',
+      category: 'electrical',
+      icon: '⚡'
+    },
+    {
+      id: 'ipc-2021',
+      name: 'International Plumbing Code (IPC) 2021',
+      description: 'Model code for plumbing systems installation and inspection',
+      category: 'plumbing',
+      icon: '🚰'
+    },
+    {
+      id: 'imc-2021',
+      name: 'International Mechanical Code (IMC) 2021',
+      description: 'Model code for mechanical systems, HVAC, and ventilation',
+      category: 'mechanical',
+      icon: '🌡️'
+    },
+    {
+      id: 'iecc-2021',
+      name: 'International Energy Conservation Code (IECC) 2021',
+      description: 'Model code for energy efficiency in buildings',
+      category: 'energy',
+      icon: '🔋'
+    },
+    {
+      id: 'ife-2021',
+      name: 'International Fire Code (IFC) 2021',
+      description: 'Model code addressing fire prevention and protection',
+      category: 'fire',
+      icon: '🚒'
+    },
+    {
+      id: 'local-building',
+      name: 'Local Building Code Amendments',
+      description: 'Municipality-specific amendments to model codes',
+      category: 'local',
+      icon: '📋'
+    },
+    {
+      id: 'ada-2010',
+      name: 'ADA Standards 2010',
+      description: 'Americans with Disabilities Act accessibility standards',
+      category: 'accessibility',
+      icon: '♿'
     }
   ];
 
@@ -784,6 +879,20 @@ export default class MunicipalPermitTypesNewController extends Controller {
     return inspection ? inspection.name : inspectionType;
   }
 
+  // Helper method to check if building code is selected
+  isBuildingCodeSelected = (codeId) => {
+    return this.selectedBuildingCodes.includes(codeId);
+  }
+
+  // Helper method to format file size
+  formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
   @action
   resetForm() {
     // Reset all form state
@@ -798,6 +907,11 @@ export default class MunicipalPermitTypesNewController extends Controller {
     this.processingTime = 14;
     this.permitDescription = '';
     this.requiresInspection = true;
+    
+    // Reset building codes and energy requirements
+    this.selectedBuildingCodes = [];
+    this.requiresResidentialEnergyCode = false;
+    this.uploadedDocuments = [];
 
     // Explicitly reset arrays
     this.selectedDepartments = [];
@@ -811,6 +925,69 @@ export default class MunicipalPermitTypesNewController extends Controller {
     this.errorMessage = '';
     
     console.log('Form reset completed');
+  }
+
+  @action
+  toggleBuildingCode(codeId) {
+    if (this.selectedBuildingCodes.includes(codeId)) {
+      this.selectedBuildingCodes = this.selectedBuildingCodes.filter(id => id !== codeId);
+    } else {
+      this.selectedBuildingCodes = [...this.selectedBuildingCodes, codeId];
+    }
+  }
+
+  @action
+  toggleResidentialEnergyCode() {
+    this.requiresResidentialEnergyCode = !this.requiresResidentialEnergyCode;
+  }
+
+  @action
+  async handleDocumentUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Basic file validation
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+        continue;
+      }
+
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File ${file.name} is not a supported format. Please upload PDF, Word, or Excel files only.`);
+        continue;
+      }
+
+      // Create document object
+      const document = {
+        id: Date.now() + Math.random(), // Simple ID generation
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file: file, // Store the actual file object
+        uploadedAt: new Date().toISOString()
+      };
+
+      this.uploadedDocuments = [...this.uploadedDocuments, document];
+    }
+
+    // Clear the input
+    event.target.value = '';
+  }
+
+  @action
+  removeDocument(documentId) {
+    this.uploadedDocuments = this.uploadedDocuments.filter(doc => doc.id !== documentId);
   }
 
   @action
@@ -851,6 +1028,17 @@ export default class MunicipalPermitTypesNewController extends Controller {
         baseFee: parseFloat(this.baseFee) || 0,
         processingTime: parseInt(this.processingTime) || 14,
         requiresInspection: this.requiresInspection,
+        
+        // Building codes and energy requirements
+        selectedBuildingCodes: this.selectedBuildingCodes || [],
+        requiresResidentialEnergyCode: this.requiresResidentialEnergyCode,
+        documentTemplates: (this.uploadedDocuments || []).map(doc => ({
+          name: doc.name,
+          size: doc.size,
+          type: doc.type,
+          uploadedAt: doc.uploadedAt
+        })),
+        
         requiredDepartments: this.selectedDepartments || [],
         requiredInspections: (this.selectedInspections || []).map(inspectionType => {
           const inspection = this.availableInspections.find(insp => insp.type === inspectionType);
