@@ -71,11 +71,190 @@
       {{/if}}
     </div>
 
-    {{! Step 2: Configure Basic Settings }}
+    {{! Step 2: Required Documents }}
+    <div class="form-section">
+      <div class="section-header">
+        <h2>2. Required Documents</h2>
+        <p>Define which documents applicants must submit with their application</p>
+      </div>
+
+      <div class="documents-tabs">
+        <div class="tab-buttons">
+          <button 
+            type="button" 
+            class="tab-btn {{if (eq this.activeDocumentTab 'predefined') 'active'}}"
+            {{on "click" (fn this.setActiveDocumentTab 'predefined')}}
+          >
+            Common Documents
+          </button>
+          <button 
+            type="button" 
+            class="tab-btn {{if (eq this.activeDocumentTab 'custom') 'active'}}"
+            {{on "click" (fn this.setActiveDocumentTab 'custom')}}
+          >
+            Custom Documents
+          </button>
+        </div>
+
+        {{#if (eq this.activeDocumentTab 'predefined')}}
+          <div class="predefined-documents">
+            <p class="section-note">Select from common document types. You can specify if each is required or optional.</p>
+            
+            <div class="documents-grid">
+              {{#each this.commonDocuments as |document|}}
+                <div class="document-card {{if (this.isDocumentSelected document.id) 'selected'}}" {{on "click" (fn this.toggleDocument document.id)}}>
+                  <div class="document-header">
+                    <span class="document-icon">{{document.icon}}</span>
+                    <div class="document-info">
+                      <h4 class="document-name">{{document.name}}</h4>
+                      <p class="document-description">{{document.description}}</p>
+                    </div>
+                    <div class="selection-indicator">
+                      {{#if (this.isDocumentSelected document.id)}}
+                        <span class="selected-icon">✓</span>
+                      {{else}}
+                        <span class="unselected-icon">+</span>
+                      {{/if}}
+                    </div>
+                  </div>
+                  
+                  {{#if (this.isDocumentSelected document.id)}}
+                    <div class="document-config">
+                      <div class="config-row">
+                        <label class="config-label">
+                          <input 
+                            type="radio" 
+                            name="requirement-{{document.id}}" 
+                            value="required"
+                            checked={{eq (get this.documentRequirements document.id).requirement 'required'}}
+                            {{on "change" (fn this.setDocumentRequirement document.id 'required')}}
+                          />
+                          Required
+                        </label>
+                        <label class="config-label">
+                          <input 
+                            type="radio" 
+                            name="requirement-{{document.id}}" 
+                            value="optional"
+                            checked={{eq (get this.documentRequirements document.id).requirement 'optional'}}
+                            {{on "change" (fn this.setDocumentRequirement document.id 'optional')}}
+                          />
+                          Optional
+                        </label>
+                      </div>
+                      
+                      <div class="config-details">
+                        <div class="format-info">
+                          <span class="info-label">Allowed formats:</span>
+                          <div class="format-tags">
+                            {{#each document.allowedFormats as |format|}}
+                              <span class="format-tag">{{format}}</span>
+                            {{/each}}
+                          </div>
+                        </div>
+                        <div class="size-info">
+                          <span class="info-label">Max size:</span>
+                          <span class="size-value">{{document.maxSize}}MB</span>
+                        </div>
+                      </div>
+                    </div>
+                  {{/if}}
+                </div>
+              {{/each}}
+            </div>
+          </div>
+        {{/if}}
+
+        {{#if (eq this.activeDocumentTab 'custom')}}
+          <div class="custom-documents">
+            <p class="section-note">Create custom document requirements specific to your municipality.</p>
+            
+            {{#if this.customDocuments.length}}
+              <div class="custom-documents-list">
+                {{#each this.customDocuments as |document|}}
+                  <div class="custom-document-item">
+                    <div class="document-header">
+                      <div class="document-info">
+                        <h4 class="document-name">{{document.name}}</h4>
+                        <p class="document-description">{{document.description}}</p>
+                        <div class="document-meta">
+                          <span class="requirement-badge {{document.requirement}}">{{document.requirement}}</span>
+                          <span class="formats">Formats: {{join ", " document.allowedFormats}}</span>
+                          <span class="max-size">Max: {{document.maxSize}}MB</span>
+                        </div>
+                      </div>
+                      <button type="button" class="btn-icon danger" {{on "click" (fn this.removeCustomDocument document.id)}} title="Remove custom document">
+                        <span class="remove-icon">🗑️</span>
+                      </button>
+                    </div>
+                  </div>
+                {{/each}}
+              </div>
+            {{/if}}
+
+            <div class="add-custom-document">
+              {{#if this.showCustomDocumentForm}}
+                <div class="custom-document-form">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label for="custom-doc-name">Document Name</label>
+                      <Input id="custom-doc-name" @value={{this.customDocumentName}} placeholder="e.g., Environmental Impact Study" />
+                    </div>
+                    <div class="form-group">
+                      <label for="custom-doc-desc">Description</label>
+                      <Textarea id="custom-doc-desc" @value={{this.customDocumentDescription}} placeholder="Describe what this document should contain..." rows="2" />
+                    </div>
+                    <div class="form-group">
+                      <label>Requirement Level</label>
+                      <div class="radio-group">
+                        <label class="radio-label">
+                          <input type="radio" name="custom-requirement" value="required" checked={{eq this.customDocumentRequirement 'required'}} {{on "change" (fn this.setCustomDocumentRequirement 'required')}} />
+                          Required
+                        </label>
+                        <label class="radio-label">
+                          <input type="radio" name="custom-requirement" value="optional" checked={{eq this.customDocumentRequirement 'optional'}} {{on "change" (fn this.setCustomDocumentRequirement 'optional')}} />
+                          Optional
+                        </label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="custom-doc-formats">Allowed Formats (comma-separated)</label>
+                      <Input id="custom-doc-formats" @value={{this.customDocumentFormats}} placeholder="pdf, doc, docx, jpg" />
+                    </div>
+                    <div class="form-group">
+                      <label for="custom-doc-size">Maximum File Size (MB)</label>
+                      <Input id="custom-doc-size" @type="number" @value={{this.customDocumentMaxSize}} placeholder="10" min="1" max="50" />
+                    </div>
+                  </div>
+                  
+                  <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" {{on "click" this.cancelCustomDocument}}>
+                      <span class="btn-icon">✕</span>
+                      Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" {{on "click" this.addCustomDocument}}>
+                      <span class="btn-icon">✓</span>
+                      Add Document
+                    </button>
+                  </div>
+                </div>
+              {{else}}
+                <button type="button" class="btn btn-outline-primary" {{on "click" this.showCustomDocumentForm}}>
+                  <span class="btn-icon">➕</span>
+                  Add Custom Document
+                </button>
+              {{/if}}
+            </div>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    {{! Step 3: Configure Basic Settings }}
     {{#if this.selectedCategory}}
       <div class="form-section">
         <div class="section-header">
-          <h2>2. Basic Configuration</h2>
+          <h2>3. Basic Configuration</h2>
           <p>Set up permit details and fees</p>
         </div>
 
@@ -119,7 +298,7 @@
         </div>
       </div>
 
-      {{! Step 3: Building Codes and Requirements }}
+      {{! Step 4: Building Codes and Requirements }}
       <div class="form-section">
         <div class="section-header">
           <h2>3. Building Codes & Requirements</h2>
@@ -183,167 +362,10 @@
         </div>
       </div>
 
-      {{! Step 4: Required Documents }}
+      {{! Step 4: Document Templates (Optional) }}
       <div class="form-section">
         <div class="section-header">
-          <h2>4. Required Documents</h2>
-          <p>Define which documents applicants must submit with their application</p>
-        </div>
-
-        <div class="required-documents-section">
-          <div class="section-tabs">
-            <button type="button" class="tab-btn {{if (eq this.activeDocumentTab 'predefined') 'active'}}" {{on "click" (fn this.setDocumentTab 'predefined')}}>
-              Common Documents
-            </button>
-            <button type="button" class="tab-btn {{if (eq this.activeDocumentTab 'custom') 'active'}}" {{on "click" (fn this.setDocumentTab 'custom')}}>
-              Custom Documents
-            </button>
-          </div>
-
-          {{#if (eq this.activeDocumentTab 'predefined')}}
-            <div class="predefined-documents">
-              <p class="section-note">Select common documents that applicants should provide for this permit type</p>
-              
-              <div class="documents-grid">
-                {{#each this.commonDocuments as |document|}}
-                  <div class="document-card {{if (this.isDocumentSelected document.id) 'selected'}}" {{on "click" (fn this.toggleDocument document.id)}}>
-                    <div class="document-header">
-                      <span class="document-icon">{{document.icon}}</span>
-                      <div class="document-info">
-                        <h4 class="document-name">{{document.name}}</h4>
-                        <p class="document-description">{{document.description}}</p>
-                        <div class="document-formats">
-                          {{#if document.allowedFormats}}
-                            <span class="formats-label">Formats:</span>
-                            {{#each document.allowedFormats as |format|}}
-                              <span class="format-tag">{{format}}</span>
-                            {{/each}}
-                          {{/if}}
-                        </div>
-                      </div>
-                      <div class="selection-controls">
-                        <div class="selection-indicator">
-                          {{#if (this.isDocumentSelected document.id)}}
-                            <span class="selected-icon">✓</span>
-                          {{else}}
-                            <span class="unselected-icon">+</span>
-                          {{/if}}
-                        </div>
-                        {{#if (this.isDocumentSelected document.id)}}
-                          <div class="requirement-toggle">
-                            <label class="checkbox-label small">
-                              <Input @type="checkbox" @checked={{this.isDocumentRequired document.id}} {{on "change" (fn this.toggleDocumentRequired document.id)}} />
-                              <span class="checkbox-text">Required</span>
-                            </label>
-                          </div>
-                        {{/if}}
-                      </div>
-                    </div>
-                  </div>
-                {{/each}}
-              </div>
-
-              {{#if this.selectedDocuments.length}}
-                <div class="selected-documents-summary">
-                  <h4>Selected Documents ({{this.selectedDocuments.length}})</h4>
-                  <div class="document-tags">
-                    {{#each this.selectedDocuments as |docId|}}
-                      {{#let (this.getDocumentById docId) as |doc|}}
-                        <span class="document-tag {{if (this.isDocumentRequired docId) 'required' 'optional'}}">
-                          {{doc.icon}} {{doc.name}}
-                          {{#if (this.isDocumentRequired docId)}}
-                            <span class="required-indicator">*</span>
-                          {{else}}
-                            <span class="optional-indicator">(opt)</span>
-                          {{/if}}
-                          <button type="button" class="tag-remove" {{on "click" (fn this.toggleDocument docId)}}>×</button>
-                        </span>
-                      {{/let}}
-                    {{/each}}
-                  </div>
-                </div>
-              {{/if}}
-            </div>
-          {{/if}}
-
-          {{#if (eq this.activeDocumentTab 'custom')}}
-            <div class="custom-documents">
-              <div class="custom-documents-header">
-                <p class="section-note">Add custom document requirements specific to this permit type</p>
-                <button type="button" class="btn btn-outline" {{on "click" this.addCustomDocument}}>
-                  <span class="btn-icon">➕</span>
-                  Add Custom Document
-                </button>
-              </div>
-
-              {{#if this.customDocuments.length}}
-                {{#each this.customDocuments as |document index|}}
-                  <div class="custom-document-form">
-                    <div class="document-form-header">
-                      <h4>Custom Document {{add index 1}}</h4>
-                      <button type="button" class="btn-icon danger" {{on "click" (fn this.removeCustomDocument index)}} title="Remove document">
-                        <span class="remove-icon">🗑️</span>
-                      </button>
-                    </div>
-
-                    <div class="form-grid">
-                      <div class="form-group">
-                        <label>Document Name</label>
-                        <Input @value={{document.name}} placeholder="e.g., Environmental Impact Assessment" {{on "input" (fn this.updateCustomDocumentName index)}} />
-                      </div>
-
-                      <div class="form-group">
-                        <label>Document Description</label>
-                        <Textarea @value={{document.description}} placeholder="Describe what this document should contain..." rows="2" {{on "input" (fn this.updateCustomDocumentDescription index)}} />
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label>Allowed File Formats</label>
-                      <div class="format-checkboxes">
-                        {{#each this.availableFormats as |format|}}
-                          <label class="checkbox-label">
-                            <Input @type="checkbox" @checked={{includes document.allowedFormats format.id}} {{on "change" (fn this.toggleCustomDocumentFormat index format.id)}} />
-                            <span class="checkbox-text">{{format.name}} ({{format.id}})</span>
-                          </label>
-                        {{/each}}
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label>Maximum File Size (MB)</label>
-                      <Input @type="number" @value={{document.maxSize}} placeholder="10" min="1" max="50" {{on "input" (fn this.updateCustomDocumentMaxSize index)}} />
-                      <small class="form-help">Maximum file size in megabytes (1-50 MB)</small>
-                    </div>
-
-                    <div class="document-settings">
-                      <label class="checkbox-label">
-                        <Input @type="checkbox" @checked={{document.required}} {{on "change" (fn this.toggleCustomDocumentRequired index)}} />
-                        <span class="checkbox-text">Required Document</span>
-                      </label>
-                    </div>
-                  </div>
-                {{/each}}
-              {{else}}
-                <div class="empty-custom-documents">
-                  <div class="empty-icon">📄</div>
-                  <h3>No Custom Documents</h3>
-                  <p>Add custom document requirements specific to this permit type.</p>
-                  <button type="button" class="btn btn-primary" {{on "click" this.addCustomDocument}}>
-                    <span class="btn-icon">➕</span>
-                    Add Your First Custom Document
-                  </button>
-                </div>
-              {{/if}}
-            </div>
-          {{/if}}
-        </div>
-      </div>
-
-      {{! Step 5: Document Templates (Optional) }}
-      <div class="form-section">
-        <div class="section-header">
-          <h2>5. Document Templates (Optional)</h2>
+          <h2>4. Document Templates (Optional)</h2>
           <p>Upload templates or forms that applicants can download and fill out</p>
         </div>
 
@@ -478,10 +500,10 @@
         </div>
       </div>
 
-      {{! Step 8: Application Questions }}
+      {{! Step 5: Additional Questions }}
       <div class="form-section">
         <div class="section-header">
-          <h2>8. Application Questions</h2>
+          <h2>5. Additional Questions</h2>
           <p>Customize the information you collect from applicants</p>
         </div>
 
