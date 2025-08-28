@@ -25,6 +25,18 @@ export default class MunicipalPermitTypesEditController extends Controller {
   // Department checklists
   @tracked departmentChecklists = {};
 
+  // Document management
+  @tracked activeDocumentTab = 'predefined';
+  @tracked selectedDocuments = [];
+  @tracked documentRequirements = {};
+  @tracked customDocuments = [];
+  @tracked showCustomDocumentForm = false;
+  @tracked customDocumentName = '';
+  @tracked customDocumentDescription = '';
+  @tracked customDocumentRequirement = 'required';
+  @tracked customDocumentFormats = 'pdf, doc, docx';
+  @tracked customDocumentMaxSize = 10;
+
   @tracked activeQuestionTab = 'default';
   @tracked defaultQuestions = [];
   @tracked customQuestions = [];
@@ -136,6 +148,130 @@ export default class MunicipalPermitTypesEditController extends Controller {
     },
   ];
 
+  // Common document types available for selection
+  commonDocuments = [
+    {
+      id: 'architectural-plans',
+      name: 'Architectural Plans',
+      description: 'Detailed architectural drawings and floor plans',
+      icon: '📐',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 25
+    },
+    {
+      id: 'site-plan',
+      name: 'Site Plan',
+      description: 'Property site plan showing building location',
+      icon: '🗺️',
+      allowedFormats: ['pdf', 'dwg'],
+      maxSize: 10
+    },
+    {
+      id: 'structural-drawings',
+      name: 'Structural Drawings',
+      description: 'Structural engineering plans and calculations',
+      icon: '🏗️',
+      allowedFormats: ['pdf', 'dwg'],
+      maxSize: 20
+    },
+    {
+      id: 'electrical-plans',
+      name: 'Electrical Plans',
+      description: 'Electrical system layouts and specifications',
+      icon: '⚡',
+      allowedFormats: ['pdf', 'dwg'],
+      maxSize: 15
+    },
+    {
+      id: 'plumbing-plans',
+      name: 'Plumbing Plans',
+      description: 'Plumbing system designs and specifications',
+      icon: '🔧',
+      allowedFormats: ['pdf', 'dwg'],
+      maxSize: 15
+    },
+    {
+      id: 'mechanical-plans',
+      name: 'Mechanical Plans',
+      description: 'HVAC and mechanical system designs',
+      icon: '🌡️',
+      allowedFormats: ['pdf', 'dwg'],
+      maxSize: 15
+    },
+    {
+      id: 'fire-safety-plan',
+      name: 'Fire Safety Plan',
+      description: 'Fire protection and life safety systems',
+      icon: '🚒',
+      allowedFormats: ['pdf'],
+      maxSize: 10
+    },
+    {
+      id: 'soil-report',
+      name: 'Soil/Geotechnical Report',
+      description: 'Soil analysis and foundation recommendations',
+      icon: '🌍',
+      allowedFormats: ['pdf'],
+      maxSize: 20
+    },
+    {
+      id: 'survey-certificate',
+      name: 'Survey Certificate',
+      description: 'Land survey showing property boundaries',
+      icon: '📏',
+      allowedFormats: ['pdf'],
+      maxSize: 5
+    },
+    {
+      id: 'title-deed',
+      name: 'Title/Deed',
+      description: 'Property ownership documentation',
+      icon: '📜',
+      allowedFormats: ['pdf'],
+      maxSize: 5
+    },
+    {
+      id: 'contractor-license',
+      name: 'Contractor License',
+      description: 'Licensed contractor certification',
+      icon: '🏅',
+      allowedFormats: ['pdf', 'jpg', 'png'],
+      maxSize: 5
+    },
+    {
+      id: 'insurance-certificate',
+      name: 'Insurance Certificate',
+      description: 'Liability insurance documentation',
+      icon: '🛡️',
+      allowedFormats: ['pdf'],
+      maxSize: 5
+    },
+    {
+      id: 'environmental-report',
+      name: 'Environmental Assessment',
+      description: 'Environmental impact or compliance report',
+      icon: '🌿',
+      allowedFormats: ['pdf'],
+      maxSize: 15
+    },
+    {
+      id: 'zoning-compliance',
+      name: 'Zoning Compliance Letter',
+      description: 'Municipal zoning compliance verification',
+      icon: '📋',
+      allowedFormats: ['pdf'],
+      maxSize: 5
+    },
+    {
+      id: 'photos',
+      name: 'Site Photos',
+      description: 'Current site conditions and context photos',
+      icon: '📸',
+      allowedFormats: ['jpg', 'png', 'pdf'],
+      maxSize: 25
+    }
+  ];
+
   // Initialize form with existing permit type data
   initializeForm(permitType) {
     console.log('initializeForm called with:', permitType);
@@ -174,6 +310,9 @@ export default class MunicipalPermitTypesEditController extends Controller {
 
       // Load form fields into appropriate tabs
       this.loadFormFields(permitType.applicationFields || []);
+
+      // Initialize document requirements
+      this.initializeDocumentRequirements(permitType.requiredDocuments || []);
       
       // Initialize visual state for departments after a short delay to ensure DOM is ready
       setTimeout(() => this.initializeDepartmentVisualState(), 100);
@@ -410,6 +549,9 @@ export default class MunicipalPermitTypesEditController extends Controller {
         // Enhanced fee structure
         feeStructure: this.buildFeeStructure(),
 
+        // Document requirements
+        requiredDocuments: this.buildDocumentRequirements(),
+
         // Set inspection requirement
         requiresInspection: this.requiresInspection,
         requiredInspections: this.requiresInspection
@@ -553,6 +695,46 @@ export default class MunicipalPermitTypesEditController extends Controller {
     }
 
     return feeStructure;
+  }
+
+  // Build document requirements for API
+  buildDocumentRequirements() {
+    const documentRequirements = [];
+
+    // Add selected common documents
+    this.selectedDocuments.forEach(docId => {
+      const commonDoc = this.commonDocuments.find(doc => doc.id === docId);
+      const requirement = this.documentRequirements[docId];
+      
+      if (commonDoc && requirement) {
+        documentRequirements.push({
+          id: docId,
+          type: docId,
+          name: commonDoc.name,
+          description: commonDoc.description,
+          required: requirement.requirement === 'required',
+          allowedFormats: commonDoc.allowedFormats,
+          maxSize: commonDoc.maxSize,
+          isCustom: false
+        });
+      }
+    });
+
+    // Add custom documents
+    this.customDocuments.forEach(doc => {
+      documentRequirements.push({
+        id: doc.id,
+        type: doc.id,
+        name: doc.name,
+        description: doc.description,
+        required: doc.requirement === 'required',
+        allowedFormats: doc.allowedFormats,
+        maxSize: doc.maxSize,
+        isCustom: true
+      });
+    });
+
+    return documentRequirements;
   }
 
   // Fee structure initialization
@@ -741,5 +923,117 @@ export default class MunicipalPermitTypesEditController extends Controller {
       }
       this.departmentChecklists = checklists;
     }
+  }
+
+  // Document management methods
+  initializeDocumentRequirements(requiredDocuments) {
+    this.selectedDocuments = [];
+    this.documentRequirements = {};
+    this.customDocuments = [];
+
+    requiredDocuments.forEach(doc => {
+      if (doc.isCustom) {
+        // Add to custom documents
+        this.customDocuments.push({
+          id: doc.id || doc.type,
+          name: doc.name || doc.type,
+          description: doc.description || '',
+          requirement: doc.required ? 'required' : 'optional',
+          allowedFormats: doc.allowedFormats || ['pdf'],
+          maxSize: doc.maxSize || 10
+        });
+      } else {
+        // Add to selected predefined documents
+        this.selectedDocuments.push(doc.type || doc.id);
+        this.documentRequirements[doc.type || doc.id] = {
+          requirement: doc.required ? 'required' : 'optional'
+        };
+      }
+    });
+
+    this.selectedDocuments = [...this.selectedDocuments];
+    this.customDocuments = [...this.customDocuments];
+  }
+
+  @action
+  setActiveDocumentTab(tab) {
+    this.activeDocumentTab = tab;
+  }
+
+  @action
+  toggleDocument(documentId) {
+    const isSelected = this.selectedDocuments.includes(documentId);
+    
+    if (isSelected) {
+      this.selectedDocuments = this.selectedDocuments.filter(id => id !== documentId);
+      const requirements = { ...this.documentRequirements };
+      delete requirements[documentId];
+      this.documentRequirements = requirements;
+    } else {
+      this.selectedDocuments = [...this.selectedDocuments, documentId];
+      this.documentRequirements = {
+        ...this.documentRequirements,
+        [documentId]: { requirement: 'required' }
+      };
+    }
+  }
+
+  @action
+  setDocumentRequirement(documentId, requirement) {
+    this.documentRequirements = {
+      ...this.documentRequirements,
+      [documentId]: { requirement }
+    };
+  }
+
+  isDocumentSelected = (documentId) => {
+    return this.selectedDocuments.includes(documentId);
+  }
+
+  @action
+  showCustomDocumentForm() {
+    this.showCustomDocumentForm = true;
+    this.customDocumentName = '';
+    this.customDocumentDescription = '';
+    this.customDocumentRequirement = 'required';
+    this.customDocumentFormats = 'pdf, doc, docx';
+    this.customDocumentMaxSize = 10;
+  }
+
+  @action
+  cancelCustomDocument() {
+    this.showCustomDocumentForm = false;
+  }
+
+  @action
+  addCustomDocument() {
+    if (!this.customDocumentName.trim()) return;
+
+    const formatsArray = this.customDocumentFormats
+      .split(',')
+      .map(format => format.trim().toLowerCase())
+      .filter(format => format);
+
+    const newDocument = {
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: this.customDocumentName,
+      description: this.customDocumentDescription,
+      requirement: this.customDocumentRequirement,
+      allowedFormats: formatsArray,
+      maxSize: parseInt(this.customDocumentMaxSize) || 10
+    };
+
+    this.customDocuments = [...this.customDocuments, newDocument];
+    this.showCustomDocumentForm = false;
+  }
+
+  @action
+  removeCustomDocument(documentId) {
+    this.customDocuments = this.customDocuments.filter(doc => doc.id !== documentId);
+  }
+
+  @action
+  setCustomDocumentRequirement(requirement) {
+    this.customDocumentRequirement = requirement;
   }
 }
