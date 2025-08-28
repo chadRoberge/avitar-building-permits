@@ -183,22 +183,47 @@
 .user-type-buttons,
 .signup-user-types {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  max-width: none;  /* Remove any max-width constraints */
+}
+
+/* Enhanced layout for desktop screens */
+@media (min-width: 1024px) {
+  .user-type-buttons {
+    grid-template-columns: repeat(4, 1fr);  /* 4 columns for sign-in user types */
+  }
+  
+  .signup-user-types {
+    grid-template-columns: repeat(2, 1fr);  /* 2 columns for sign-up user types */
+  }
+}
+
+/* Medium screens - tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .user-type-buttons {
+    grid-template-columns: repeat(2, 1fr);  /* 2 columns for tablets */
+  }
+  
+  .signup-user-types {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .user-type-btn {
   background: var(--surface-color);
   border: 2px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;  /* Increased padding for better proportions */
   text-align: center;
   transition: all 0.3s ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;  /* Slightly increased gap */
+  min-height: 160px;  /* Ensure consistent height */
+  justify-content: center;
 }
 
 .user-type-btn:hover {
@@ -487,6 +512,12 @@
   .user-type-buttons,
   .signup-user-types {
     grid-template-columns: 1fr;
+    gap: 1rem;  /* Reduce gap on mobile */
+  }
+  
+  .user-type-btn {
+    padding: 1.5rem 1rem;  /* Reduce padding on mobile */
+    min-height: 140px;  /* Reduce height on mobile */
   }
   
   .form-row {
@@ -2188,7 +2219,7 @@ body {
   box-shadow: 0 4px 20px rgb(0 0 0 / 10%);
   overflow: hidden;
   width: 100%;
-  max-width: 600px;
+  max-width: 1200px;  /* Increased from 600px to 1200px for desktop */
   margin-top: -50px;
   position: relative;
 }
