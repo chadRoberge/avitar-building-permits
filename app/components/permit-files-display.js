@@ -184,4 +184,12 @@ export default class PermitFilesDisplayComponent extends Component {
     // In the future, could check user permissions
     return true;
   }
+
+  @action
+  handleUploadClick() {
+    // Call parent component's onUploadClick action
+    if (this.args.onUploadClick) {
+      this.args.onUploadClick();
+    }
+  }
 }

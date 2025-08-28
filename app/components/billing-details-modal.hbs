@@ -1,0 +1,204 @@
+{{! Trigger reactive data loading without displaying anything }}
+{{this.reactiveLoader}}
+{{#if @isVisible}}
+  <div class="modal-backdrop" {{on "click" this.closeModal}}>
+    <div class="modal-content billing-modal" {{on "click" this.stopPropagation}}>
+      <div class="modal-header">
+        <h2>Account & Billing Details</h2>
+        <button type="button" class="modal-close" {{on "click" @onClose}}>
+          ×
+        </button>
+      </div>
+
+      <div class="modal-body">
+        {{#if this.isLoading}}
+          <div class="billing-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading billing information...</p>
+          </div>
+        {{else if this.errorMessage}}
+          <div class="billing-error">
+            {{this.errorMessage}}
+          </div>
+        {{else}}
+          {{! Current Plan Section }}
+          <div class="current-plan-section">
+            <div class="section-header">
+              <h3>Current Plan</h3>
+              <span class="status-badge {{if this.billingData.accountStatus "active" "inactive"}}">
+                {{or this.billingData.accountStatus "Unknown"}}
+              </span>
+            </div>
+            
+            <div class="plan-overview">
+              <div class="plan-info">
+                <div class="plan-name">{{or this.billingData.planName "Free Forever"}}</div>
+                <div class="plan-price">
+                  {{#if this.billingData.subscription.pricePerPeriod}}
+                    ${{this.formatPrice this.billingData.subscription.pricePerPeriod}}/{{this.billingData.subscription.interval}}
+                  {{else}}
+                    $0.00/month
+                  {{/if}}
+                </div>
+                {{#if this.billingData.subscription.currentPeriodEnd}}
+                  <div class="plan-renewal">
+                    Next renewal: {{this.formatDate this.billingData.subscription.currentPeriodEnd}}
+                  </div>
+                {{/if}}
+              </div>
+            </div>
+          </div>
+
+          {{! Plan Comparison Section }}
+          <div class="plan-comparison-section">
+            <h3>Plan Comparison & Upgrade Options</h3>
+            
+            <div class="plans-comparison-grid">
+              {{#each-in this.availablePlans as |planKey plan|}}
+                <div class="plan-card {{if plan.current "current"}} {{if plan.popular "popular"}}">
+                  {{#if plan.popular}}
+                    <div class="popular-badge">Most Popular</div>
+                  {{/if}}
+                  {{#if plan.current}}
+                    <div class="current-badge">Current Plan</div>
+                  {{/if}}
+                  
+                  <div class="plan-header">
+                    <h4>{{plan.name}}</h4>
+                    <div class="plan-pricing">
+                      <span class="price">${{this.formatPlanPrice plan.price}}</span>
+                      <span class="period">/{{plan.interval}}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="plan-features">
+                    <ul>
+                      {{#each plan.features as |feature|}}
+                        <li>✓ {{feature}}</li>
+                      {{/each}}
+                    </ul>
+                  </div>
+                  
+                  <div class="plan-action">
+                    {{#if plan.current}}
+                      <button type="button" class="btn btn-outline" disabled>Current Plan</button>
+                    {{else}}
+                      <button type="button" class="btn btn-primary" {{on "click" (fn this.selectPlan planKey)}}>
+                        {{#if this.isUpdatingPlan}}
+                          Upgrading...
+                        {{else}}
+                          Upgrade to {{plan.name}}
+                        {{/if}}
+                      </button>
+                    {{/if}}
+                  </div>
+                </div>
+              {{/each-in}}
+            </div>
+          </div>
+
+          {{! Billing History Section }}
+          <div class="billing-history-section">
+            <div class="section-header">
+              <h3>Billing History</h3>
+              <span class="history-count">{{this.billingHistory.length}} {{if (eq this.billingHistory.length 1) "transaction" "transactions"}}</span>
+            </div>
+            
+            {{#if this.billingHistory.length}}
+              <div class="professional-table">
+                <div class="table-container">
+                  <table class="billing-history-table">
+                    <thead>
+                      <tr>
+                        <th class="date-col">Date</th>
+                        <th class="plan-col">Plan</th>
+                        <th class="period-col">Billing Period</th>
+                        <th class="amount-col">Amount</th>
+                        <th class="status-col">Status</th>
+                        <th class="actions-col">Invoice</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {{#each this.billingHistory as |invoice|}}
+                        <tr class="invoice-row">
+                          <td class="date-cell">
+                            <div class="date-display">{{this.formatDate invoice.date}}</div>
+                          </td>
+                          <td class="plan-cell">
+                            <div class="plan-name">{{invoice.plan}}</div>
+                          </td>
+                          <td class="period-cell">
+                            <div class="period-text">{{invoice.period}}</div>
+                          </td>
+                          <td class="amount-cell">
+                            <div class="amount-display">
+                              {{#if (eq invoice.amount 0)}}
+                                <span class="free-label">Free</span>
+                              {{else}}
+                                <span class="amount-value">${{this.formatPrice invoice.amount}}</span>
+                              {{/if}}
+                            </div>
+                          </td>
+                          <td class="status-cell">
+                            <span class="status-badge professional {{invoice.status}}">
+                              <span class="status-dot"></span>
+                              {{invoice.status}}
+                            </span>
+                          </td>
+                          <td class="actions-cell">
+                            {{#if invoice.downloadUrl}}
+                              <a href="{{invoice.downloadUrl}}" target="_blank" class="download-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                  <polyline points="7,10 12,15 17,10"/>
+                                  <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                PDF
+                              </a>
+                            {{else}}
+                              <span class="no-invoice">—</span>
+                            {{/if}}
+                          </td>
+                        </tr>
+                      {{/each}}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            {{else}}
+              <div class="empty-history-professional">
+                <div class="empty-icon">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                <h4>No billing history yet</h4>
+                <p>Once you upgrade your plan or make payments, your billing history will appear here.</p>
+              </div>
+            {{/if}}
+          </div>
+
+          {{! Account Management Section }}
+          {{#if this.billingData.subscription.stripeCustomerId}}
+            <div class="account-management-section">
+              <h3>Account Management</h3>
+              <p>Manage your subscription, payment methods, and billing details through our secure billing portal.</p>
+              <button type="button" class="btn btn-outline" {{on "click" this.openBillingPortal}}>
+                Open Billing Portal
+              </button>
+            </div>
+          {{/if}}
+        {{/if}}
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" {{on "click" @onClose}}>
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+{{/if}}

@@ -102,6 +102,7 @@ export default class AdminController extends Controller {
       localStorage.setItem('auth_token', result.token);
       localStorage.setItem('user_type', result.user.userType);
       localStorage.setItem('user_id', result.user._id);
+      localStorage.setItem('user_details', JSON.stringify(result.user));
       localStorage.setItem('municipality_id', result.user.municipality._id);
 
       // Check if there's a selected municipality from the portal flow

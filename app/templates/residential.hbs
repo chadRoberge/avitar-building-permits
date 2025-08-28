@@ -79,6 +79,12 @@
           </LinkTo>
         </li>
         <li class="nav-item">
+          <LinkTo @route="residential.contractors" class="nav-link {{if this.isContractorsActive 'active'}}">
+            <span class="nav-icon">🔨</span>
+            <span class="nav-label">Find Contractors</span>
+          </LinkTo>
+        </li>
+        <li class="nav-item">
           <LinkTo @route="residential.profile" class="nav-link {{if this.isProfileActive 'active'}}">
             <span class="nav-icon">👤</span>
             <span class="nav-label">Profile</span>

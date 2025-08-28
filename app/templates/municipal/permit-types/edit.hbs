@@ -63,8 +63,77 @@
         <div class="form-group">
           <label for="base-fee">Base Fee ($)</label>
           <Input id="base-fee" @type="number" @value={{this.baseFee}} placeholder="0.00" step="0.01" min="0" />
-          <small class="form-help">Standard application fee</small>
+          <small class="form-help">Base application fee (always charged)</small>
         </div>
+
+        <div class="form-group">
+          <label for="additional-fee-structure">Additional Fee Structure</label>
+          <select id="additional-fee-structure" class="form-select" value={{this.feeStructureType}} {{on "change" this.handleFeeStructureChange}}>
+            <option value="none">No Additional Fees</option>
+            <option value="percentage">Percentage of Project Value</option>
+            <option value="square_footage">Per Square Foot</option>
+            <option value="tiered">Tiered Based on Value</option>
+          </select>
+          <small class="form-help">Additional fees on top of base fee</small>
+        </div>
+
+        {{#if (eq this.feeStructureType "percentage")}}
+          <div class="form-group">
+            <label for="fee-percentage">Percentage (%)</label>
+            <Input id="fee-percentage" @type="number" @value={{this.feePercentage}} placeholder="1.5" step="0.1" min="0" max="100" />
+            <small class="form-help">Percentage of total project value</small>
+          </div>
+          <div class="form-group">
+            <label for="min-fee">Minimum Fee ($)</label>
+            <Input id="min-fee" @type="number" @value={{this.minimumFee}} placeholder="50.00" step="0.01" min="0" />
+            <small class="form-help">Minimum fee regardless of project value</small>
+          </div>
+        {{/if}}
+
+        {{#if (eq this.feeStructureType "square_footage")}}
+          <div class="form-group">
+            <label for="fee-per-sqft">Fee per Square Foot ($)</label>
+            <Input id="fee-per-sqft" @type="number" @value={{this.feePerSquareFoot}} placeholder="0.25" step="0.01" min="0" />
+            <small class="form-help">Fee charged per square foot of construction</small>
+          </div>
+          <div class="form-group">
+            <label for="min-fee">Minimum Fee ($)</label>
+            <Input id="min-fee" @type="number" @value={{this.minimumFee}} placeholder="50.00" step="0.01" min="0" />
+            <small class="form-help">Minimum fee for small projects</small>
+          </div>
+        {{/if}}
+
+        {{#if (eq this.feeStructureType "tiered")}}
+          <div class="tiered-fees-section">
+            <label>Fee Tiers</label>
+            <div class="fee-tiers">
+              {{#each this.feeTiers as |tier index|}}
+                <div class="fee-tier">
+                  <div class="tier-inputs">
+                    <div class="form-group">
+                      <label>From ($)</label>
+                      <Input @type="number" @value={{tier.minValue}} placeholder="0" step="0.01" min="0" {{on "input" (fn this.updateTierMinValue index)}} />
+                    </div>
+                    <div class="form-group">
+                      <label>To ($)</label>
+                      <Input @type="number" @value={{tier.maxValue}} placeholder="10000" step="0.01" min="0" {{on "input" (fn this.updateTierMaxValue index)}} />
+                    </div>
+                    <div class="form-group">
+                      <label>Fee ($)</label>
+                      <Input @type="number" @value={{tier.fee}} placeholder="100.00" step="0.01" min="0" {{on "input" (fn this.updateTierFee index)}} />
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" {{on "click" (fn this.removeTier index)}}>Remove</button>
+                  </div>
+                </div>
+              {{/each}}
+              <button type="button" class="btn btn-outline" {{on "click" this.addTier}}>
+                <span class="btn-icon">+</span>
+                Add Tier
+              </button>
+            </div>
+            <small class="form-help">Create fee tiers based on project value ranges</small>
+          </div>
+        {{/if}}
 
         <div class="form-group">
           <label for="processing-time">Processing Time (days)</label>
@@ -126,6 +195,65 @@
           {{/each}}
         </div>
       </div>
+
+      {{! Department Checklists }}
+      {{#if this.selectedDepartments.length}}
+        <div class="department-checklists-section">
+          <h3>Department Review Checklists</h3>
+          <p>Configure specific checklist items that reviewers must complete before approval.</p>
+          
+          {{#each this.selectedDepartments as |departmentId|}}
+            {{#let (this.getDepartmentInfo departmentId) as |department|}}
+              <div class="department-checklist-card">
+                <div class="checklist-header">
+                  <span class="department-icon">{{department.icon}}</span>
+                  <h4>{{department.name}} Checklist</h4>
+                </div>
+                
+                <div class="checklist-items">
+                  {{#each (this.getDepartmentChecklist departmentId) as |item index|}}
+                    <div class="checklist-item">
+                      <div class="item-inputs">
+                        <div class="form-group">
+                          <Input 
+                            @value={{item.label}} 
+                            placeholder="Enter checklist item..." 
+                            {{on "input" (fn this.updateChecklistItem departmentId index "label")}}
+                          />
+                        </div>
+                        <label class="checkbox-label">
+                          <Input 
+                            @type="checkbox" 
+                            @checked={{item.required}} 
+                            {{on "change" (fn this.updateChecklistItem departmentId index "required")}}
+                          />
+                          <span class="checkbox-text">Required</span>
+                        </label>
+                        <button 
+                          type="button" 
+                          class="btn btn-outline btn-sm" 
+                          {{on "click" (fn this.removeChecklistItem departmentId index)}}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  {{/each}}
+                  
+                  <button 
+                    type="button" 
+                    class="btn btn-outline" 
+                    {{on "click" (fn this.addChecklistItem departmentId)}}
+                  >
+                    <span class="btn-icon">+</span>
+                    Add Checklist Item
+                  </button>
+                </div>
+              </div>
+            {{/let}}
+          {{/each}}
+        </div>
+      {{/if}}
     </div>
 
     {{! Step 4: Application Questions }}

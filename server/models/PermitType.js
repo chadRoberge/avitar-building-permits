@@ -155,6 +155,7 @@ const feeStructureSchema = new mongoose.Schema({
   // Percentage fee
   percentage: Number,
   baseField: String, // Field name to calculate percentage from
+  minimumAmount: Number, // Minimum fee for percentage-based fees
 
   // Per-unit fee
   unitAmount: Number,
@@ -294,6 +295,146 @@ const permitTypeSchema = new mongoose.Schema(
       },
     ],
 
+    // Department-specific checklists for this permit type
+    departmentChecklists: {
+      building: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ],
+      planning: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ],
+      fire: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ],
+      health: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ],
+      engineering: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ],
+      zoning: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ],
+      environmental: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ],
+      finance: [
+        {
+          id: String,
+          label: {
+            type: String,
+            required: true
+          },
+          required: {
+            type: Boolean,
+            default: false
+          },
+          order: {
+            type: Number,
+            default: 0
+          }
+        }
+      ]
+    },
+
     // Processing Settings
     estimatedProcessingTime: {
       type: Number, // in business days
@@ -415,14 +556,24 @@ permitTypeSchema.methods.calculateFees = function (applicationData) {
       case 'percentage':
         if (fee.baseField && applicationData[fee.baseField]) {
           const baseValue = parseFloat(applicationData[fee.baseField]) || 0;
-          totalFees += (baseValue * (fee.percentage || 0)) / 100;
+          const percentageFee = (baseValue * (fee.percentage || 0)) / 100;
+          const minimumFee = fee.minimumAmount || 0;
+          totalFees += Math.max(percentageFee, minimumFee);
+        } else if (fee.minimumAmount) {
+          // If no project value provided but minimum fee exists, use minimum
+          totalFees += fee.minimumAmount;
         }
         break;
 
       case 'per-unit':
         if (fee.unitField && applicationData[fee.unitField]) {
           const units = parseFloat(applicationData[fee.unitField]) || 0;
-          totalFees += units * (fee.unitAmount || 0);
+          const unitFee = units * (fee.unitAmount || 0);
+          const minimumFee = fee.minimumAmount || 0;
+          totalFees += Math.max(unitFee, minimumFee);
+        } else if (fee.minimumAmount) {
+          // If no unit count provided but minimum fee exists, use minimum
+          totalFees += fee.minimumAmount;
         }
         break;
 

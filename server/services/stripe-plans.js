@@ -7,11 +7,12 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 class StripePlansService {
   /**
-   * Get all available municipal plans from Stripe with caching
+   * Get all available plans from Stripe with caching
+   * @param {string} userType - User type to filter plans (optional)
    * @param {boolean} forceRefresh - Force refresh cache
    * @returns {Object} Available plans object
    */
-  static async getAvailablePlans(forceRefresh = false) {
+  static async getAvailablePlans(userType = null, forceRefresh = false) {
     // Return cached plans if still valid
     if (!forceRefresh && cachedPlans && cacheExpiry && Date.now() < cacheExpiry) {
       return cachedPlans;
@@ -32,16 +33,18 @@ class StripePlansService {
         })
       ]);
 
-      const plans = this.processStripeProducts(productsResponse.data, pricesResponse.data);
+      const plans = this.processStripeProducts(productsResponse.data, pricesResponse.data, userType);
       
-      // Cache the results
-      cachedPlans = plans;
-      cacheExpiry = Date.now() + CACHE_DURATION;
+      // Cache the results (if no userType filter, cache all plans)
+      if (!userType) {
+        cachedPlans = plans;
+        cacheExpiry = Date.now() + CACHE_DURATION;
+      }
       
       return plans;
 
     } catch (error) {
-      console.error('Error fetching plans from Stripe:', error);
+      console.error('Error fetching plans from Stripe:', error.message);
       
       // Return cached plans if available, even if expired
       if (cachedPlans) {
@@ -49,7 +52,7 @@ class StripePlansService {
       }
       
       // Return default plans as fallback
-      return this.getDefaultPlans();
+      return this.getDefaultPlans(userType);
     }
   }
 
@@ -57,14 +60,20 @@ class StripePlansService {
    * Process Stripe products and prices into plan objects
    * @param {Array} products - Stripe products
    * @param {Array} prices - Stripe prices
+   * @param {string} userType - User type to filter plans (optional)
    * @returns {Object} Processed plans
    */
-  static processStripeProducts(products, prices) {
+  static processStripeProducts(products, prices, userType = null) {
     const plans = {};
 
     for (const product of products) {
-      // Skip if not a municipal plan
-      if (!product.metadata.plan_type || product.metadata.plan_type !== 'municipal') {
+      // Filter by user type if specified
+      if (userType && product.metadata.plan_type !== userType) {
+        continue;
+      }
+      
+      // Skip if no plan type specified in product metadata
+      if (!product.metadata.plan_type) {
         continue;
       }
 
@@ -175,9 +184,59 @@ class StripePlansService {
 
   /**
    * Get default fallback plans
+   * @param {string} userType - User type for fallback plans
    * @returns {Object} Default plans
    */
-  static getDefaultPlans() {
+  static getDefaultPlans(userType = 'municipal') {
+    if (userType === 'residential') {
+      return {
+        free: {
+          name: 'Free Forever',
+          price: 0,
+          currency: 'usd',
+          interval: 'month',
+          permits: 'Unlimited',
+          users: 1,
+          features: [
+            'Submit building permit applications',
+            'Track permit status in real-time',
+            'Communicate with review departments',
+            'Upload required documents',
+            'Schedule inspections',
+            'Basic email notifications'
+          ],
+          popular: false,
+          plan_type: 'residential',
+          priceId: null,
+        },
+        premium: {
+          name: 'Premium Residential',
+          price: 999, // $9.99/month
+          currency: 'usd',
+          interval: 'month',
+          permits: 'Unlimited',
+          users: 1,
+          features: [
+            'Everything in Free',
+            'SMS notifications',
+            'Advanced document management',
+            'Property portfolio management',
+            'Permit history & analytics',
+          ],
+          popular: true,
+          plan_type: 'residential',
+          priceId: null,
+        }
+      };
+    }
+    
+    if (userType === 'commercial') {
+      // Return empty object - commercial plans should come from actual Stripe products
+      // with metadata.plan_type = 'commercial'
+      return {};
+    }
+    
+    // Municipal plans (default)
     return {
       basic: {
         name: 'Basic',
@@ -193,6 +252,7 @@ class StripePlansService {
           'Email support',
         ],
         popular: false,
+        plan_type: 'municipal',
       },
       professional: {
         name: 'Professional',
@@ -210,6 +270,7 @@ class StripePlansService {
           'Phone support',
         ],
         popular: true,
+        plan_type: 'municipal',
       },
     };
   }

@@ -1,8 +1,11 @@
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
 import { action } from '@ember/object';
+import { inject as service } from '@ember/service';
+import config from 'avitar-building-permits/config/environment';
 
 export default class CommercialSignUpFormComponent extends Component {
+  @service router;
   @tracked email = '';
   @tracked password = '';
   @tracked confirmPassword = '';
@@ -23,13 +26,60 @@ export default class CommercialSignUpFormComponent extends Component {
   @tracked businessState = 'NH';
   @tracked businessZip = '';
 
+  // Plan selection
+  @tracked selectedPlan = 'free';
+  @tracked availablePlans = null;
+
   @tracked isLoading = false;
   @tracked errorMessage = '';
+
+  constructor() {
+    super(...arguments);
+    
+    // Load available plans
+    this.loadAvailablePlans();
+  }
+  
+  async loadAvailablePlans() {
+    try {
+      const response = await fetch(`${config.APP.API_HOST}/api/billing/public-plans/commercial`);
+      if (response.ok) {
+        this.availablePlans = await response.json();
+        console.log('Loaded commercial plans from Stripe:', this.availablePlans);
+        
+        // Set default to 'free' plan if it exists
+        if (this.availablePlans?.free) {
+          this.selectedPlan = 'free';
+        } else if (this.availablePlans) {
+          // Otherwise select the first available plan
+          const planKeys = Object.keys(this.availablePlans);
+          if (planKeys.length > 0) {
+            this.selectedPlan = planKeys[0];
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading commercial plans from Stripe:', error);
+      this.availablePlans = {};
+    }
+  }
 
   @action
   updateField(field, event) {
     this[field] = event.target.value;
     this.errorMessage = '';
+  }
+
+  @action
+  selectPlan(planKey) {
+    this.selectedPlan = planKey;
+    this.errorMessage = '';
+  }
+
+  // Helper methods
+  formatPrice(cents) {
+    if (!cents || cents === 0) return '0';
+    return (cents / 100).toFixed(0);
   }
 
   @action
@@ -51,7 +101,6 @@ export default class CommercialSignUpFormComponent extends Component {
         lastName: this.lastName,
         phone: this.phone,
         userType: 'commercial',
-        municipality: this.args.municipality,
         businessInfo: {
           businessName: this.businessName,
           businessType: this.businessType,
@@ -65,15 +114,44 @@ export default class CommercialSignUpFormComponent extends Component {
             zip: this.businessZip,
           },
         },
+        selectedPlan: this.selectedPlan,
       };
 
-      // TODO: Implement actual API call
-      console.log('Commercial user registration data:', userData);
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.log('Registering commercial user:', userData);
 
-      alert('Commercial account created successfully!');
+      const response = await fetch(`${config.APP.API_HOST}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Registration failed');
+      }
+
+      // Store authentication data
+      localStorage.setItem('auth_token', result.token);
+      localStorage.setItem('user_type', result.user.userType);
+      localStorage.setItem('user_id', result.user._id);
+      localStorage.setItem('user_details', JSON.stringify(result.user));
+
+      // Show success message and redirect
+      console.log('Registration successful:', result);
+
+      // Redirect to commercial dashboard
+      alert(
+        `Welcome ${result.user.firstName}! Your commercial account has been created successfully. You can now apply for building permits across multiple municipalities.`,
+      );
+
+      this.router.transitionTo('commercial.dashboard');
     } catch (error) {
-      this.errorMessage = 'Failed to create account. Please try again.';
+      console.error('Registration error:', error);
+      this.errorMessage =
+        error.message || 'Failed to create account. Please try again.';
     } finally {
       this.isLoading = false;
     }
@@ -90,6 +168,7 @@ export default class CommercialSignUpFormComponent extends Component {
       !this.businessType ||
       !this.businessStreet ||
       !this.businessCity ||
+      !this.businessState ||
       !this.businessZip
     ) {
       this.errorMessage = 'Please fill in all required fields';

@@ -11,7 +11,7 @@ export default class CommercialBillingRoute extends Route {
     const userType = localStorage.getItem('user_type');
 
     if (!token || userType !== 'commercial') {
-      this.router.transitionTo('auth');
+      this.router.transitionTo('home');
       return;
     }
 
@@ -29,14 +29,14 @@ export default class CommercialBillingRoute extends Route {
 
       const userData = await response.json();
       if (userData.userType !== 'commercial') {
-        this.router.transitionTo('auth');
+        this.router.transitionTo('home');
         return;
       }
     } catch (error) {
       console.error('Authentication check failed:', error);
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_type');
-      this.router.transitionTo('auth');
+      this.router.transitionTo('home');
     }
   }
 

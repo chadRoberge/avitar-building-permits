@@ -1,0 +1,66 @@
+<form class="auth-form universal-signin-form" {{on "submit" this.handleSubmit}}>
+  {{#if this.errorMessage}}
+    <div class="error-message">{{this.errorMessage}}</div>
+  {{/if}}
+
+  {{#if @requiresMunicipality}}
+    <div class="form-section">
+      <h3>Select Municipality</h3>
+      <div class="form-group">
+        <label for="municipality-select">Municipality *</label>
+        <select
+          id="municipality-select"
+          value={{this.selectedMunicipalityId}}
+          {{on "change" this.updateSelectedMunicipality}}
+          required
+          disabled={{this.isLoading}}
+        >
+          <option value="">Choose your municipality...</option>
+          {{#each @municipalities as |municipality|}}
+            <option value={{municipality.id}}>{{municipality.name}} - {{municipality.city}}, {{municipality.state}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  {{/if}}
+
+  <div class="form-section">
+    <div class="form-group">
+      <label for="signin-email">Email Address</label>
+      <input
+        id="signin-email"
+        type="email"
+        value={{this.email}}
+        {{on "input" this.updateEmail}}
+        placeholder="Enter your email"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="signin-password">Password</label>
+      <input
+        id="signin-password"
+        type="password"
+        value={{this.password}}
+        {{on "input" this.updatePassword}}
+        placeholder="Enter your password"
+        required
+        disabled={{this.isLoading}}
+      />
+    </div>
+  </div>
+
+  <button 
+    type="submit" 
+    class="submit-btn"
+    disabled={{this.isLoading}}
+  >
+    {{#if this.isLoading}}
+      Signing In...
+    {{else}}
+      Sign In
+    {{/if}}
+  </button>
+</form>

@@ -136,6 +136,20 @@ router.put('/profile', auth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Check for email conflicts before updating
+    if (email && email.toLowerCase() !== user.email.toLowerCase()) {
+      const existingUser = await User.findOne({ 
+        email: email.toLowerCase(),
+        _id: { $ne: user._id }
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({ 
+          error: 'This email address is already in use by another account. Please choose a different email address.' 
+        });
+      }
+    }
+
     // Update user fields (only allow certain fields to be updated by user)
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
@@ -173,10 +187,82 @@ router.put('/profile', auth, async (req, res) => {
     console.error('Error updating user profile:', error);
     
     if (error.code === 11000) {
-      return res.status(400).json({ error: 'Email already in use by another user' });
+      if (error.keyValue && error.keyValue.email) {
+        return res.status(400).json({ 
+          error: `The email address "${error.keyValue.email}" is already in use by another account. Please choose a different email address.` 
+        });
+      }
+      return res.status(400).json({ error: 'This information is already in use by another account' });
     }
     
     res.status(500).json({ error: 'Failed to update profile', details: error.message });
+  }
+});
+
+// Update business information
+router.put('/business', auth, async (req, res) => {
+  try {
+    const { businessInfo } = req.body;
+    
+    if (!businessInfo) {
+      return res.status(400).json({ error: 'Business information is required' });
+    }
+    
+    // req.user is already the full user object from auth middleware
+    const user = req.user;
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Ensure this is a commercial user
+    if (user.userType !== 'commercial') {
+      return res.status(400).json({ error: 'Business information can only be updated for commercial users' });
+    }
+
+    // Update business information
+    if (!user.businessInfo) {
+      user.businessInfo = {};
+    }
+
+    if (businessInfo.businessName !== undefined) {
+      user.businessInfo.businessName = businessInfo.businessName;
+    }
+    if (businessInfo.businessType !== undefined) {
+      user.businessInfo.businessType = businessInfo.businessType;
+    }
+    if (businessInfo.licenseNumber !== undefined) {
+      user.businessInfo.licenseNumber = businessInfo.licenseNumber;
+    }
+
+    // Update business address if provided
+    if (businessInfo.businessAddress) {
+      if (!user.businessInfo.businessAddress) {
+        user.businessInfo.businessAddress = {};
+      }
+      
+      const addr = businessInfo.businessAddress;
+      if (addr.street !== undefined) user.businessInfo.businessAddress.street = addr.street;
+      if (addr.city !== undefined) user.businessInfo.businessAddress.city = addr.city;
+      if (addr.state !== undefined) user.businessInfo.businessAddress.state = addr.state;
+      if (addr.zip !== undefined) user.businessInfo.businessAddress.zip = addr.zip;
+      if (addr.county !== undefined) user.businessInfo.businessAddress.county = addr.county;
+    }
+
+    await user.save();
+    
+    console.log('Updated business information for user:', {
+      id: user._id,
+      email: user.email,
+      businessName: user.businessInfo.businessName,
+      businessType: user.businessInfo.businessType
+    });
+
+    const userResponse = user.toJSON();
+    res.json(userResponse);
+  } catch (error) {
+    console.error('Error updating business information:', error);
+    res.status(500).json({ error: 'Failed to update business information', details: error.message });
   }
 });
 
@@ -376,14 +462,26 @@ router.post('/change-password', auth, async (req, res) => {
       return res.status(400).json({ error: 'New password must be at least 6 characters' });
     }
 
-    const user = await User.findById(req.user.userId);
+    // Get fresh user from database to ensure we have the full Mongoose document with methods
+    const userId = req.user._id || req.user.userId;
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    console.log('Change password attempt for user:', user.email);
+    console.log('Current password provided:', !!currentPassword);
+    console.log('Current password value:', currentPassword);
+    console.log('New password provided:', !!newPassword);
+    console.log('User has comparePassword method:', typeof user.comparePassword);
+    console.log('Stored password hash:', user.password?.substring(0, 20) + '...');
+
     // Verify current password
     const isValidPassword = await user.comparePassword(currentPassword);
+    console.log('Current password valid:', isValidPassword);
+    
     if (!isValidPassword) {
+      console.log('Password verification failed for user:', user.email);
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
 
@@ -391,7 +489,7 @@ router.post('/change-password', auth, async (req, res) => {
     user.password = newPassword;
     await user.save();
     
-    console.log('Password changed for user:', user.email);
+    console.log('Password changed successfully for user:', user.email);
 
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
@@ -403,10 +501,8 @@ router.post('/change-password', auth, async (req, res) => {
 // Get user activity/statistics
 router.get('/activity', auth, async (req, res) => {
   try {
-    const userId = req.user.userId;
-    
-    // For now, return mock data. In a real app, you'd query various collections
-    // to get actual statistics about the user's activity
+    const userId = req.user._id || req.user.userId;
+    const Permit = require('../models/Permit');
     
     const activityData = {
       permitReviews: 0,
@@ -415,36 +511,98 @@ router.get('/activity', auth, async (req, res) => {
       recentActivity: []
     };
 
-    // If user is municipal, get some basic stats
+    // If user is municipal, get real statistics
     if (req.user.userType === 'municipal') {
-      // You could query the Permit model here to get real statistics
-      // For example:
-      // const Permit = require('../models/Permit');
-      // const reviewCount = await Permit.countDocuments({
-      //   'departmentReviews.reviewer.id': userId
-      // });
+      // Count permits reviewed by this user
+      const permitReviewsCount = await Permit.countDocuments({
+        'reviewedBy.id': userId
+      });
+
+      // Count department reviews by this user
+      const departmentReviewsCount = await Permit.countDocuments({
+        'departmentReviews.reviewer.id': userId
+      });
+
+      // Count inspections completed by this user
+      const inspectionCount = await Permit.countDocuments({
+        'inspections.inspector.id': userId
+      });
+
+      activityData.permitReviews = permitReviewsCount;
+      activityData.inspectionCount = inspectionCount;
+      activityData.departmentReviews = departmentReviewsCount;
       
-      activityData.permitReviews = Math.floor(Math.random() * 50); // Mock data
-      activityData.inspectionCount = Math.floor(Math.random() * 25); // Mock data
-      activityData.departmentReviews = Math.floor(Math.random() * 75); // Mock data
-      
-      activityData.recentActivity = [
-        {
-          icon: '📋',
-          description: 'Reviewed permit application #1234',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
-        },
-        {
-          icon: '✅', 
-          description: 'Approved building department review',
-          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000) // 5 hours ago
-        },
-        {
-          icon: '🔍',
-          description: 'Completed inspection for permit #5678',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
+      // Get recent activity - permits reviewed, inspections completed, department reviews
+      const recentPermitReviews = await Permit.find({
+        'reviewedBy.id': userId
+      })
+        .sort({ approvedDate: -1 })
+        .limit(3)
+        .select('permitNumber approvedDate')
+        .lean();
+
+      const recentInspections = await Permit.find({
+        'inspections.inspector.id': userId
+      })
+        .sort({ 'inspections.completedDate': -1 })
+        .limit(3)
+        .select('permitNumber inspections')
+        .lean();
+
+      const recentDepartmentReviews = await Permit.find({
+        'departmentReviews.reviewer.id': userId
+      })
+        .sort({ 'departmentReviews.reviewedAt': -1 })
+        .limit(3)
+        .select('permitNumber departmentReviews')
+        .lean();
+
+      // Build recent activity array
+      const activities = [];
+
+      // Add permit reviews
+      recentPermitReviews.forEach(permit => {
+        if (permit.approvedDate) {
+          activities.push({
+            icon: '📋',
+            description: `Reviewed permit application #${permit.permitNumber}`,
+            timestamp: permit.approvedDate
+          });
         }
-      ];
+      });
+
+      // Add inspections
+      recentInspections.forEach(permit => {
+        const userInspections = permit.inspections?.filter(
+          inspection => inspection.inspector?.id?.toString() === userId.toString() && inspection.completedDate
+        ) || [];
+        userInspections.forEach(inspection => {
+          activities.push({
+            icon: '🔍',
+            description: `Completed ${inspection.type} inspection for permit #${permit.permitNumber}`,
+            timestamp: inspection.completedDate
+          });
+        });
+      });
+
+      // Add department reviews
+      recentDepartmentReviews.forEach(permit => {
+        const userReviews = permit.departmentReviews?.filter(
+          review => review.reviewer?.id?.toString() === userId.toString() && review.reviewedAt
+        ) || [];
+        userReviews.forEach(review => {
+          activities.push({
+            icon: '✅',
+            description: `${review.status === 'approved' ? 'Approved' : 'Reviewed'} ${review.department} department review for permit #${permit.permitNumber}`,
+            timestamp: review.reviewedAt
+          });
+        });
+      });
+
+      // Sort activities by timestamp (newest first) and take top 5
+      activityData.recentActivity = activities
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 5);
     }
 
     res.json(activityData);

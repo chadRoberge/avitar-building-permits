@@ -1,0 +1,208 @@
+<div class="inspection-scheduler">
+  <div class="scheduler-header">
+    <h3>Schedule Inspections</h3>
+  </div>
+
+  {{#if this.canScheduleInspections}}
+    
+    {{!-- Scheduled Inspections List --}}
+    {{#if this.scheduledInspections.length}}
+      <div class="scheduled-inspections">
+        <h4>Scheduled Inspections</h4>
+        <div class="inspections-list">
+          {{#each this.scheduledInspections as |inspection|}}
+            <div class="inspection-item {{inspection.status}}">
+              <div class="inspection-info">
+                <div class="inspection-type">{{inspection.name}}</div>
+                <div class="inspection-details">
+                  <span class="inspection-date">
+                    📅 {{format-date inspection.scheduledDate "MMM DD, YYYY"}}
+                  </span>
+                  {{#if inspection.scheduledTime}}
+                    <span class="inspection-time">
+                      🕒 {{inspection.scheduledTime}}
+                    </span>
+                  {{/if}}
+                </div>
+              </div>
+              <div class="inspection-status">
+                <span class="status-badge status-{{inspection.status}}">
+                  {{#if (eq inspection.status "scheduled")}}
+                    📋 Scheduled
+                  {{else if (eq inspection.status "completed")}}
+                    ✅ Completed
+                  {{else if (eq inspection.status "passed")}}
+                    ✅ Passed
+                  {{else if (eq inspection.status "failed")}}
+                    ❌ Failed
+                  {{else}}
+                    {{inspection.status}}
+                  {{/if}}
+                </span>
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    {{/if}}
+
+    {{!-- Schedule New Inspection --}}
+    {{#if this.availableInspections.length}}
+      <div class="schedule-new-inspection">
+        <h4>Schedule New Inspection</h4>
+        
+        {{!-- Success Message --}}
+        {{#if this.success}}
+          <div class="success-message">
+            <div class="success-icon">✅</div>
+            <div class="success-content">
+              <strong>Inspection Scheduled!</strong>
+              <p>Your inspection has been scheduled successfully.</p>
+            </div>
+          </div>
+        {{/if}}
+
+        {{!-- Error Message --}}
+        {{#if this.error}}
+          <div class="error-message">
+            <div class="error-icon">⚠️</div>
+            <div class="error-content">
+              <p>{{this.error}}</p>
+              <button type="button" class="btn btn-sm btn-outline-secondary" {{on "click" this.clearError}}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        {{/if}}
+
+        {{#unless (or this.success this.error)}}
+          <div class="scheduling-form">
+            {{!-- Inspection Type Selection --}}
+            <div class="form-group">
+              <label class="form-label">Inspection Type</label>
+              <select 
+                class="form-select" 
+                value={{this.selectedInspectionType}}
+                {{on "change" this.handleInspectionTypeChange}}
+              >
+                <option value="">Select inspection type...</option>
+                {{#each this.availableInspections as |inspection|}}
+                  <option value={{inspection.type}}>{{inspection.name}}</option>
+                {{/each}}
+              </select>
+            </div>
+
+            {{#if this.selectedInspectionType}}
+              {{!-- Date Selection --}}
+              <div class="form-group">
+                <label class="form-label" for="inspection-date">Preferred Date</label>
+                <input 
+                  type="date" 
+                  id="inspection-date"
+                  class="form-input"
+                  value={{this.selectedDate}}
+                  min={{this.minDate}}
+                  max={{this.maxDate}}
+                  {{on "change" this.selectDate}}
+                />
+                <small class="form-help">Available dates are within the next 30 days</small>
+              </div>
+
+              {{#if this.selectedDate}}
+                {{!-- Time Slot Selection --}}
+                <div class="form-group">
+                  <label class="form-label">Available Time Slots</label>
+                  {{#if this.isLoadingSlots}}
+                    <div class="loading-slots">
+                      <span class="spinner"></span>
+                      Loading available time slots...
+                    </div>
+                  {{else if this.availableTimeSlots.length}}
+                    <div class="time-slots-grid">
+                      {{#each this.availableTimeSlots as |timeSlot|}}
+                        <label class="time-slot-option">
+                          <input 
+                            type="radio" 
+                            name="timeSlot" 
+                            value={{timeSlot}}
+                            checked={{eq this.selectedTimeSlot timeSlot}}
+                            {{on "change" (fn this.selectTimeSlot timeSlot)}}
+                          />
+                          <div class="time-slot-label">
+                            {{timeSlot}}
+                          </div>
+                        </label>
+                      {{/each}}
+                    </div>
+                  {{else}}
+                    <div class="no-slots-message">
+                      <span class="warning-icon">⚠️</span>
+                      <p>No available time slots for this date. Please select another date.</p>
+                    </div>
+                  {{/if}}
+                </div>
+
+                {{#if this.selectedTimeSlot}}
+                  {{!-- Additional Notes --}}
+                  <div class="form-group">
+                    <label class="form-label" for="inspection-notes">Additional Notes (Optional)</label>
+                    <textarea 
+                      id="inspection-notes"
+                      class="form-textarea"
+                      rows="3"
+                      placeholder="Any special instructions or notes for the inspector..."
+                      value={{this.inspectionNotes}}
+                      {{on "input" this.updateNotes}}
+                    ></textarea>
+                  </div>
+
+                  {{!-- Schedule Button --}}
+                  <div class="form-actions">
+                    <button 
+                      type="button" 
+                      class="btn btn-primary"
+                      disabled={{this.isScheduling}}
+                      {{on "click" this.scheduleInspection}}
+                    >
+                      {{#if this.isScheduling}}
+                        <span class="spinner"></span>
+                        Scheduling...
+                      {{else}}
+                        📋 Schedule Inspection
+                      {{/if}}
+                    </button>
+                  </div>
+                {{/if}}
+              {{/if}}
+            {{/if}}
+          </div>
+        {{/unless}}
+      </div>
+    {{else}}
+      <div class="no-inspections">
+        <div class="info-icon">ℹ️</div>
+        <div class="info-content">
+          <h4>All Inspections Scheduled</h4>
+          <p>All required inspections for this permit have been scheduled or completed.</p>
+        </div>
+      </div>
+    {{/if}}
+
+  {{else}}
+    {{!-- Payment Required Message --}}
+    <div class="payment-required-message">
+      <div class="warning-icon">🔒</div>
+      <div class="warning-content">
+        <h4>Payment Required</h4>
+        <p>Inspections can be scheduled after permit fees are paid and the permit is approved.</p>
+        {{#if (eq @permit.status "approved")}}
+          {{#if (not (eq @permit.paymentStatus "paid"))}}
+            <p><strong>Next step:</strong> Complete payment below to unlock inspection scheduling.</p>
+          {{/if}}
+        {{else}}
+          <p><strong>Current Status:</strong> {{@permit.status}} - Awaiting approval</p>
+        {{/if}}
+      </div>
+    </div>
+  {{/if}}
+</div>

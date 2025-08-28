@@ -17,6 +17,7 @@ const stripeRoutes = require('./routes/stripe');
 const stripeSetupRoutes = require('./routes/stripe-setup');
 const apiIntegrationRoutes = require('./routes/api-integration');
 const userRoutes = require('./routes/users');
+const contractorLookupRoutes = require('./routes/contractor-lookup');
 
 const app = express();
 
@@ -595,9 +596,12 @@ app.post('/api/admin/municipalities/:municipalityId/users', async (req, res) => 
       phone, 
       userType, 
       password,
+      department,
+      permissionLevel,
       businessInfo,
       propertyAddress 
     } = req.body;
+
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -605,9 +609,16 @@ app.post('/api/admin/municipalities/:municipalityId/users', async (req, res) => 
       return res.status(400).json({ error: 'User with this email already exists' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password || 'TempPassword123!', salt);
+    // Set password (will be hashed by User model's pre-save middleware)
+    const actualPassword = password || 'TempPassword123!';
+    console.log('=== USER CREATION PASSWORD DEBUG ===');
+    console.log('Email:', email);
+    console.log('Password provided:', !!password);
+    console.log('Password from request:', JSON.stringify(password));
+    console.log('Actual password to hash:', JSON.stringify(actualPassword));
+    console.log('Password length:', actualPassword?.length);
+    console.log('Password char codes:', actualPassword ? Array.from(actualPassword).map(c => c.charCodeAt(0)) : 'none');
+    console.log('Letting User model pre-save middleware handle hashing...');
 
     // Create user data
     const userData = {
@@ -615,7 +626,7 @@ app.post('/api/admin/municipalities/:municipalityId/users', async (req, res) => 
       firstName,
       lastName,
       phone,
-      password: hashedPassword,
+      password: actualPassword,
       userType,
       municipality: {
         _id: municipality._id,
@@ -626,6 +637,11 @@ app.post('/api/admin/municipalities/:municipalityId/users', async (req, res) => 
     };
 
     // Add type-specific data
+    if (userType === 'municipal') {
+      userData.department = department;
+      userData.permissionLevel = permissionLevel || 11; // Default to basic municipal access
+    }
+
     if (userType === 'commercial' && businessInfo) {
       userData.businessInfo = businessInfo;
     }
@@ -735,6 +751,7 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/stripe-setup', stripeSetupRoutes);
 app.use('/api/integration', apiIntegrationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/contractor-lookup', contractorLookupRoutes);
 
 // Debug: Log all registered routes
 console.log('Registered routes:');
@@ -750,6 +767,7 @@ console.log('- /api/permit-messages');
 console.log('- /api/billing');
 console.log('- /api/stripe');
 console.log('- /api/integration (API key secured endpoints)');
+console.log('- /api/contractor-lookup');
 
 // Simple test endpoint (no DB required)
 app.get('/api/test', (req, res) => {

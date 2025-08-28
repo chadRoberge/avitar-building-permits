@@ -5,6 +5,28 @@ const PermitMessage = require('../models/PermitMessage');
 const Permit = require('../models/Permit');
 const User = require('../models/User');
 
+// Helper function to find permit by ID or permit number
+const findPermit = async (permitId, populate = []) => {
+  let query;
+  
+  if (permitId.match(/^[0-9a-fA-F]{24}$/)) {
+    // It's a valid ObjectId
+    query = Permit.findById(permitId);
+  } else {
+    // It's probably a permit number like "P2025-DEERFI-001"
+    query = Permit.findOne({ permitNumber: permitId });
+  }
+  
+  // Apply population if specified
+  if (populate.length > 0) {
+    populate.forEach(field => {
+      query = query.populate(field);
+    });
+  }
+  
+  return await query;
+};
+
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -32,7 +54,7 @@ router.get('/permit/:permitId', authenticateToken, async (req, res) => {
     const userType = req.user.userType;
 
     // First verify the user has access to this permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -48,10 +70,10 @@ router.get('/permit/:permitId', authenticateToken, async (req, res) => {
     }
 
     // Get messages for this permit
-    const messages = await PermitMessage.getPermitMessages(permitId, userType);
+    const messages = await PermitMessage.getPermitMessages(permit._id, userType);
 
     // Mark messages as read for this user
-    await PermitMessage.markAsRead(permitId, userId);
+    await PermitMessage.markAsRead(permit._id, userId);
 
     res.json(messages);
   } catch (error) {
@@ -70,7 +92,7 @@ router.get('/:permitId', authenticateToken, async (req, res) => {
     console.log('Loading messages for permit:', permitId, 'by user:', userId, 'type:', userType);
 
     // First verify the user has access to this permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -88,11 +110,11 @@ router.get('/:permitId', authenticateToken, async (req, res) => {
     // Get messages for this permit using model method if it exists, otherwise query directly
     let messages;
     try {
-      messages = await PermitMessage.getPermitMessages(permitId, userType);
+      messages = await PermitMessage.getPermitMessages(permit._id, userType);
     } catch (error) {
       // Fallback to direct query if model method doesn't exist
       console.log('Using direct query fallback for messages');
-      const query = { permit: permitId };
+      const query = { permit: permit._id };
       
       // Filter internal messages for non-municipal users
       if (userType !== 'municipal') {
@@ -121,7 +143,7 @@ router.get('/:permitId', authenticateToken, async (req, res) => {
 
     // Mark messages as read for this user if method exists
     try {
-      await PermitMessage.markAsRead(permitId, userId);
+      await PermitMessage.markAsRead(permit._id, userId);
     } catch (error) {
       console.log('markAsRead method not available');
     }
@@ -156,7 +178,7 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // Verify the user has access to this permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -196,7 +218,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Create the message
     const newMessage = new PermitMessage({
-      permit: permitId,
+      permit: permit._id,
       message: content.trim(),
       messageType: 'general',
       isInternal: isInternal,
@@ -258,7 +280,7 @@ router.post('/permit/:permitId', authenticateToken, async (req, res) => {
     }
 
     // Verify the user has access to this permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -296,7 +318,7 @@ router.post('/permit/:permitId', authenticateToken, async (req, res) => {
 
     // Create the message
     const newMessage = new PermitMessage({
-      permit: permitId,
+      permit: permit._id,
       message: message.trim(),
       messageType: messageType,
       isInternal: messageIsInternal,
@@ -336,7 +358,7 @@ router.get('/permit/:permitId/unread', authenticateToken, async (req, res) => {
     const userType = req.user.userType;
 
     // Verify access to permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -352,7 +374,7 @@ router.get('/permit/:permitId/unread', authenticateToken, async (req, res) => {
 
     // Count unread messages (exclude own messages and internal if not municipal)
     const query = {
-      permit: permitId,
+      permit: permit._id,
       'sender.id': { $ne: userId },
       isRead: false,
     };

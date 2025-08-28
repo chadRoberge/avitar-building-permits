@@ -12,6 +12,7 @@ export default class ResidentialPermitsViewController extends Controller {
   @tracked inspectionNotes = '';
   @tracked isSubmittingInspection = false;
   @tracked showInspectionForm = false;
+  @tracked showUploadModal = false;
 
   @action
   goBack() {
@@ -51,6 +52,16 @@ export default class ResidentialPermitsViewController extends Controller {
     console.log('File deleted:', deletedFile);
 
     // The PermitFilesDisplay component handles removing the file from its local list
+  }
+
+  @action
+  showFileUploadModal() {
+    this.showUploadModal = true;
+  }
+
+  @action
+  hideFileUploadModal() {
+    this.showUploadModal = false;
   }
 
   @action
@@ -123,5 +134,15 @@ export default class ResidentialPermitsViewController extends Controller {
     } finally {
       this.isSubmittingInspection = false;
     }
+  }
+
+  @action
+  handleInspectionScheduled(inspectionData) {
+    console.log('Inspection scheduled successfully:', inspectionData);
+    
+    // Refresh the page to show the newly scheduled inspection
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000); // Give time to show success message
   }
 }

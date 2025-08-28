@@ -8,16 +8,13 @@ export default class Router extends EmberRouter {
 
 Router.map(function () {
   this.route('home', { path: '/' });
-  this.route('municipal-portal', { path: '/municipality/:municipality_id' });
   this.route('register-municipality');
-  this.route('auth');
 
   // Municipal staff routes (admin portal)
   this.route('admin');
   
   // System admin routes (system administration)
   this.route('system-admin', function () {
-    this.route('login');
     this.route('dashboard');
     this.route('municipalities');
     this.route('users');
@@ -49,7 +46,7 @@ Router.map(function () {
       this.route('new');
       this.route('view', { path: '/:permit_id' });
     });
-    this.route('billing');
+    this.route('contractors');
     this.route('profile');
   });
 
@@ -61,6 +58,7 @@ Router.map(function () {
       this.route('new');
       this.route('view', { path: '/:permit_id' });
     });
+    this.route('contractors');
     this.route('billing');
     this.route('profile');
   });

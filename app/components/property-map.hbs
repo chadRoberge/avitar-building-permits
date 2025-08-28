@@ -1,0 +1,41 @@
+<div class="property-map-container">
+  <div class="property-map-header">
+    <div class="map-title-section">
+      <h4>Property Location</h4>
+      {{#if this.coordinates}}
+        <p class="map-instructions">Click map or drag marker to adjust location</p>
+      {{/if}}
+    </div>
+    {{#if this.isGeocoding}}
+      <span class="geocoding-status">
+        <span class="spinner small"></span>
+        Geocoding...
+      </span>
+    {{/if}}
+  </div>
+  
+  <div class="map-container">
+    {{#if this.coordinates}}
+      <div id="leaflet-map-{{this.elementId}}" class="leaflet-map"></div>
+    {{else if this.geocodeError}}
+      <div class="map-placeholder">
+        <div class="map-error">
+          <div class="error-icon">⚠️</div>
+          <p>Could not geocode address</p>
+          <p class="error-message">{{this.geocodeError}}</p>
+          <button type="button" class="btn btn-sm btn-secondary" {{on "click" this.retryGeocode}}>
+            Retry
+          </button>
+        </div>
+      </div>
+    {{else}}
+      <div class="map-placeholder">
+        <div class="map-loading">
+          <div class="map-icon">🛰️</div>
+          <p>Preparing map view of</p>
+          <p class="property-address-map">{{@property.address}}</p>
+        </div>
+      </div>
+    {{/if}}
+  </div>
+</div>

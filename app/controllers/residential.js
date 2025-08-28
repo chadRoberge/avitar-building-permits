@@ -23,6 +23,10 @@ export default class ResidentialController extends Controller {
     return this.router.currentRouteName === 'residential.profile';
   }
 
+  get isContractorsActive() {
+    return this.router.currentRouteName === 'residential.contractors';
+  }
+
   @action
   togglePropertyDropdown() {
     this.showPropertyDropdown = !this.showPropertyDropdown;

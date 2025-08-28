@@ -1,0 +1,186 @@
+{{page-title "Commercial Dashboard"}}
+
+<div class="commercial-dashboard">
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1>{{#if this.selectedMunicipality}}{{this.selectedMunicipality.name}}{{else}}Select Municipality{{/if}}</h1>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-primary" {{on "click" this.newPermitApplication}}>
+        <span class="btn-icon">➕</span>
+        Apply for Permit
+      </button>
+    </div>
+  </header>
+
+  {{#if @model.loadError}}
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Error Loading Dashboard</h3>
+      <p>{{@model.loadError}}</p>
+      <button type="button" class="btn btn-primary" {{on "click" (fn this.refresh)}}>
+        Refresh
+      </button>
+    </div>
+  {{/if}}
+
+  {{#if this.selectedMunicipality}}
+    {{!-- Summary Cards --}}
+    <div class="summary-grid compact">
+      <div class="summary-card permits-card">
+        <div class="card-content">
+          <h3>Total Permits Applied</h3>
+          <div class="card-value">{{this.municipalityStats.totalPermits}}</div>
+        </div>
+      </div>
+
+      <div class="summary-card cost-card">
+        <div class="card-content">
+          <h3>Total Permit Costs</h3>
+          <div class="card-value">{{format-currency this.municipalityStats.totalPermitCosts}}</div>
+        </div>
+      </div>
+
+      <div class="summary-card value-card">
+        <div class="card-content">
+          <h3>Total Project Value</h3>
+          <div class="card-value">{{format-currency this.municipalityStats.totalProjectValue}}</div>
+        </div>
+      </div>
+
+      <div class="summary-card pending-value-card">
+        <div class="card-content">
+          <h3>Pending Project Value</h3>
+          <div class="card-value">{{format-currency this.municipalityStats.pendingProjectValue}}</div>
+        </div>
+      </div>
+
+      <div class="summary-card pending-cost-card">
+        <div class="card-content">
+          <h3>Pending Permit Costs</h3>
+          <div class="card-value">{{format-currency this.municipalityStats.pendingPermitCosts}}</div>
+        </div>
+      </div>
+
+      <div class="summary-card active-card">
+        <div class="card-content">
+          <h3>Active Projects</h3>
+          <div class="card-value">{{this.municipalityStats.activeProjects}}</div>
+        </div>
+      </div>
+    </div>
+
+    {{!-- Main Content --}}
+    <div class="dashboard-main-content">
+      <div class="content-grid">
+        {{!-- Recent Permits --}}
+        <div class="recent-permits-section">
+          <div class="section-header">
+            <h3>Recent Permit Activity</h3>
+            <LinkTo @route="commercial.permits.index" class="view-all-link">
+              View All Permits →
+            </LinkTo>
+          </div>
+          
+          {{#if this.municipalityPermits.length}}
+            <div class="permits-list">
+              {{#each this.municipalityPermits as |permit|}}
+                <div class="permit-item" {{on "click" (fn this.viewPermit permit.id)}}>
+                  <div class="permit-icon">
+                    {{#if (eq permit.category 'building')}}🏗️{{/if}}
+                    {{#if (eq permit.category 'electrical')}}⚡{{/if}}
+                    {{#if (eq permit.category 'plumbing')}}🔧{{/if}}
+                    {{#if (eq permit.category 'mechanical')}}🌡️{{/if}}
+                    {{#unless permit.category}}📄{{/unless}}
+                  </div>
+                  <div class="permit-content">
+                    <div class="permit-title">{{permit.type}}</div>
+                    <div class="permit-date">Applied: {{format-date permit.submittedDate}}</div>
+                    {{#if permit.projectDescription}}
+                      <div class="permit-description">{{permit.projectDescription}}</div>
+                    {{/if}}
+                  </div>
+                  <div class="permit-status">
+                    <span class="status-badge {{get-status-badge-class permit.status}}">
+                      {{permit.status}}
+                    </span>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+          {{else}}
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              <h4>No Permits Yet</h4>
+              <p>Start your first permit application in {{this.selectedMunicipality.name}}.</p>
+              <button type="button" class="btn btn-primary" {{on "click" this.newPermitApplication}}>
+                Apply for Permit
+              </button>
+            </div>
+          {{/if}}
+        </div>
+
+        {{!-- Quick Stats --}}
+        <div class="quick-stats-section">
+          <div class="section-header">
+            <h3>Municipality Overview</h3>
+          </div>
+          
+          <div class="stats-list">
+            <div class="stat-item">
+              <span class="stat-label">Pending Review:</span>
+              <span class="stat-value">{{this.municipalityStats.pendingPermits}}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Approved:</span>
+              <span class="stat-value">{{this.municipalityStats.approvedPermits}}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Completed:</span>
+              <span class="stat-value">{{this.municipalityStats.completedPermits}}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Average Processing:</span>
+              <span class="stat-value">{{this.municipalityStats.avgProcessingTime}} days</span>
+            </div>
+          </div>
+          
+          <div class="quick-actions">
+            <h4>Quick Actions</h4>
+            <div class="action-buttons">
+              <button type="button" class="btn btn-outline" {{on "click" this.newPermitApplication}}>
+                <span class="btn-icon">📋</span>
+                New Application
+              </button>
+              <LinkTo @route="commercial.permits.index" class="btn btn-outline">
+                <span class="btn-icon">📊</span>
+                View All Permits
+              </LinkTo>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {{else}}
+    <!-- No Municipality Selected -->
+    <div class="no-municipality-selected">
+      <div class="selection-message">
+        <div class="message-icon">🏛️</div>
+        <h2>Select a Municipality</h2>
+        <p>Please choose a municipality from the navigation menu to view your permits and statistics.</p>
+        <div class="instruction">
+          <span class="arrow">←</span>
+          Look for the municipality selector in the left sidebar
+        </div>
+      </div>
+    </div>
+  {{/if}}
+
+  <!-- Apply Permit Modal -->
+  <ApplyPermitModal 
+    @isOpen={{this.showApplyPermitModal}}
+    @selectedMunicipality={{this.selectedMunicipality}}
+    @onClose={{this.closeApplyPermitModal}}
+    @onSubmitSuccess={{this.onPermitSubmitSuccess}}
+  />
+</div>

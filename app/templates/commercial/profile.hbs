@@ -1,0 +1,427 @@
+{{page-title "Profile - Commercial Portal"}}
+
+<div class="commercial-profile-page">
+  <div class="profile-header">
+    <div class="header-content">
+      <h1>Profile Settings</h1>
+      <p>Manage your account information and business details</p>
+    </div>
+  </div>
+
+  {{#if this.successMessage}}
+    <div class="alert alert-success">
+      <div class="alert-icon">✅</div>
+      <div class="alert-content">
+        <strong>Success!</strong> {{this.successMessage}}
+      </div>
+      <button type="button" class="alert-close" {{on "click" this.clearSuccessMessage}}>×</button>
+    </div>
+  {{/if}}
+
+  {{#if this.errorMessage}}
+    <div class="alert alert-error">
+      <div class="alert-icon">❌</div>
+      <div class="alert-content">
+        <strong>Error!</strong> {{this.errorMessage}}
+      </div>
+      <button type="button" class="alert-close" {{on "click" this.clearErrorMessage}}>×</button>
+    </div>
+  {{/if}}
+
+  <div class="profile-content">
+    <!-- Personal Information Section -->
+    <div class="profile-section">
+      <div class="section-header">
+        <h2>Personal Information</h2>
+        <button type="button" class="btn btn-secondary" {{on "click" this.togglePersonalEdit}}>
+          {{if this.isEditingPersonal "Cancel" "Edit"}}
+        </button>
+      </div>
+
+      {{#if this.isEditingPersonal}}
+        <form class="profile-form" {{on "submit" this.updatePersonalInfo}}>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="firstName">First Name</label>
+              <input
+                id="firstName"
+                type="text"
+                value={{this.personalForm.firstName}}
+                {{on "input" (fn this.updatePersonalField "firstName")}}
+                class="form-control"
+                required
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <input
+                id="lastName"
+                type="text"
+                value={{this.personalForm.lastName}}
+                {{on "input" (fn this.updatePersonalField "lastName")}}
+                class="form-control"
+                required
+              />
+            </div>
+            
+            <div class="form-group full-width">
+              <label for="email">Email Address</label>
+              <input
+                id="email"
+                type="email"
+                value={{this.personalForm.email}}
+                {{on "input" (fn this.updatePersonalField "email")}}
+                class="form-control"
+                required
+              />
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" disabled={{this.isUpdatingPersonal}}>
+              {{if this.isUpdatingPersonal "Saving..." "Save Changes"}}
+            </button>
+          </div>
+        </form>
+      {{else}}
+        <div class="info-display">
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Name</label>
+              <p>{{#if @model.currentUser.firstName}}{{@model.currentUser.firstName}} {{@model.currentUser.lastName}}{{else}}Not set{{/if}}</p>
+            </div>
+            <div class="info-item">
+              <label>Email</label>
+              <p>{{#if @model.currentUser.email}}{{@model.currentUser.email}}{{else}}Not set{{/if}}</p>
+            </div>
+          </div>
+        </div>
+      {{/if}}
+    </div>
+
+    <!-- Business Information Section -->
+    {{#if (or @model.currentUser.businessInfo (eq @model.currentUser.userType "commercial"))}}
+      <div class="profile-section">
+        <div class="section-header">
+          <h2>Business Information</h2>
+          <button type="button" class="btn btn-secondary" {{on "click" this.toggleBusinessEdit}}>
+            {{if this.isEditingBusiness "Cancel" "Edit"}}
+          </button>
+        </div>
+
+        {{#if this.isEditingBusiness}}
+          <form class="profile-form" {{on "submit" this.updateBusinessInfo}}>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="businessName">Business Name</label>
+                <input
+                  id="businessName"
+                  type="text"
+                  value={{this.businessForm.businessName}}
+                  {{on "input" (fn this.updateBusinessField "businessName")}}
+                  class="form-control"
+                  required
+                />
+              </div>
+              
+              <div class="form-group">
+                <label for="businessType">Business Type</label>
+                <select
+                  id="businessType"
+                  {{on "change" (fn this.updateBusinessField "businessType")}}
+                  class="form-control"
+                  required
+                >
+                  <option value="">Select Business Type</option>
+                  <option value="General Contractor" selected={{eq this.businessForm.businessType "General Contractor"}}>General Contractor</option>
+                  <option value="Electrical Contractor" selected={{eq this.businessForm.businessType "Electrical Contractor"}}>Electrical Contractor</option>
+                  <option value="Plumbing Contractor" selected={{eq this.businessForm.businessType "Plumbing Contractor"}}>Plumbing Contractor</option>
+                  <option value="HVAC Contractor" selected={{eq this.businessForm.businessType "HVAC Contractor"}}>HVAC Contractor</option>
+                  <option value="Roofing Contractor" selected={{eq this.businessForm.businessType "Roofing Contractor"}}>Roofing Contractor</option>
+                  <option value="Developer" selected={{eq this.businessForm.businessType "Developer"}}>Developer</option>
+                  <option value="Architect" selected={{eq this.businessForm.businessType "Architect"}}>Architect</option>
+                  <option value="Engineer" selected={{eq this.businessForm.businessType "Engineer"}}>Engineer</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="licenseNumber">License Number (Optional)</label>
+                <input
+                  id="licenseNumber"
+                  type="text"
+                  value={{this.businessForm.licenseNumber}}
+                  {{on "input" (fn this.updateBusinessField "licenseNumber")}}
+                  class="form-control"
+                  placeholder="Enter your license number"
+                />
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" disabled={{this.isUpdatingBusiness}}>
+                {{if this.isUpdatingBusiness "Saving..." "Save Changes"}}
+              </button>
+            </div>
+          </form>
+        {{else}}
+          <div class="info-display">
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Business Name</label>
+                <p>{{#if @model.currentUser.businessInfo.businessName}}{{@model.currentUser.businessInfo.businessName}}{{else}}Not set{{/if}}</p>
+              </div>
+              <div class="info-item">
+                <label>Business Type</label>
+                <p>{{#if @model.currentUser.businessInfo.businessType}}{{@model.currentUser.businessInfo.businessType}}{{else}}Not set{{/if}}</p>
+              </div>
+              {{#if @model.currentUser.businessInfo.licenseNumber}}
+                <div class="info-item">
+                  <label>License Number</label>
+                  <p>{{@model.currentUser.businessInfo.licenseNumber}}</p>
+                </div>
+              {{/if}}
+            </div>
+          </div>
+        {{/if}}
+      </div>
+    {{/if}}
+
+    <!-- Password Change Section -->
+    <div class="profile-section">
+      <div class="section-header">
+        <h2>Change Password</h2>
+        <button type="button" class="btn btn-secondary" {{on "click" this.togglePasswordChange}}>
+          {{if this.isChangingPassword "Cancel" "Change Password"}}
+        </button>
+      </div>
+
+      {{#if this.isChangingPassword}}
+        <form class="profile-form" {{on "submit" this.changePassword}}>
+          <div class="form-grid password-grid">
+            <div class="form-group">
+              <label for="currentPassword">Current Password</label>
+              <input
+                id="currentPassword"
+                type="password"
+                value={{this.passwordForm.currentPassword}}
+                {{on "input" (fn this.updatePasswordField "currentPassword")}}
+                class="form-control"
+                required
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="newPassword">New Password</label>
+              <input
+                id="newPassword"
+                type="password"
+                value={{this.passwordForm.newPassword}}
+                {{on "input" (fn this.updatePasswordField "newPassword")}}
+                class="form-control"
+                required
+                minlength="8"
+              />
+              <small class="form-hint">Must be at least 8 characters long</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="confirmPassword">Confirm New Password</label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={{this.passwordForm.confirmPassword}}
+                {{on "input" (fn this.updatePasswordField "confirmPassword")}}
+                class="form-control"
+                required
+              />
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" disabled={{this.isUpdatingPassword}}>
+              {{if this.isUpdatingPassword "Changing Password..." "Change Password"}}
+            </button>
+          </div>
+        </form>
+      {{/if}}
+    </div>
+
+    <!-- Account Settings Section -->
+    <div class="profile-section">
+      <div class="section-header">
+        <h2>Account Settings</h2>
+      </div>
+
+      <div class="info-display">
+        <div class="settings-grid">
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>Account Created</label>
+              <p>{{format-date @model.currentUser.createdAt}}</p>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>Account Type</label>
+              <p>Commercial User</p>
+            </div>
+          </div>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <label>User ID</label>
+              <p class="user-id">{{@model.currentUser._id}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Billing Information Section -->
+    <div class="profile-section">
+      <div class="section-header">
+        <h2>Billing Information</h2>
+        {{#if @model.billingInfo}}
+          <button type="button" class="btn btn-secondary" {{on "click" this.manageBilling}}>
+            Manage Billing
+          </button>
+        {{/if}}
+      </div>
+
+      {{#if @model.billingInfo}}
+        <!-- Current Plan -->
+        <div class="billing-subsection">
+          <h3>Current Plan</h3>
+          <div class="current-plan-card">
+            <div class="plan-info">
+              <div class="plan-details">
+                <h4>{{@model.billingInfo.plan.name}}</h4>
+                <p class="plan-description">{{@model.billingInfo.plan.description}}</p>
+                <div class="plan-pricing">
+                  {{#if (eq @model.billingInfo.plan.price 0)}}
+                    <span class="price">Free</span>
+                  {{else}}
+                    <span class="price">${{@model.billingInfo.plan.price}}</span>
+                    <span class="period">/{{@model.billingInfo.plan.interval}}</span>
+                  {{/if}}
+                </div>
+              </div>
+              <div class="plan-status">
+                <span class="status-badge {{@model.billingInfo.status}}">
+                  {{capitalize @model.billingInfo.status}}
+                </span>
+                {{#if @model.billingInfo.nextBillingDate}}
+                  <p class="next-billing">Next billing: {{format-date @model.billingInfo.nextBillingDate}}</p>
+                {{/if}}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Plan Upgrades -->
+        {{#if @model.availablePlans}}
+          <div class="billing-subsection">
+            <h3>Available Upgrades</h3>
+            <div class="plans-grid">
+              {{#each @model.availablePlans as |plan|}}
+                {{#unless (eq plan.stripePriceId @model.billingInfo.plan.stripePriceId)}}
+                  <div class="plan-card {{if (gt plan.price @model.billingInfo.plan.price) 'upgrade' 'downgrade'}}">
+                    <div class="plan-header">
+                      <h4>{{plan.name}}</h4>
+                      <div class="plan-pricing">
+                        {{#if (eq plan.price 0)}}
+                          <span class="price">Free</span>
+                        {{else}}
+                          <span class="price">${{plan.price}}</span>
+                          <span class="period">/{{plan.interval}}</span>
+                        {{/if}}
+                      </div>
+                    </div>
+                    <div class="plan-body">
+                      <p class="plan-description">{{plan.description}}</p>
+                      <ul class="plan-features">
+                        {{#each plan.features as |feature|}}
+                          <li>{{feature}}</li>
+                        {{/each}}
+                      </ul>
+                    </div>
+                    <div class="plan-actions">
+                      <button 
+                        type="button" 
+                        class="btn {{if (gt plan.price @model.billingInfo.plan.price) 'btn-primary' 'btn-secondary'}}"
+                        {{on "click" (fn this.changePlan plan)}}
+                      >
+                        {{if (gt plan.price @model.billingInfo.plan.price) "Upgrade" "Change"}} to {{plan.name}}
+                      </button>
+                    </div>
+                  </div>
+                {{/unless}}
+              {{/each}}
+            </div>
+          </div>
+        {{/if}}
+
+        <!-- Billing History -->
+        {{#if @model.billingHistory.length}}
+          <div class="billing-subsection">
+            <h3>Billing History</h3>
+            <div class="billing-history">
+              <div class="history-table">
+                <div class="table-header">
+                  <div class="header-cell">Date</div>
+                  <div class="header-cell">Description</div>
+                  <div class="header-cell">Amount</div>
+                  <div class="header-cell">Status</div>
+                  <div class="header-cell">Invoice</div>
+                </div>
+                {{#each @model.billingHistory as |transaction|}}
+                  <div class="table-row">
+                    <div class="table-cell">{{format-date transaction.date}}</div>
+                    <div class="table-cell">{{transaction.description}}</div>
+                    <div class="table-cell">
+                      {{#if (eq transaction.amount 0)}}
+                        Free
+                      {{else}}
+                        ${{transaction.amount}}
+                      {{/if}}
+                    </div>
+                    <div class="table-cell">
+                      <span class="status-badge {{transaction.status}}">
+                        {{capitalize transaction.status}}
+                      </span>
+                    </div>
+                    <div class="table-cell">
+                      {{#if transaction.invoiceUrl}}
+                        <a href="{{transaction.invoiceUrl}}" target="_blank" class="invoice-link">
+                          View Invoice
+                        </a>
+                      {{else}}
+                        —
+                      {{/if}}
+                    </div>
+                  </div>
+                {{/each}}
+              </div>
+            </div>
+          </div>
+        {{/if}}
+      {{else}}
+        <!-- No Billing Info -->
+        <div class="no-billing-info">
+          <div class="empty-state">
+            <div class="empty-icon">💳</div>
+            <h4>No Billing Information</h4>
+            <p>You haven't set up billing yet. Choose a plan to get started with premium features.</p>
+            {{#if @model.availablePlans.length}}
+              <button type="button" class="btn btn-primary" {{on "click" this.setupBilling}}>
+                Choose a Plan
+              </button>
+            {{/if}}
+          </div>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</div>

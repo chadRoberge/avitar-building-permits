@@ -12,7 +12,7 @@ export default class ResidentialProfileRoute extends Route {
     const userType = localStorage.getItem('user_type');
 
     if (!token || userType !== 'residential') {
-      this.router.transitionTo('auth');
+      this.router.transitionTo('home');
       return;
     }
 
@@ -30,14 +30,14 @@ export default class ResidentialProfileRoute extends Route {
 
       const { user } = await response.json();
       if (user.userType !== 'residential') {
-        this.router.transitionTo('auth');
+        this.router.transitionTo('home');
         return;
       }
     } catch (error) {
       console.error('Authentication check failed:', error);
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_type');
-      this.router.transitionTo('auth');
+      this.router.transitionTo('home');
     }
   }
 

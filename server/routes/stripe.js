@@ -2,42 +2,93 @@ const express = require('express');
 const router = express.Router();
 const { stripe, MUNICIPAL_PLANS, stripeKeys } = require('../config/stripe');
 const Municipality = require('../models/Municipality');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 
-// Create Stripe checkout session for municipal subscription
+// Create Stripe checkout session for subscription
 router.post('/create-checkout-session', auth, async (req, res) => {
   try {
+    console.log('🛒 Stripe checkout request:', {
+      body: req.body,
+      userType: req.user.userType,
+      userId: req.user._id,
+      userObject: req.user
+    });
+    
     const { planType, municipalityId, priceId, productId } = req.body;
+    const userType = req.user.userType;
 
-    // Validate user is municipal admin
-    if (req.user.userType !== 'municipal') {
+    // Validate user type
+    if (!['municipal', 'residential', 'commercial'].includes(userType)) {
+      console.error('❌ Invalid user type:', userType);
       return res.status(403).json({ error: 'Access denied' });
     }
+    
+    console.log('✅ User type validation passed for:', userType);
 
-    // Get municipality
-    const municipality = await Municipality.findById(municipalityId);
-    if (!municipality) {
-      return res.status(404).json({ error: 'Municipality not found' });
-    }
+    let customerId;
+    let successUrl, cancelUrl;
+    let customerName, customerEmail;
 
-    // Create or get Stripe customer
-    let customerId = municipality.subscription.stripeCustomerId;
+    if (userType === 'municipal') {
+      // Handle municipal users
+      const municipality = await Municipality.findById(municipalityId);
+      if (!municipality) {
+        return res.status(404).json({ error: 'Municipality not found' });
+      }
 
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: req.user.email,
-        name: municipality.name,
-        metadata: {
-          municipalityId: municipality._id.toString(),
-          planType: planType,
-        },
-      });
+      customerId = municipality.subscription.stripeCustomerId;
+      customerName = municipality.name;
+      customerEmail = req.user.email;
+      successUrl = `${process.env.CLIENT_URL}/municipal/billing?session_id={CHECKOUT_SESSION_ID}&success=true`;
+      cancelUrl = `${process.env.CLIENT_URL}/municipal/billing?canceled=true`;
 
-      customerId = customer.id;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: customerEmail,
+          name: customerName,
+          metadata: {
+            municipalityId: municipality._id.toString(),
+            planType: planType,
+            userType: userType,
+          },
+        });
 
-      // Update municipality with customer ID
-      municipality.subscription.stripeCustomerId = customerId;
-      await municipality.save();
+        customerId = customer.id;
+        municipality.subscription.stripeCustomerId = customerId;
+        await municipality.save();
+      }
+    } else {
+      // Handle residential/commercial users
+      console.log('Looking for user with ID:', req.user._id);
+      const user = await User.findById(req.user._id);
+      console.log('Found user:', user ? user.email : 'null');
+      if (!user) {
+        console.error('User not found with ID:', req.user._id);
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      customerId = user.stripeCustomerId;
+      customerName = `${user.firstName} ${user.lastName}`;
+      customerEmail = user.email;
+      successUrl = `${process.env.CLIENT_URL}/residential/profile?session_id={CHECKOUT_SESSION_ID}&success=true`;
+      cancelUrl = `${process.env.CLIENT_URL}/residential/profile?canceled=true`;
+
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: customerEmail,
+          name: customerName,
+          metadata: {
+            userId: user._id.toString(),
+            planType: planType,
+            userType: userType,
+          },
+        });
+
+        customerId = customer.id;
+        user.stripeCustomerId = customerId;
+        await user.save();
+      }
     }
 
     let lineItems;
@@ -54,7 +105,7 @@ router.post('/create-checkout-session', auth, async (req, res) => {
       // Fallback: Try to get plan from StripePlansService or use hardcoded plans
       try {
         const StripePlansService = require('../services/stripe-plans');
-        const plans = await StripePlansService.getAvailablePlans();
+        const plans = await StripePlansService.getAvailablePlans(userType);
         const plan = plans[planType];
 
         if (plan && plan.price) {
@@ -67,8 +118,8 @@ router.post('/create-checkout-session', auth, async (req, res) => {
                   description: plan.description,
                   metadata: {
                     planType: planType,
-                    municipalityId: municipality._id.toString(),
-                    plan_type: 'municipal',
+                    ...(userType === 'municipal' ? { municipalityId: municipalityId } : { userId: req.user._id.toString() }),
+                    plan_type: userType,
                     plan_key: planType,
                   },
                 },
@@ -145,25 +196,36 @@ router.post('/create-checkout-session', auth, async (req, res) => {
     }
 
     // Create checkout session
+    const sessionMetadata = {
+      planType: planType,
+      userType: userType,
+      userId: req.user._id.toString(),
+      priceId: priceId || '',
+      productId: productId || '',
+    };
+
+    const subscriptionMetadata = {
+      planType: planType,
+      userType: userType,
+      userId: req.user._id.toString(),
+    };
+
+    // Add municipality ID for municipal users
+    if (userType === 'municipal' && municipalityId) {
+      sessionMetadata.municipalityId = municipalityId;
+      subscriptionMetadata.municipalityId = municipalityId;
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'subscription',
-      success_url: `${process.env.CLIENT_URL}/municipal/billing?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${process.env.CLIENT_URL}/municipal/billing?canceled=true`,
-      metadata: {
-        municipalityId: municipality._id.toString(),
-        planType: planType,
-        userId: req.user._id.toString(),
-        priceId: priceId || '',
-        productId: productId || '',
-      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: sessionMetadata,
       subscription_data: {
-        metadata: {
-          municipalityId: municipality._id.toString(),
-          planType: planType,
-        },
+        metadata: subscriptionMetadata,
       },
     });
 
@@ -207,24 +269,42 @@ router.get('/checkout-session/:sessionId', auth, async (req, res) => {
 router.post('/create-portal-session', auth, async (req, res) => {
   try {
     const { municipalityId } = req.body;
+    const userType = req.user.userType;
 
-    // Validate user is municipal admin
-    if (req.user.userType !== 'municipal') {
+    // Validate user type
+    if (!['municipal', 'residential', 'commercial'].includes(userType)) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Get municipality
-    const municipality = await Municipality.findById(municipalityId);
-    if (!municipality || !municipality.subscription.stripeCustomerId) {
-      return res
-        .status(404)
-        .json({ error: 'Municipality or customer not found' });
+    let stripeCustomerId;
+    let returnUrl;
+
+    if (userType === 'municipal') {
+      // Get municipality
+      const municipality = await Municipality.findById(municipalityId);
+      if (!municipality || !municipality.subscription.stripeCustomerId) {
+        return res
+          .status(404)
+          .json({ error: 'Municipality or customer not found' });
+      }
+      stripeCustomerId = municipality.subscription.stripeCustomerId;
+      returnUrl = `${process.env.CLIENT_URL}/municipal/billing`;
+    } else {
+      // Get user
+      const user = await User.findById(req.user._id);
+      if (!user || !user.stripeCustomerId) {
+        return res
+          .status(404)
+          .json({ error: 'User or customer not found' });
+      }
+      stripeCustomerId = user.stripeCustomerId;
+      returnUrl = `${process.env.CLIENT_URL}/residential/profile`;
     }
 
     // Create portal session
     const session = await stripe.billingPortal.sessions.create({
-      customer: municipality.subscription.stripeCustomerId,
-      return_url: `${process.env.CLIENT_URL}/municipal/billing`,
+      customer: stripeCustomerId,
+      return_url: returnUrl,
     });
 
     res.json({
@@ -366,34 +446,65 @@ router.post('/webhook', async (req, res) => {
 // Webhook handler functions
 async function handleSubscriptionCreated(subscription) {
   try {
-    const municipalityId = subscription.metadata.municipalityId;
+    const userType = subscription.metadata.userType;
     const planType = subscription.metadata.planType;
+    
+    console.log('🎉 Subscription created webhook:', {
+      subscriptionId: subscription.id,
+      userType,
+      planType,
+      metadata: subscription.metadata
+    });
 
-    if (!municipalityId) {
-      console.warn('No municipalityId in subscription metadata');
-      return;
+    if (userType === 'municipal') {
+      // Handle municipal subscription
+      const municipalityId = subscription.metadata.municipalityId;
+      if (!municipalityId) {
+        console.warn('No municipalityId in subscription metadata');
+        return;
+      }
+
+      const municipality = await Municipality.findById(municipalityId);
+      if (!municipality) {
+        console.error('Municipality not found for subscription:', municipalityId);
+        return;
+      }
+
+      municipality.subscription.stripeSubscriptionId = subscription.id;
+      municipality.subscription.plan = planType;
+      municipality.subscription.status = subscription.status;
+      municipality.subscription.currentPeriodStart = new Date(
+        subscription.current_period_start * 1000,
+      );
+      municipality.subscription.currentPeriodEnd = new Date(
+        subscription.current_period_end * 1000,
+      );
+      municipality.subscription.cancelAtPeriodEnd =
+        subscription.cancel_at_period_end;
+
+      await municipality.save();
+      console.log('✅ Subscription created for municipality:', municipality.name);
+    } else {
+      // Handle residential/commercial subscription
+      const userId = subscription.metadata.userId;
+      if (!userId) {
+        console.warn('No userId in subscription metadata');
+        return;
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        console.error('User not found for subscription:', userId);
+        return;
+      }
+
+      // Update user subscription info
+      user.stripeSubscriptionId = subscription.id;
+      user.stripePlanId = planType;
+      
+      await user.save();
+      console.log('✅ Subscription created for user:', user.email, 'Plan:', planType);
     }
-
-    const municipality = await Municipality.findById(municipalityId);
-    if (!municipality) {
-      console.error('Municipality not found for subscription:', municipalityId);
-      return;
-    }
-
-    municipality.subscription.stripeSubscriptionId = subscription.id;
-    municipality.subscription.plan = planType;
-    municipality.subscription.status = subscription.status;
-    municipality.subscription.currentPeriodStart = new Date(
-      subscription.current_period_start * 1000,
-    );
-    municipality.subscription.currentPeriodEnd = new Date(
-      subscription.current_period_end * 1000,
-    );
-    municipality.subscription.cancelAtPeriodEnd =
-      subscription.cancel_at_period_end;
-
-    await municipality.save();
-    console.log('Subscription created for municipality:', municipality.name);
   } catch (error) {
     console.error('Error handling subscription created:', error);
   }
@@ -401,35 +512,64 @@ async function handleSubscriptionCreated(subscription) {
 
 async function handleSubscriptionUpdated(subscription) {
   try {
-    const municipality = await Municipality.findOne({
-      'subscription.stripeSubscriptionId': subscription.id,
+    const userType = subscription.metadata.userType;
+    
+    console.log('🔄 Subscription updated webhook:', {
+      subscriptionId: subscription.id,
+      userType,
+      status: subscription.status
     });
 
-    if (!municipality) {
-      console.warn(
-        'Municipality not found for subscription update:',
-        subscription.id,
+    if (userType === 'municipal') {
+      // Handle municipal subscription update
+      const municipality = await Municipality.findOne({
+        'subscription.stripeSubscriptionId': subscription.id,
+      });
+
+      if (!municipality) {
+        console.warn(
+          'Municipality not found for subscription update:',
+          subscription.id,
+        );
+        return;
+      }
+
+      municipality.subscription.status = subscription.status;
+      municipality.subscription.currentPeriodStart = new Date(
+        subscription.current_period_start * 1000,
       );
-      return;
+      municipality.subscription.currentPeriodEnd = new Date(
+        subscription.current_period_end * 1000,
+      );
+      municipality.subscription.cancelAtPeriodEnd =
+        subscription.cancel_at_period_end;
+
+      // If plan changed, update it
+      if (subscription.metadata.planType) {
+        municipality.subscription.plan = subscription.metadata.planType;
+      }
+
+      await municipality.save();
+      console.log('✅ Subscription updated for municipality:', municipality.name);
+    } else {
+      // Handle residential/commercial subscription update
+      const user = await User.findOne({
+        stripeSubscriptionId: subscription.id,
+      });
+
+      if (!user) {
+        console.warn('User not found for subscription update:', subscription.id);
+        return;
+      }
+
+      // Update plan if changed
+      if (subscription.metadata.planType) {
+        user.stripePlanId = subscription.metadata.planType;
+      }
+
+      await user.save();
+      console.log('✅ Subscription updated for user:', user.email);
     }
-
-    municipality.subscription.status = subscription.status;
-    municipality.subscription.currentPeriodStart = new Date(
-      subscription.current_period_start * 1000,
-    );
-    municipality.subscription.currentPeriodEnd = new Date(
-      subscription.current_period_end * 1000,
-    );
-    municipality.subscription.cancelAtPeriodEnd =
-      subscription.cancel_at_period_end;
-
-    // If plan changed, update it
-    if (subscription.metadata.planType) {
-      municipality.subscription.plan = subscription.metadata.planType;
-    }
-
-    await municipality.save();
-    console.log('Subscription updated for municipality:', municipality.name);
   } catch (error) {
     console.error('Error handling subscription updated:', error);
   }

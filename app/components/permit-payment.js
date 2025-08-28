@@ -22,10 +22,17 @@ export default class PermitPaymentComponent extends Component {
   }
 
   get isPaymentRequired() {
-    // Check if permit has fees and is in a status that allows payment
+    // Payment is available for approved permits and permits in progress (inspections, active) that have unpaid fees
     return this.totalAmount > 0 && 
-           !this.permit.paymentStatus === 'paid' &&
-           ['pending', 'under_review', 'approved'].includes(this.permit.status);
+           this.permit.paymentStatus !== 'paid' &&
+           ['approved', 'active', 'inspections'].includes(this.permit.status);
+  }
+
+  get isPaymentPending() {
+    // Show payment pending message for permits with unpaid fees in payable statuses
+    return this.totalAmount > 0 && 
+           this.permit.paymentStatus !== 'paid' &&
+           ['approved', 'active', 'inspections'].includes(this.permit.status);
   }
 
   get isPaid() {

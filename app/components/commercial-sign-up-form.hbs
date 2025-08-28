@@ -1,6 +1,6 @@
 <form class="auth-form commercial-signup-form" {{on "submit" this.handleSubmit}}>
   <h2>Create Commercial Account</h2>
-  <p class="form-subtitle">For businesses and commercial developers in {{@municipality.name}}</p>
+  <p class="form-subtitle">For businesses and commercial developers working across multiple municipalities</p>
   
   {{#if this.errorMessage}}
     <div class="error-message">{{this.errorMessage}}</div>
@@ -208,14 +208,23 @@
       </div>
 
       <div class="form-group">
-        <label for="business-state">State</label>
-        <input
+        <label for="business-state">State *</label>
+        <select
           id="business-state"
-          type="text"
           value={{this.businessState}}
-          readonly
-          disabled
-        />
+          {{on "change" (fn this.updateField "businessState")}}
+          required
+          disabled={{this.isLoading}}
+        >
+          <option value="">Select State</option>
+          <option value="NH">New Hampshire</option>
+          <option value="ME">Maine</option>
+          <option value="VT">Vermont</option>
+          <option value="MA">Massachusetts</option>
+          <option value="CT">Connecticut</option>
+          <option value="RI">Rhode Island</option>
+          <option value="NY">New York</option>
+        </select>
       </div>
 
       <div class="form-group">
@@ -231,6 +240,70 @@
         />
       </div>
     </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Select Your Plan</h3>
+    <p class="section-description">Choose the plan that best fits your business needs</p>
+    
+    {{#if this.availablePlans}}
+      <div class="plans-grid">
+        {{#each-in this.availablePlans as |planKey plan|}}
+          <div 
+            class="plan-card {{if (eq this.selectedPlan planKey) 'selected' ''}} {{if plan.popular 'popular' ''}}"
+            {{on "click" (fn this.selectPlan planKey)}}
+          >
+            {{#if plan.popular}}
+              <div class="plan-badge">Most Popular</div>
+            {{/if}}
+            
+            <div class="plan-header">
+              <h4 class="plan-name">{{plan.name}}</h4>
+              <div class="plan-price">
+                {{#if (eq plan.price 0)}}
+                  <span class="price-amount">Free</span>
+                {{else}}
+                  <span class="price-currency">$</span>
+                  <span class="price-amount">{{this.formatPrice plan.price}}</span>
+                  <span class="price-period">/{{plan.interval}}</span>
+                {{/if}}
+              </div>
+            </div>
+            
+            <div class="plan-features">
+              {{#if plan.description}}
+                <p class="plan-description">{{plan.description}}</p>
+              {{/if}}
+              {{#if plan.features}}
+                <ul>
+                  {{#each plan.features as |feature|}}
+                    <li>✓ {{feature}}</li>
+                  {{/each}}
+                </ul>
+              {{/if}}
+            </div>
+            
+            <div class="plan-limits">
+              {{#unless (eq plan.permits "Unlimited")}}
+                <span class="limit">{{plan.permits}} permits</span>
+              {{else}}
+                <span class="limit">Unlimited permits</span>
+              {{/unless}}
+              • 
+              {{#unless (eq plan.users "Unlimited")}}
+                <span class="limit">{{plan.users}} users</span>
+              {{else}}
+                <span class="limit">Unlimited users</span>
+              {{/unless}}
+            </div>
+          </div>
+        {{/each-in}}
+      </div>
+    {{else}}
+      <div class="loading-plans">
+        <p>Loading available plans...</p>
+      </div>
+    {{/if}}
   </div>
 
   <button 

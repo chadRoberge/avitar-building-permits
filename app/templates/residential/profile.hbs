@@ -116,9 +116,9 @@
       <section class="profile-section billing-section">
         <div class="section-header">
           <h2>Billing & Subscription</h2>
-          <LinkTo @route="residential.billing" class="btn btn-outline btn-sm">
+          <button type="button" class="btn btn-outline btn-sm" {{on "click" this.openBillingModal}}>
             View Full Billing Details
-          </LinkTo>
+          </button>
         </div>
         
         <BillingManagement />
@@ -220,5 +220,11 @@
     @currentProperty={{this.currentProperty.currentProperty}}
     @onClose={{this.closeEditModal}}
     @onUpdated={{this.handleProfileUpdated}}
+  />
+
+  {{! Billing Details Modal }}
+  <BillingDetailsModal 
+    @isVisible={{this.showBillingModal}}
+    @onClose={{this.closeBillingModal}}
   />
 </div>

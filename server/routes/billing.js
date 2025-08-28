@@ -4,6 +4,22 @@ const jwt = require('jsonwebtoken');
 const Municipality = require('../models/Municipality');
 const User = require('../models/User');
 
+// Public endpoint for getting available plans (used during signup)
+router.get('/public-plans/:userType', async (req, res) => {
+  try {
+    const userType = req.params.userType;
+    const StripePlansService = require('../services/stripe-plans');
+    
+    // Get plans from Stripe based on user type
+    const plans = await StripePlansService.getAvailablePlans(userType);
+    
+    res.json(plans);
+  } catch (error) {
+    console.error('Error fetching public subscription plans:', error);
+    res.status(500).json({ error: 'Failed to fetch subscription plans' });
+  }
+});
+
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -143,22 +159,110 @@ router.get('/', authenticateToken, async (req, res) => {
       }
     }
 
-    // For residential/commercial users, provide basic account info
+    // For residential/commercial users, check for Stripe subscription
     if (userType === 'residential' || userType === 'commercial') {
       billingInfo.accountStatus = 'active';
-      billingInfo.planName = 'Free Forever';
-      billingInfo.benefits =
-        userType === 'residential'
-          ? [
-              'Submit building permit applications',
-              'Track permit status',
-              'Communicate with review departments',
-            ]
-          : [
-              'Submit contractor applications',
-              'Manage multiple properties',
-              'Track business permits',
-            ];
+      
+      
+      // Check if user has a Stripe subscription
+      if (user.stripeSubscriptionId) {
+        try {
+          const { stripe } = require('../config/stripe');
+          
+          // Get subscription details from Stripe
+          const stripeSubscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
+            expand: ['latest_invoice', 'items.data.price.product']
+          });
+
+          if (stripeSubscription && stripeSubscription.status === 'active') {
+            const product = stripeSubscription.items.data[0]?.price?.product;
+            const price = stripeSubscription.items.data[0]?.price;
+            
+            billingInfo.planName = product?.name || user.stripePlanId || 'Premium Plan';
+            billingInfo.subscription = {
+              status: stripeSubscription.status,
+              currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+              cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+              pricePerPeriod: price?.unit_amount,
+              currency: price?.currency || 'usd',
+              interval: price?.recurring?.interval || 'month',
+              stripeSubscriptionId: stripeSubscription.id,
+            };
+
+            // Get benefits from product metadata or set default premium benefits
+            const features = product?.metadata?.features;
+            if (features) {
+              try {
+                billingInfo.benefits = JSON.parse(features);
+              } catch (e) {
+                billingInfo.benefits = features.split(',').map(f => f.trim());
+              }
+            } else {
+              billingInfo.benefits = userType === 'residential'
+                ? [
+                    'Everything in Free',
+                    'SMS notifications', 
+                    'Advanced document management',
+                    'Property portfolio management',
+                    'Permit history & analytics',
+                  ]
+                : [
+                    'Everything in Free',
+                    'Multi-property management',
+                    'Team collaboration tools',
+                    'Advanced analytics & reporting',
+                    'API access for integrations',
+                    'Priority phone support'
+                  ];
+            }
+          } else {
+            // Subscription exists but not active
+            billingInfo.planName = 'Free Forever';
+            billingInfo.benefits = userType === 'residential'
+              ? [
+                  'Submit building permit applications',
+                  'Track permit status',
+                  'Communicate with review departments',
+                ]
+              : [
+                  'Submit contractor applications',
+                  'Manage multiple properties',
+                  'Track business permits',
+                ];
+          }
+        } catch (stripeError) {
+          console.warn('Error fetching Stripe subscription for user:', stripeError.message);
+          // Fallback to free plan
+          billingInfo.planName = 'Free Forever';
+          billingInfo.benefits = userType === 'residential'
+            ? [
+                'Submit building permit applications',
+                'Track permit status',
+                'Communicate with review departments',
+              ]
+            : [
+                'Submit contractor applications',
+                'Manage multiple properties',
+                'Track business permits',
+              ];
+        }
+      } else {
+        // No Stripe subscription - free user
+        billingInfo.planName = 'Free Forever';
+        billingInfo.benefits =
+          userType === 'residential'
+            ? [
+                'Submit building permit applications',
+                'Track permit status',
+                'Communicate with review departments',
+              ]
+            : [
+                'Submit contractor applications',
+                'Manage multiple properties',
+                'Track business permits',
+              ];
+      }
     }
 
     res.json(billingInfo);
@@ -168,19 +272,16 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Get available subscription plans from Stripe (for municipal users)
+// Get available subscription plans (authenticated)
 router.get('/plans', authenticateToken, async (req, res) => {
   try {
     const userType = req.user.userType;
 
-    if (userType !== 'municipal') {
-      return res.json({});
-    }
-
     const StripePlansService = require('../services/stripe-plans');
     const forceRefresh = req.query.refresh === 'true';
     
-    const plans = await StripePlansService.getAvailablePlans(forceRefresh);
+    // Get plans from Stripe for all user types
+    const plans = await StripePlansService.getAvailablePlans(userType, forceRefresh);
     res.json(plans);
     
   } catch (error) {
@@ -264,6 +365,75 @@ router.get('/history', authenticateToken, async (req, res) => {
   try {
     const userType = req.user.userType;
     const userId = req.user.userId;
+
+    // For residential/commercial users, check if they have Stripe subscription
+    if (userType === 'residential' || userType === 'commercial') {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // If user has a Stripe customer ID, fetch real billing history from Stripe
+      if (user.stripeCustomerId) {
+        try {
+          const { stripe } = require('../config/stripe');
+          
+          // Fetch invoices from Stripe
+          const invoices = await stripe.invoices.list({
+            customer: user.stripeCustomerId,
+            limit: 50,
+            status: 'paid',
+          });
+
+          const billingHistory = invoices.data.map(invoice => {
+            const lineItem = invoice.lines.data[0];
+            const planName = lineItem ? lineItem.description || 'Subscription' : 'Subscription';
+            
+            // Format period dates
+            let period = 'N/A';
+            if (lineItem && lineItem.period) {
+              const startDate = new Date(lineItem.period.start * 1000).toLocaleDateString();
+              const endDate = new Date(lineItem.period.end * 1000).toLocaleDateString();
+              period = `${startDate} to ${endDate}`;
+            }
+
+            return {
+              id: invoice.id,
+              date: new Date(invoice.created * 1000),
+              amount: invoice.amount_paid,
+              status: invoice.status === 'paid' ? 'paid' : invoice.status,
+              plan: planName,
+              period: period,
+              downloadUrl: invoice.hosted_invoice_url || invoice.invoice_pdf,
+            };
+          });
+
+          return res.json(billingHistory);
+        } catch (stripeError) {
+          console.error('Error fetching Stripe invoices for user:', stripeError);
+          // Fall through to show free account history if Stripe fails
+        }
+      }
+
+      // Fallback for users without Stripe subscription - show free account
+      const accountCreatedDate = user.createdAt || new Date();
+      const planName = userType === 'residential' ? 'Free Forever' : 'Free Trial';
+      
+      const billingHistory = [
+        {
+          id: `free_${userId}`,
+          date: accountCreatedDate.toISOString(),
+          plan: planName,
+          period: `${accountCreatedDate.toLocaleDateString()} - Present`,
+          amount: 0,
+          status: 'active',
+          downloadUrl: null,
+          description: `${planName} - No charges apply`
+        }
+      ];
+
+      return res.json(billingHistory);
+    }
 
     if (userType !== 'municipal') {
       return res.json([]);
@@ -412,5 +582,6 @@ router.post('/subscription/reactivate', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to reactivate subscription' });
   }
 });
+
 
 module.exports = router;

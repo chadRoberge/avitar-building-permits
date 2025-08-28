@@ -8,6 +8,7 @@ export default class ResidentialProfileController extends Controller {
   @service('current-property') currentProperty;
 
   @tracked showEditModal = false;
+  @tracked showBillingModal = false;
 
   @action
   openEditModal() {
@@ -17,6 +18,16 @@ export default class ResidentialProfileController extends Controller {
   @action
   closeEditModal() {
     this.showEditModal = false;
+  }
+
+  @action
+  openBillingModal() {
+    this.showBillingModal = true;
+  }
+
+  @action
+  closeBillingModal() {
+    this.showBillingModal = false;
   }
 
   @action

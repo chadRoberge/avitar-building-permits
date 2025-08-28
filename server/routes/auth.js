@@ -39,6 +39,7 @@ router.post('/register', async (req, res) => {
       propertyAddress,
       propertyInfo,
       businessInfo,
+      selectedPlan,
     } = req.body;
 
     console.log(
@@ -118,17 +119,8 @@ router.post('/register', async (req, res) => {
         userData.propertyInfo = propertyInfo;
       }
     } else if (userType === 'commercial') {
-      if (!municipality?.id && !municipality?._id) {
-        return res
-          .status(400)
-          .json({ error: 'Municipality is required for commercial users' });
-      }
-
-      userData.municipality = {
-        _id: municipality.id || municipality._id,
-        name: municipality.name,
-      };
-
+      // Commercial users don't need to be tied to a specific municipality
+      // They can work across multiple municipalities
       if (businessInfo) {
         userData.businessInfo = businessInfo;
       }
@@ -141,6 +133,34 @@ router.post('/register', async (req, res) => {
     const savedUser = await user.save();
     
     console.log('User created successfully with ID:', savedUser._id);
+
+    // Create Stripe customer for non-free plans
+    if (selectedPlan && selectedPlan !== 'free' && (userType === 'residential' || userType === 'commercial')) {
+      try {
+        const { stripe } = require('../config/stripe');
+        
+        // Create Stripe customer
+        const customer = await stripe.customers.create({
+          email: savedUser.email,
+          name: `${savedUser.firstName} ${savedUser.lastName}`,
+          metadata: {
+            userId: savedUser._id.toString(),
+            userType: savedUser.userType,
+            selectedPlan: selectedPlan,
+          },
+        });
+
+        // Update user with Stripe customer ID
+        savedUser.stripeCustomerId = customer.id;
+        savedUser.stripePlanId = selectedPlan;
+        await savedUser.save();
+
+        console.log('Stripe customer created:', customer.id, 'for plan:', selectedPlan);
+      } catch (stripeError) {
+        console.error('Error creating Stripe customer during signup:', stripeError);
+        // Don't fail the registration if Stripe fails, but log it
+      }
+    }
 
     // For residential users, create a Property record from their property address
     console.log('Checking property creation conditions:', {
@@ -263,6 +283,12 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password, userType, municipality, municipalityName } = req.body;
+    
+    // Debug all login attempts
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('Email:', email);
+    console.log('UserType:', userType);
+    console.log('Has password:', !!password);
 
     // Debug logging for admin login attempts
     if (email === 'admin@avitarbuildingpermits.com') {
@@ -271,6 +297,14 @@ router.post('/login', async (req, res) => {
       console.log('Requested userType:', userType);
       console.log('Environment:', process.env.NODE_ENV);
       console.log('Vercel:', !!process.env.VERCEL);
+    }
+
+    // Debug logging for municipal test user
+    if (email === 'muninspection@test.com') {
+      console.log('=== MUNICIPAL TEST USER LOGIN ===');
+      console.log('Email:', email);
+      console.log('Password provided:', password);
+      console.log('Requested userType:', userType);
     }
 
     if (!email || !password) {
@@ -286,9 +320,26 @@ router.post('/login', async (req, res) => {
 
     // Find user
     const user = await User.findOne({ email });
+    
+    // Debug user lookup for any municipal user
+    if (user && user.userType === 'municipal') {
+      console.log('=== MUNICIPAL USER LOOKUP ===');
+      console.log('User found:', !!user);
+      console.log('User details:', {
+        email: user.email,
+        userType: user.userType,
+        isActive: user.isActive,
+        department: user.department,
+        permissionLevel: user.permissionLevel
+      });
+    }
+    
     if (!user || !user.isActive) {
       if (email === 'admin@avitarbuildingpermits.com') {
         console.log('Admin user not found or inactive:', { userFound: !!user, isActive: user?.isActive });
+      }
+      if (email === 'muninspection@test.com') {
+        console.log('Municipal test user not found or inactive:', { userFound: !!user, isActive: user?.isActive });
       }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -331,7 +382,31 @@ router.post('/login', async (req, res) => {
 
     // Check password
     const isMatch = await user.comparePassword(password);
+    
+    // Debug password comparison for any municipal user
+    if (user && user.userType === 'municipal') {
+      console.log('=== MUNICIPAL PASSWORD CHECK ===');
+      console.log('Email:', email);
+      console.log('Password provided:', JSON.stringify(password));
+      console.log('Password provided type:', typeof password);
+      console.log('Password provided length:', password?.length);
+      console.log('Password char codes:', password ? Array.from(password).map(c => c.charCodeAt(0)) : 'none');
+      console.log('Password match result:', isMatch);
+      console.log('Stored password hash length:', user.password?.length);
+      console.log('Stored password hash start:', user.password?.substring(0, 20) + '...');
+      console.log('User has comparePassword method:', typeof user.comparePassword);
+      
+      // Test direct bcrypt comparison
+      const bcrypt = require('bcryptjs');
+      console.log('Testing direct bcrypt compare...');
+      const directResult = await bcrypt.compare(password, user.password);
+      console.log('Direct bcrypt compare result:', directResult);
+    }
+    
     if (!isMatch) {
+      if (email === 'muninspection@test.com') {
+        console.log('Municipal test user password check FAILED');
+      }
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 

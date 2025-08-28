@@ -6,12 +6,21 @@ import config from 'avitar-building-permits/config/environment';
 
 export default class MunicipalPermitTypesIndexController extends Controller {
   @service router;
+  @service permissions;
 
   @tracked permitTypes = [];
   @tracked isLoading = true;
   @tracked errorMessage = '';
   @tracked showDeleteModal = false;
   @tracked permitTypeToDelete = null;
+
+  get currentUser() {
+    return JSON.parse(localStorage.getItem('user_details') || '{}');
+  }
+
+  get canManagePermitTypes() {
+    return this.permissions.canManagePermitTypes(this.currentUser);
+  }
 
   async loadPermitTypes() {
     this.isLoading = true;

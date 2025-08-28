@@ -467,6 +467,7 @@
                     {{/unless}}
                   </div>
 
+                  
                   {{#if (eq this.userForm.userType "municipal")}}
                     <div class="form-section">
                       <h6>Municipal User Settings</h6>
@@ -478,6 +479,7 @@
                             {{on "change" (fn this.updateUserField "department")}}
                             class="form-control"
                             required
+                            value={{this.userForm.department}}
                           >
                             <option value="">Select Department</option>
                             {{#each this.availableDepartments as |dept|}}

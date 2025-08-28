@@ -4,12 +4,46 @@ const path = require('path');
 const fs = require('fs').promises;
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Permit = require('../models/Permit');
 const PermitType = require('../models/PermitType');
 const PermitFile = require('../models/PermitFile');
+const fileStorageService = require('../services/fileStorage');
 
 console.log('PERMITS ROUTE MODULE LOADED!');
+
+// Helper function to find permit by ID or permit number
+const findPermit = async (permitId, populate = []) => {
+  console.log('findPermit called with:', permitId, 'populate:', populate);
+  let query;
+  
+  if (permitId.match(/^[0-9a-fA-F]{24}$/)) {
+    // It's a valid ObjectId
+    console.log('Using findById for ObjectId:', permitId);
+    query = Permit.findById(permitId);
+  } else {
+    // It's probably a permit number like "P2025-DEERFI-001"
+    console.log('Using findOne for permit number:', permitId);
+    query = Permit.findOne({ permitNumber: permitId });
+  }
+  
+  // Apply population if specified
+  if (populate.length > 0) {
+    populate.forEach(field => {
+      query = query.populate(field);
+    });
+  }
+  
+  try {
+    const result = await query;
+    console.log('findPermit result:', result ? 'found' : 'not found');
+    return result;
+  } catch (error) {
+    console.error('findPermit error:', error.message);
+    throw error;
+  }
+};
 
 // Helper function to calculate completion date based on duration
 function calculateCompletionDate(startDate, duration) {
@@ -74,6 +108,69 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+// Get permits - main route with optional municipality filter for commercial users
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const { municipality } = req.query;
+    const userId = req.user.userId;
+    
+    console.log('Main permits route called with municipality:', municipality, 'user:', userId, 'userType:', req.user.userType);
+    
+    let query = {};
+    
+    if (municipality && municipality !== 'undefined') {
+      // Commercial users can view permits by municipality
+      if (req.user.userType === 'commercial') {
+        query = { municipality: municipality };
+        console.log('Filtering permits for municipality:', municipality);
+      } else {
+        // For other users, still filter by municipality but also by user
+        query = { 
+          municipality: municipality,
+          'applicant.id': userId 
+        };
+      }
+    } else {
+      // Default: user's own permits
+      query = { 'applicant.id': userId };
+    }
+    
+    console.log('Permits query:', query);
+    
+    const permits = await Permit.find(query)
+      .populate('permitType')
+      .populate('municipality')
+      .sort({ applicationDate: -1 });
+    
+    console.log(`Found ${permits.length} permits for query`);
+    
+    // Transform permits to match frontend expectations
+    const transformedPermits = permits.map((permit) => ({
+      id: permit._id,
+      applicationId: permit.permitNumber,
+      type: permit.permitType?.name || 'Unknown',
+      category: permit.permitType?.category || 'general',
+      status: permit.status,
+      propertyAddress: permit.projectAddress ? 
+        `${permit.projectAddress.street}, ${permit.projectAddress.city}, ${permit.projectAddress.state} ${permit.projectAddress.zip}` : 
+        'Address not available',
+      submittedDate: permit.submittedDate || permit.applicationDate,
+      fee: permit.fees?.[0]?.amount || 0,
+      projectValue: permit.estimatedValue || 0,
+      municipality: permit.municipality?.name || 'Unknown Municipality',
+      applicant: {
+        name: `${permit.applicant?.firstName || ''} ${permit.applicant?.lastName || ''}`.trim() || 'Unknown',
+        email: permit.applicant?.email || ''
+      }
+    }));
+    
+    res.json(transformedPermits);
+  } catch (error) {
+    console.error('Error fetching permits:', error);
+    res.status(500).json({ error: 'Failed to fetch permits' });
+  }
+});
 
 // Get permits for a specific user
 router.get('/user/:userId', authenticateToken, async (req, res) => {
@@ -334,11 +431,31 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid user or permit type' });
     }
 
+    // Log the address data we're about to use
+    console.log('DEBUG: overrideProjectAddress:', permitData.overrideProjectAddress);
+    console.log('DEBUG: user.propertyAddress:', user.propertyAddress);
+    
+    const projectAddressData = permitData.overrideProjectAddress ? {
+      street: permitData.overrideProjectAddress.street || '',
+      city: permitData.overrideProjectAddress.city || '',
+      state: permitData.overrideProjectAddress.state || '',
+      zip: permitData.overrideProjectAddress.zip || '',
+      parcelId: permitData.selectedPropertyData?.pid || '',
+    } : {
+      street: user.propertyAddress?.street || '',
+      city: user.propertyAddress?.city || '',
+      state: user.propertyAddress?.state || '',
+      zip: user.propertyAddress?.zip || '',
+      parcelId: user.propertyAddress?.parcelId || '',
+    };
+    
+    console.log('DEBUG: Final projectAddressData:', projectAddressData);
+
     // Create permit in database using the comprehensive model
     const newPermit = new Permit({
       municipality: permitData.municipalityId,
       permitType: permitData.permitTypeId,
-      property: permitData.property, // Add the property field
+      property: permitData.property || new mongoose.Types.ObjectId(), // Create valid ObjectId if none provided
       projectDescription: permitData.projectDescription,
       workDescription: permitData.projectDescription, // Same as project description for now
       estimatedValue: permitData.projectValue,
@@ -350,14 +467,8 @@ router.post('/', authenticateToken, async (req, res) => {
           )
         : null,
 
-      // Project address (use user's property address)
-      projectAddress: {
-        street: user.propertyAddress?.street || '',
-        city: user.propertyAddress?.city || '',
-        state: user.propertyAddress?.state || '',
-        zip: user.propertyAddress?.zip || '',
-        parcelId: user.propertyAddress?.parcelId || '',
-      },
+      // Project address (use pre-calculated address data)
+      projectAddress: projectAddressData,
 
       // Applicant information (the user)
       applicant: {
@@ -367,7 +478,7 @@ router.post('/', authenticateToken, async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         phone: user.phone || '',
-        address: user.propertyAddress,
+        address: projectAddressData,
         relationshipToProperty: 'owner',
       },
 
@@ -437,16 +548,14 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Get specific permit by ID
+// Get specific permit by ID or permit number
 router.get('/:permitId', authenticateToken, async (req, res) => {
   try {
     const { permitId } = req.params;
+    console.log('🔥 MAIN GET ROUTE CALLED WITH PERMIT ID:', permitId);
 
     // Find the permit and populate related data
-    const permit = await Permit.findById(permitId)
-      .populate('permitType')
-      .populate('municipality')
-      .populate('property');
+    const permit = await findPermit(permitId, ['permitType', 'municipality', 'property']);
 
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
@@ -614,7 +723,7 @@ router.post('/:id/payment/initiate', authenticateToken, async (req, res) => {
     const { paymentMethod, amount } = req.body;
 
     // Find and validate permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -683,7 +792,7 @@ router.post('/:id/payment/webhook', async (req, res) => {
     }
 
     // Find permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -724,7 +833,7 @@ router.get('/:id/payment/status', authenticateToken, async (req, res) => {
   try {
     const permitId = req.params.id;
 
-    const permit = await Permit.findById(permitId).select('paymentStatus paymentMethod transactionId paidAt');
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -843,32 +952,9 @@ function validateInvoiceCloudWebhook(req) {
 
 // ===== FILE UPLOAD FUNCTIONALITY =====
 
-// Configure multer for file uploads - memory storage for Vercel serverless
-let storage;
-let uploadsDir;
-
-if (process.env.VERCEL) {
-  // Use memory storage for serverless (files won't persist)
-  console.log('Using memory storage for Vercel serverless');
-  storage = multer.memoryStorage();
-} else {
-  // Use disk storage for local development
-  uploadsDir = path.join(__dirname, '../uploads/permit-files');
-  fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
-  
-  storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, uploadsDir);
-    },
-    filename: function (req, file, cb) {
-      // Generate unique filename: timestamp-random-originalname
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      const name = path.basename(file.originalname, ext);
-      cb(null, `${name}-${uniqueSuffix}${ext}`);
-    },
-  });
-}
+// Configure multer for file uploads - use memory storage to work with our file storage service
+console.log(`Using file storage service (${fileStorageService.getStorageType()})`);
+const storage = multer.memoryStorage();
 
 // File filter for security
 const fileFilter = (req, file, cb) => {
@@ -917,7 +1003,7 @@ router.get('/:permitId/files', authenticateToken, async (req, res) => {
     const { fileType, status } = req.query;
 
     // Verify permit exists and user has access
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -934,7 +1020,8 @@ router.get('/:permitId/files', authenticateToken, async (req, res) => {
     if (fileType) options.fileType = fileType;
     if (status) options.status = status;
 
-    const files = await PermitFile.getByPermit(permitId, options);
+    // Use the permit's actual ObjectId for the PermitFile query
+    const files = await PermitFile.getByPermit(permit._id, options);
     const publicFiles = files.map((file) => file.toPublic());
 
     res.json(publicFiles);
@@ -955,14 +1042,8 @@ router.post(
       const { fileType = 'other', description = '' } = req.body;
 
       // Verify permit exists and user has access
-      const permit = await Permit.findById(permitId);
+      const permit = await findPermit(permitId, ['municipality']);
       if (!permit) {
-        // Clean up uploaded files
-        if (req.files) {
-          req.files.forEach((file) => {
-            fs.unlink(file.path).catch(console.error);
-          });
-        }
         return res.status(404).json({ error: 'Permit not found' });
       }
 
@@ -971,12 +1052,6 @@ router.post(
         req.user.userType === 'residential' &&
         permit.applicant.id !== req.user.userId
       ) {
-        // Clean up uploaded files
-        if (req.files) {
-          req.files.forEach((file) => {
-            fs.unlink(file.path).catch(console.error);
-          });
-        }
         return res.status(403).json({ error: 'Access denied' });
       }
 
@@ -989,16 +1064,38 @@ router.post(
       // Process each uploaded file
       for (const file of req.files) {
         try {
+          // Generate unique filename with timestamp and random string
+          const timestamp = Date.now();
+          const randomStr = Math.random().toString(36).substring(2, 15);
+          const fileExt = path.extname(file.originalname);
+          const uniqueFilename = `permit-${permitId}-${timestamp}-${randomStr}${fileExt}`;
+
+          // Upload file using the file storage service with organization info
+          const uploadResult = await fileStorageService.uploadFile(
+            file.buffer,
+            uniqueFilename,
+            file.mimetype,
+            {
+              permitId: permit._id,
+              uploadedBy: req.user.userId,
+              originalName: file.originalname,
+              fileType: fileType,
+              state: permit.municipality?.address?.state || permit.municipality?.state,
+              municipality: permit.municipality?.name,
+            }
+          );
+
           const permitFile = new PermitFile({
-            permitId: permitId,
+            permitId: permit._id,
             uploadedBy: req.user.userId,
             originalName: file.originalname,
-            filename: file.filename,
+            filename: uniqueFilename,
             mimetype: file.mimetype,
             size: file.size,
             fileType: fileType,
             description: description,
-            path: file.path,
+            path: uploadResult.path,
+            url: uploadResult.url,
           });
 
           await permitFile.save();
@@ -1012,8 +1109,7 @@ router.post(
           savedFiles.push(permitFile.toPublic());
         } catch (error) {
           console.error('Error saving file:', error);
-          // Clean up file if database save failed
-          fs.unlink(file.path).catch(console.error);
+          // Note: No need to clean up files as the storage service handles failures
         }
       }
 
@@ -1032,12 +1128,7 @@ router.post(
     } catch (error) {
       console.error('Error uploading files:', error);
 
-      // Clean up uploaded files on error
-      if (req.files) {
-        req.files.forEach((file) => {
-          fs.unlink(file.path).catch(console.error);
-        });
-      }
+      // Note: No need to clean up files as storage service handles failures automatically
 
       if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
@@ -1070,7 +1161,7 @@ router.get(
       // Find the file
       const permitFile = await PermitFile.findOne({
         _id: fileId,
-        permitId: permitId,
+        permitId: permit._id,
       });
 
       if (!permitFile) {
@@ -1078,7 +1169,7 @@ router.get(
       }
 
       // Verify permit access
-      const permit = await Permit.findById(permitId);
+      const permit = await findPermit(permitId);
       if (!permit) {
         return res.status(404).json({ error: 'Permit not found' });
       }
@@ -1091,12 +1182,14 @@ router.get(
         return res.status(403).json({ error: 'Access denied' });
       }
 
-      // Check if file exists on disk
-      try {
-        await fs.access(permitFile.path);
-      } catch (error) {
-        return res.status(404).json({ error: 'File not found on server' });
+      // Check if file exists in storage
+      const fileExists = await fileStorageService.fileExists(permitFile.path);
+      if (!fileExists) {
+        return res.status(404).json({ error: 'File not found in storage' });
       }
+
+      // Download file from storage service
+      const fileBuffer = await fileStorageService.downloadFile(permitFile.path);
 
       // Set appropriate headers
       res.setHeader('Content-Type', permitFile.mimetype);
@@ -1104,9 +1197,10 @@ router.get(
         'Content-Disposition',
         `inline; filename="${permitFile.originalName}"`,
       );
+      res.setHeader('Content-Length', fileBuffer.length);
 
-      // Stream the file
-      res.sendFile(path.resolve(permitFile.path));
+      // Send the file buffer
+      res.send(fileBuffer);
     } catch (error) {
       console.error('Error downloading file:', error);
       res.status(500).json({ error: 'Failed to download file' });
@@ -1125,7 +1219,7 @@ router.delete(
       // Find the file
       const permitFile = await PermitFile.findOne({
         _id: fileId,
-        permitId: permitId,
+        permitId: permit._id,
       });
 
       if (!permitFile) {
@@ -1140,11 +1234,11 @@ router.delete(
         return res.status(403).json({ error: 'Access denied' });
       }
 
-      // Delete file from disk
+      // Delete file from storage
       try {
-        await fs.unlink(permitFile.path);
+        await fileStorageService.deleteFile(permitFile.path);
       } catch (error) {
-        console.warn('File not found on disk:', permitFile.path);
+        console.warn('Error deleting file from storage:', permitFile.path, error);
       }
 
       // Remove from database
@@ -1158,13 +1252,56 @@ router.delete(
   },
 );
 
+// Serve local files when using local storage (for development)
+router.get('/files/local/:state/:municipality/:department/:filename', async (req, res) => {
+  try {
+    // Get the organized path components
+    const { state, municipality, department, filename } = req.params;
+    const relativePath = `${state}/${municipality}/${department}/${filename}`;
+    
+    if (!relativePath) {
+      return res.status(400).json({ error: 'File path required' });
+    }
+    
+    // Only serve files if using local storage
+    if (fileStorageService.getStorageType() !== 'local') {
+      return res.status(404).json({ error: 'Local file serving not available' });
+    }
+    
+    // Decode the URL-encoded path
+    const decodedPath = decodeURIComponent(relativePath);
+    const filePath = path.join(__dirname, '../uploads/permit-files', decodedPath);
+    
+    // Security check - ensure the resolved path is within our upload directory
+    const uploadDir = path.resolve(__dirname, '../uploads/permit-files');
+    const resolvedPath = path.resolve(filePath);
+    
+    if (!resolvedPath.startsWith(uploadDir)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if file exists
+    try {
+      await fs.access(resolvedPath);
+    } catch (error) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    // Send the file
+    res.sendFile(resolvedPath);
+  } catch (error) {
+    console.error('Error serving local file:', error);
+    res.status(500).json({ error: 'Failed to serve file' });
+  }
+});
+
 // Get file statistics for a permit
 router.get('/:permitId/files/stats', authenticateToken, async (req, res) => {
   try {
     const { permitId } = req.params;
 
     // Verify permit access
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -1217,7 +1354,7 @@ router.put('/:permitId/status', authenticateToken, async (req, res) => {
     }
 
     // Find the permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -1326,7 +1463,7 @@ router.post('/:permitId/department-review', authenticateToken, async (req, res) 
     }
 
     // Find the permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -1370,7 +1507,7 @@ router.get('/:permitId/department-reviews', authenticateToken, async (req, res) 
     console.log('Fetching department reviews for permit:', permitId);
 
     // Find the permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       console.log('Permit not found:', permitId);
       return res.status(404).json({ error: 'Permit not found' });
@@ -1466,7 +1603,7 @@ router.post('/:permitId/reset-department-reviews', authenticateToken, async (req
     }
 
     // Find the permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -1523,7 +1660,7 @@ router.get('/:permitId/validation', authenticateToken, async (req, res) => {
     const { permitId } = req.params;
 
     // Find the permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -1560,7 +1697,7 @@ router.get('/:permitId/inspection-requirements', authenticateToken, async (req, 
     const { permitId } = req.params;
 
     // Find the permit
-    const permit = await Permit.findById(permitId);
+    const permit = await findPermit(permitId);
     if (!permit) {
       return res.status(404).json({ error: 'Permit not found' });
     }
@@ -1585,5 +1722,150 @@ router.get('/:permitId/inspection-requirements', authenticateToken, async (req, 
     res.status(500).json({ error: 'Failed to fetch inspection requirements' });
   }
 });
+
+// Schedule an inspection for a permit
+router.post('/:permitId/schedule-inspection', authenticateToken, async (req, res) => {
+  try {
+    const { permitId } = req.params;
+    const { inspectionType, scheduledDate, scheduledTime, notes } = req.body;
+
+    // Find the permit
+    const permit = await findPermit(permitId);
+    if (!permit) {
+      return res.status(404).json({ error: 'Permit not found' });
+    }
+
+    // Check access - permit owners can schedule inspections
+    if (permit.applicant?.id !== req.user.userId && req.user.userType !== 'municipal') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Validate permit status and payment
+    if (permit.status !== 'approved' && permit.status !== 'active' && permit.status !== 'inspections') {
+      return res.status(400).json({ error: 'Permit must be approved before scheduling inspections' });
+    }
+
+    if (permit.paymentStatus !== 'paid') {
+      return res.status(400).json({ error: 'Permit fees must be paid before scheduling inspections' });
+    }
+
+    // Validate required fields
+    if (!inspectionType || !scheduledDate || !scheduledTime) {
+      return res.status(400).json({ error: 'Inspection type, date, and time are required' });
+    }
+
+    // Check if inspection type is already scheduled
+    const existingInspection = permit.inspections?.find(
+      inspection => inspection.type === inspectionType && 
+                   ['scheduled', 'passed'].includes(inspection.status)
+    );
+
+    if (existingInspection) {
+      return res.status(400).json({ error: 'This inspection type is already scheduled or completed' });
+    }
+
+    // Create inspection object
+    const inspection = {
+      type: inspectionType,
+      name: getInspectionName(inspectionType),
+      status: 'scheduled',
+      scheduledDate: new Date(scheduledDate),
+      scheduledTime: scheduledTime,
+      notes: notes || '',
+      scheduledBy: req.user.userId,
+      scheduledAt: new Date()
+    };
+
+    // Add inspection to permit
+    if (!permit.inspections) {
+      permit.inspections = [];
+    }
+    permit.inspections.push(inspection);
+
+    // Update permit status if this is the first scheduled inspection
+    if (permit.status === 'approved') {
+      permit.status = 'inspections';
+    }
+
+    await permit.save();
+
+    console.log(`Inspection scheduled for permit ${permitId}:`, {
+      type: inspectionType,
+      date: scheduledDate,
+      time: scheduledTime
+    });
+
+    res.json({
+      success: true,
+      message: 'Inspection scheduled successfully',
+      inspection: inspection,
+      permitStatus: permit.status
+    });
+
+  } catch (error) {
+    console.error('Error scheduling inspection:', error);
+    res.status(500).json({ error: 'Failed to schedule inspection', details: error.message });
+  }
+});
+
+// Get available inspection time slots
+router.get('/inspections/available-slots', authenticateToken, async (req, res) => {
+  try {
+    const { date, type, municipality } = req.query;
+
+    if (!date || !type) {
+      return res.status(400).json({ error: 'Date and inspection type are required' });
+    }
+
+    // For now, return default time slots
+    // In a real system, this would check inspector availability and existing bookings
+    const defaultTimeSlots = [
+      '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM',
+      '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+      '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
+      '03:00 PM', '03:30 PM', '04:00 PM'
+    ];
+
+    // Simulate some slots being unavailable
+    const selectedDate = new Date(date);
+    const dayOfWeek = selectedDate.getDay();
+    
+    let availableSlots = [...defaultTimeSlots];
+    
+    // Remove some slots based on day of week to simulate real availability
+    if (dayOfWeek === 1) { // Monday - busy day
+      availableSlots = availableSlots.filter((_, index) => index % 3 !== 0);
+    } else if (dayOfWeek === 5) { // Friday - fewer afternoon slots
+      availableSlots = availableSlots.filter(slot => !slot.includes('03:') && !slot.includes('04:'));
+    }
+
+    res.json({
+      date: date,
+      inspectionType: type,
+      availableSlots: availableSlots
+    });
+
+  } catch (error) {
+    console.error('Error fetching available time slots:', error);
+    res.status(500).json({ error: 'Failed to fetch available time slots' });
+  }
+});
+
+// Helper function to get inspection name from type
+function getInspectionName(type) {
+  const inspectionNames = {
+    'foundation-inspection': 'Foundation Inspection',
+    'framing-inspection': 'Framing Inspection',
+    'electrical-rough': 'Rough Electrical Inspection',
+    'electrical-final': 'Final Electrical Inspection',
+    'plumbing-rough': 'Rough Plumbing Inspection',
+    'plumbing-final': 'Final Plumbing Inspection',
+    'mechanical-rough': 'HVAC Rough Inspection',
+    'mechanical-final': 'HVAC Final Inspection',
+    'final-inspection': 'Final Inspection'
+  };
+  
+  return inspectionNames[type] || type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
 
 module.exports = router;

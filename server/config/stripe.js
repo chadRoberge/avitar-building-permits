@@ -23,57 +23,6 @@ const stripeInstance = stripeKeys.secretKey
   ? stripe(stripeKeys.secretKey)
   : null; // Allow server to run without Stripe in development
 
-// Stripe product and price configurations for municipal plans
-const MUNICIPAL_PLANS = {
-  basic: {
-    productId: 'prod_municipal_basic',
-    priceId: 'price_municipal_basic_yearly',
-    name: 'Municipal Basic',
-    description: 'Essential permit management for small municipalities',
-    price: 2400, // $24.00 in cents
-    interval: 'year',
-    features: [
-      'Up to 100 permits per year',
-      'Basic reporting',
-      'Email support',
-      'Standard integrations',
-    ],
-  },
-  professional: {
-    productId: 'prod_municipal_professional',
-    priceId: 'price_municipal_professional_yearly',
-    name: 'Municipal Professional',
-    description: 'Advanced features for growing municipalities',
-    price: 4800, // $48.00 in cents
-    interval: 'year',
-    features: [
-      'Up to 500 permits per year',
-      'Advanced reporting & analytics',
-      'Priority support',
-      'Custom integrations',
-      'Workflow automation',
-      'Multi-department management',
-    ],
-  },
-  enterprise: {
-    productId: 'prod_municipal_enterprise',
-    priceId: 'price_municipal_enterprise_yearly',
-    name: 'Municipal Enterprise',
-    description: 'Full-featured solution for large municipalities',
-    price: null, // Custom pricing
-    interval: 'year',
-    features: [
-      'Unlimited permits',
-      'Custom reporting suite',
-      'Dedicated account manager',
-      'Full API access',
-      'Advanced workflow automation',
-      'Multi-jurisdiction support',
-      'Custom training & onboarding',
-    ],
-  },
-};
-
 // Function to get actual Stripe products (replaces hardcoded plans)
 const getStripeProducts = async () => {
   if (!stripeInstance) {
@@ -108,7 +57,6 @@ const getMunicipalProducts = async () => {
 module.exports = {
   stripe: stripeInstance,
   stripeKeys,
-  MUNICIPAL_PLANS, // Keep for backward compatibility
   getStripeProducts,
   getMunicipalProducts,
 };

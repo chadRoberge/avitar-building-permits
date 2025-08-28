@@ -49,6 +49,11 @@ export default class MunicipalNavigationComponent extends Component {
   get navigationItems() {
     const userPermissionLevel = this.currentUser.permissionLevel || 11; // Default to municipal basic
     
+    // Debug logging
+    console.log('Navigation - Current User:', this.currentUser);
+    console.log('Navigation - Permission Level:', userPermissionLevel);
+    console.log('Navigation - Can Manage Permit Types:', this.permissions.canManagePermitTypes(this.currentUser));
+    
     const baseItems = [
       {
         route: 'municipal.dashboard',
@@ -64,13 +69,17 @@ export default class MunicipalNavigationComponent extends Component {
       },
     ];
 
-    // Municipal power users and above can manage permit types
-    if (this.permissions.canManagePermitTypes(this.currentUser)) {
+    // Municipal inspectors and above can view permit types
+    if (this.permissions.canConductInspections(this.currentUser) || this.permissions.canManagePermitTypes(this.currentUser)) {
+      const description = this.permissions.canManagePermitTypes(this.currentUser) 
+        ? 'Configure permit categories'
+        : 'View permit categories and requirements';
+      
       baseItems.push({
         route: 'municipal.permit-types.index',
         label: 'Permit Types',
         icon: '⚙️',
-        description: 'Configure permit categories',
+        description: description,
       });
     }
 

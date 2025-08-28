@@ -7,5 +7,8 @@ module.exports = function (defaults) {
     // Add options here
   });
 
+  // Import Leaflet CSS
+  app.import('node_modules/leaflet/dist/leaflet.css');
+
   return app.toTree();
 };

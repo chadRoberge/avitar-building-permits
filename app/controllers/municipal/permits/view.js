@@ -114,8 +114,64 @@ export default class MunicipalPermitsViewController extends Controller {
   // Permit Review Actions
   @action
   async approvePermit() {
-    if (confirm('Are you sure you want to approve this permit?')) {
-      await this.updatePermitStatus('approved', 'Permit approved by municipal reviewer');
+    // If permit is submitted, start the review process
+    if (this.model.permit.status === 'submitted') {
+      if (confirm('Start the department review process for this permit?')) {
+        await this.updatePermitStatus('under-review', 'Permit moved to department review');
+      }
+    } else {
+      // For other statuses, attempt direct approval
+      if (confirm('Are you sure you want to approve this permit?')) {
+        await this.updatePermitStatus('approved', 'Permit approved by municipal reviewer');
+      }
+    }
+  }
+
+  async checkForAutoApproval() {
+    // Only attempt auto-approval for permits under review
+    if (this.model.permit.status !== 'under-review') {
+      return;
+    }
+
+    try {
+      // Reload department reviews to get latest status
+      await this.loadDepartmentReviews();
+      
+      const departmentReviews = this.model.departmentReviews;
+      if (!departmentReviews || !departmentReviews.departmentReviews) {
+        return;
+      }
+
+      const pendingDepartments = departmentReviews.pendingDepartments || [];
+      const rejectedReviews = departmentReviews.departmentReviews.filter(review => review.status === 'rejected');
+      
+      if (rejectedReviews.length > 0) {
+        // Don't auto-approve if any department rejected
+        console.log('Auto-approval blocked: Some departments have rejected the permit');
+        return;
+      }
+
+      if (pendingDepartments.length === 0) {
+        // All departments have completed their reviews, auto-approve
+        console.log('All departments have completed reviews, auto-approving permit');
+        await this.updatePermitStatus('approved', 'Permit automatically approved - all department reviews completed');
+      } else {
+        // Still have pending departments, show status
+        const departmentNames = pendingDepartments.map(dept => this.formatDepartmentName(dept)).join(', ');
+        console.log(`Waiting for reviews from: ${departmentNames}`);
+        
+        // Optional: Show a brief status message to user
+        const statusElement = document.querySelector('.approval-status-message');
+        if (statusElement) {
+          statusElement.textContent = `Pending reviews from: ${departmentNames}`;
+          statusElement.style.display = 'block';
+          setTimeout(() => {
+            statusElement.style.display = 'none';
+          }, 3000);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for auto-approval:', error);
     }
   }
 
@@ -355,8 +411,9 @@ export default class MunicipalPermitsViewController extends Controller {
 
   @action
   async handleApproval() {
-    // Reload department reviews and refresh page
+    // Reload department reviews and check for auto-approval
     await this.loadDepartmentReviews();
+    await this.checkForAutoApproval();
     window.location.reload();
   }
 
@@ -391,6 +448,9 @@ export default class MunicipalPermitsViewController extends Controller {
       console.log('Department reviews reloaded:', reviewData);
       // Update the model data directly
       this.model.departmentReviews = reviewData;
+      
+      // Show current review status when data loads
+      this.showCurrentReviewStatus();
     } catch (error) {
       console.error('Error loading department reviews:', error);
       // Set empty department reviews to prevent template errors
@@ -401,6 +461,47 @@ export default class MunicipalPermitsViewController extends Controller {
         approvedDepartments: [],
         canCurrentUserReview: false
       };
+    }
+  }
+
+  showCurrentReviewStatus() {
+    const departmentReviews = this.model.departmentReviews;
+    if (!departmentReviews || this.model.permit.status !== 'under-review') {
+      return;
+    }
+
+    const pendingDepartments = departmentReviews.pendingDepartments || [];
+    const approvedDepartments = departmentReviews.approvedDepartments || [];
+    const rejectedReviews = departmentReviews.departmentReviews?.filter(review => review.status === 'rejected') || [];
+    
+    const statusElement = document.querySelector('.approval-status-message');
+    if (!statusElement) return;
+
+    if (rejectedReviews.length > 0) {
+      const rejectedDepartmentNames = rejectedReviews.map(review => this.formatDepartmentName(review.department)).join(', ');
+      statusElement.innerHTML = `<strong>⚠️ Rejected by:</strong> ${rejectedDepartmentNames}`;
+      statusElement.style.background = '#f8d7da';
+      statusElement.style.borderColor = '#f5c6cb';
+      statusElement.style.color = '#721c24';
+      statusElement.style.display = 'block';
+    } else if (pendingDepartments.length === 0 && approvedDepartments.length > 0) {
+      statusElement.innerHTML = `<strong>✅ All departments approved!</strong> Permit will be automatically approved.`;
+      statusElement.style.background = '#d1edff';
+      statusElement.style.borderColor = '#b8daff';
+      statusElement.style.color = '#004085';
+      statusElement.style.display = 'block';
+    } else if (pendingDepartments.length > 0) {
+      const pendingNames = pendingDepartments.map(dept => this.formatDepartmentName(dept)).join(', ');
+      const approvedNames = approvedDepartments.map(dept => this.formatDepartmentName(dept)).join(', ');
+      let message = `<strong>📋 Pending reviews:</strong> ${pendingNames}`;
+      if (approvedNames) {
+        message += `<br><strong>✅ Approved by:</strong> ${approvedNames}`;
+      }
+      statusElement.innerHTML = message;
+      statusElement.style.background = '#fff3cd';
+      statusElement.style.borderColor = '#ffeaa7';
+      statusElement.style.color = '#856404';
+      statusElement.style.display = 'block';
     }
   }
 

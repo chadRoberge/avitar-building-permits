@@ -129,6 +129,20 @@ const userSchema = new mongoose.Schema(
     lastLoginDate: {
       type: Date,
     },
+    // Stripe integration
+    stripeCustomerId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    stripePlanId: {
+      type: String,
+      sparse: true,
+    },
+    stripeSubscriptionId: {
+      type: String,
+      sparse: true,
+    },
   },
   {
     timestamps: true,

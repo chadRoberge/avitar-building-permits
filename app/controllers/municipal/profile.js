@@ -169,7 +169,8 @@ export default class MunicipalProfileController extends Controller {
   }
 
   @action
-  updateProfileField(field, value) {
+  updateProfileField(field, event) {
+    const value = event.target.value;
     this.profileFormData = {
       ...this.profileFormData,
       [field]: value
@@ -221,7 +222,8 @@ export default class MunicipalProfileController extends Controller {
 
   // Password Management
   @action
-  updatePasswordField(field, value) {
+  updatePasswordField(field, event) {
+    const value = event.target.value;
     this.passwordFormData = {
       ...this.passwordFormData,
       [field]: value

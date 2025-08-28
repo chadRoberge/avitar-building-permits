@@ -1,6 +1,7 @@
 const express = require('express');
 const Municipality = require('../models/Municipality');
 const User = require('../models/User');
+const PermitType = require('../models/PermitType');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 
@@ -255,6 +256,36 @@ router.post('/check-availability', async (req, res) => {
   } catch (error) {
     console.error('Check availability error:', error);
     res.status(500).json({ error: 'Server error checking availability' });
+  }
+});
+
+// Get permit types for a specific municipality (public endpoint for commercial users)
+router.get('/:municipalityId/permit-types', async (req, res) => {
+  try {
+    const { municipalityId } = req.params;
+    console.log('Getting permit types for municipality:', municipalityId);
+
+    // Find the municipality first to ensure it exists
+    const municipality = await Municipality.findById(municipalityId);
+    if (!municipality) {
+      return res.status(404).json({ error: 'Municipality not found' });
+    }
+
+    // Get all active and public permit types for this municipality
+    const permitTypes = await PermitType.find({
+      municipality: municipalityId,
+      isActive: true,
+      isPublic: true
+    }).sort({ displayOrder: 1, name: 1 });
+
+    console.log(`Found ${permitTypes.length} permit types for ${municipality.name}`);
+    res.json(permitTypes);
+  } catch (error) {
+    console.error('Get permit types error:', error);
+    res.status(500).json({ 
+      error: 'Server error retrieving permit types',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

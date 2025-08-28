@@ -63,7 +63,7 @@ export default class AdminMunicipalManagerComponent extends Component {
     phone: '',
     userType: 'residential',
     password: '',
-    department: '',
+    department: 'building', // Default to building department for municipal users
     permissionLevel: 11,
     businessInfo: {
       businessName: '',
@@ -691,9 +691,13 @@ export default class AdminMunicipalManagerComponent extends Component {
         this.userForm[keys[0]] = {};
       }
       this.userForm[keys[0]][keys[1]] = event.target.value;
+      // Trigger reactivity by reassigning the entire object
+      this.userForm = { ...this.userForm };
     } else {
-      this.userForm[field] = event.target.value;
+      // Create a new object to trigger reactivity
+      this.userForm = { ...this.userForm, [field]: event.target.value };
     }
+    
   }
 
   @action
@@ -701,6 +705,18 @@ export default class AdminMunicipalManagerComponent extends Component {
     event.preventDefault();
     
     if (!this.selectedMunicipality) return;
+
+    // Validate municipal user requirements
+    if (this.userForm.userType === 'municipal') {
+      if (!this.userForm.department || this.userForm.department === '') {
+        alert('Please select a department for municipal users.');
+        return;
+      }
+      if (!this.userForm.permissionLevel) {
+        alert('Please select a permission level for municipal users.');
+        return;
+      }
+    }
 
     try {
       const url = this.editingUser 
@@ -840,7 +856,7 @@ export default class AdminMunicipalManagerComponent extends Component {
       phone: '',
       userType: 'residential',
       password: '',
-      department: '',
+      department: 'building', // Default to building department for municipal users
       permissionLevel: 11,
       businessInfo: {
         businessName: '',

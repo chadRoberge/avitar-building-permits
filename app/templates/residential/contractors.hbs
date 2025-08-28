@@ -1,0 +1,223 @@
+{{page-title "Find Contractors - Residential Portal"}}
+
+<div class="residential-dashboard">
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1>Find Local Contractors</h1>
+      <p>Discover qualified contractors who have worked in your area</p>
+    </div>
+  </header>
+
+  {{#if this.model.error}}
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Error Loading Data</h3>
+      <p>{{this.model.error}}</p>
+      <button type="button" class="btn btn-primary" {{on "click" this.refresh}}>
+        Try Again
+      </button>
+    </div>
+  {{/if}}
+
+  <div class="dashboard-main-content">
+    {{! Contractor Search and Filter Section }}
+    <div class="section-header">
+      <h3>All Contractors</h3>
+      <p>Search and filter contractors from all municipalities, or narrow down to a specific area.</p>
+    </div>
+
+    {{! Search and Filter Controls }}
+    <div class="contractor-controls">
+      <div class="controls-row">
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Search contractors..."
+            value={{this.searchTerm}}
+            {{on "input" this.updateSearch}}
+            class="search-input"
+          />
+        </div>
+        
+        <div class="filter-controls">
+          <label>Municipality:</label>
+          <select value={{this.municipalityFilter}} {{on "change" this.setMunicipalityFilter}}>
+            <option value="all">All Municipalities</option>
+            {{#if this.userMunicipality}}
+              <option value={{this.userMunicipality.id}}>{{this.userMunicipality.name}} (Your Town)</option>
+            {{/if}}
+            {{#each this.municipalities as |municipality|}}
+              {{#unless (eq municipality this.userMunicipality)}}
+                <option value={{municipality.id}}>{{municipality.name}}</option>
+              {{/unless}}
+            {{/each}}
+          </select>
+        </div>
+        
+        <div class="sort-controls">
+          <label>Sort by:</label>
+          <select value={{this.sortBy}} {{on "change" this.setSortBy}}>
+            <option value="recentActivity">Recent Activity</option>
+            <option value="name">Name</option>
+            <option value="totalProjects">Total Projects</option>
+            <option value="completionRate">Completion Rate</option>
+            <option value="totalValue">Total Value</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-outline refresh-btn" {{on "click" this.refresh}}>
+          🔄 Refresh
+        </button>
+      </div>
+    </div>
+    {{! Contractor Results }}
+    <div class="contractor-results-section">
+      <div class="results-header">
+        <h3>
+          {{#if (eq this.municipalityFilter "all")}}
+            All Contractors
+          {{else}}
+            Contractors in {{this.selectedMunicipality.name}}
+          {{/if}}
+          {{#if this.searchTerm}}
+            matching "{{this.searchTerm}}"
+          {{/if}}
+        </h3>
+      </div>
+
+        {{#if this.isLoading}}
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading contractors...</p>
+          </div>
+        {{else if this.error}}
+          <div class="error-message">
+            <span class="error-icon">⚠️</span>
+            <p>{{this.error}}</p>
+          </div>
+        {{else if this.contractors.length}}
+          <div class="permits-list">
+            {{#each this.contractors as |contractor|}}
+              <div class="permit-item" {{on "click" (fn this.showContractorDetails contractor)}}>
+                <div class="permit-icon">🔨</div>
+                <div class="permit-content">
+                  <div class="permit-title">{{contractor.businessName}}</div>
+                  <div class="permit-date">Last Permit: {{format-date contractor.lastPermitDate}}</div>
+                  {{#if contractor.licenseNumber}}
+                    <div class="permit-description">License: {{contractor.licenseNumber}}</div>
+                  {{/if}}
+                  <div class="permit-description">
+                    {{contractor.totalProjects}} projects • {{contractor.completionRate}}% completion rate • {{format-currency contractor.totalProjectValue}} total value
+                    {{#if contractor.municipalities}}
+                      • Works in {{contractor.municipalities.length}} municipalities
+                    {{/if}}
+                  </div>
+                  {{#if contractor.email}}
+                    <div class="permit-description">Email: {{contractor.email}}</div>
+                  {{/if}}
+                  {{#if contractor.phone}}
+                    <div class="permit-description">Phone: {{format-phone contractor.phone}}</div>
+                  {{/if}}
+                </div>
+                <div class="permit-status">
+                  <div class="permit-specialties">
+                    {{#each contractor.permitTypes as |permitType|}}
+                      <span class="status-badge">{{permitType.name}}</span>
+                    {{/each}}
+                  </div>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="empty-state">
+            <div class="empty-icon">🏗️</div>
+            <h4>No Contractors Found</h4>
+            <p>{{#if this.searchTerm}}
+              No contractors match your search{{#if (neq this.municipalityFilter "all")}} in {{this.selectedMunicipality.name}}{{/if}}.
+            {{else if (neq this.municipalityFilter "all")}}
+              No contractors have pulled permits in {{this.selectedMunicipality.name}} yet.
+            {{else}}
+              No contractors found in the system.
+            {{/if}}</p>
+            {{#if this.searchTerm}}
+              <button type="button" class="btn btn-outline" {{on "click" (fn this.updateSearch "")}}>
+                Clear Search
+              </button>
+            {{/if}}
+          </div>
+        {{/if}}
+      </div>
+  </div>
+
+  {{! Contractor Detail Modal }}
+  {{#if this.showContractorModal}}
+    <div class="modal-backdrop" {{on "click" this.closeContractorModal}}>
+      <div class="modal contractor-detail-modal" {{on "click" (fn this.stopPropagation)}}>
+        <div class="modal-header">
+          <h3>{{this.selectedContractor.businessName}}</h3>
+          <button type="button" class="close-btn" {{on "click" this.closeContractorModal}}>×</button>
+        </div>
+
+        <div class="modal-content">
+          {{#if this.selectedContractor.detailedInfo}}
+            <div class="contractor-detailed-info">
+              <div class="contact-info">
+                <h4>Contact Information</h4>
+                {{#if this.selectedContractor.detailedInfo.contractor.email}}
+                  <p><strong>Email:</strong> 
+                    <a href="mailto:{{this.selectedContractor.detailedInfo.contractor.email}}">
+                      {{this.selectedContractor.detailedInfo.contractor.email}}
+                    </a>
+                  </p>
+                {{/if}}
+                {{#if this.selectedContractor.detailedInfo.contractor.phone}}
+                  <p><strong>Phone:</strong> 
+                    <a href="tel:{{this.selectedContractor.detailedInfo.contractor.phone}}">
+                      {{format-phone this.selectedContractor.detailedInfo.contractor.phone}}
+                    </a>
+                  </p>
+                {{/if}}
+                {{#if this.selectedContractor.detailedInfo.contractor.licenseNumber}}
+                  <p><strong>License:</strong> {{this.selectedContractor.detailedInfo.contractor.licenseNumber}}</p>
+                {{/if}}
+              </div>
+
+              <div class="municipality-breakdown">
+                <h4>Work by Municipality</h4>
+                {{#each-in this.selectedContractor.detailedInfo.statistics.byMunicipality as |municipalityName stats|}}
+                  <div class="municipality-stats">
+                    <h5>{{municipalityName}}</h5>
+                    <div class="stats-grid">
+                      <div class="stat">
+                        <span class="stat-value">{{stats.totalProjects}}</span>
+                        <span class="stat-label">Projects</span>
+                      </div>
+                      <div class="stat">
+                        <span class="stat-value">{{stats.completionRate}}%</span>
+                        <span class="stat-label">Completion Rate</span>
+                      </div>
+                      <div class="stat">
+                        <span class="stat-value">{{format-currency stats.totalValue}}</span>
+                        <span class="stat-label">Total Value</span>
+                      </div>
+                    </div>
+                    <div class="permit-types">
+                      <strong>Permit Types:</strong>
+                      {{#each stats.permitTypes as |permitType index|}}{{if index ", "}}{{permitType}}{{/each}}
+                    </div>
+                  </div>
+                {{/each-in}}
+              </div>
+            </div>
+          {{else}}
+            <div class="loading-state">
+              <div class="loading-spinner"></div>
+              <p>Loading detailed information...</p>
+            </div>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  {{/if}}
+</div>

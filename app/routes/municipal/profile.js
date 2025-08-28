@@ -49,8 +49,7 @@ export default class MunicipalProfileRoute extends Route {
         console.log('Using fallback user profile:', userProfile);
       }
 
-      // Create mock user activity data based on user level
-      // TODO: Implement real activity tracking API endpoint
+      // Fetch real user activity data
       let userActivity = {
         permitReviews: 0,
         inspectionCount: 0,
@@ -58,16 +57,24 @@ export default class MunicipalProfileRoute extends Route {
         recentActivity: []
       };
 
-      // Provide realistic mock data based on permission level
-      if (userProfile.permissionLevel >= 15) {
-        userActivity.permitReviews = Math.floor(Math.random() * 50) + 10;
-        userActivity.inspectionCount = Math.floor(Math.random() * 30) + 5;
-      }
-      if (userProfile.permissionLevel >= 17) {
-        userActivity.departmentReviews = Math.floor(Math.random() * 20) + 3;
-      }
+      try {
+        const activityResponse = await fetch(`${config.APP.API_HOST}/api/users/activity`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        });
 
-      console.log('Generated user activity:', userActivity);
+        if (activityResponse.ok) {
+          userActivity = await activityResponse.json();
+          console.log('Loaded real user activity:', userActivity);
+        } else {
+          console.warn('Could not fetch user activity:', activityResponse.status);
+        }
+      } catch (activityError) {
+        console.error('Error fetching user activity:', activityError);
+        // Keep default empty activity data
+      }
 
       return {
         ...parentModel,

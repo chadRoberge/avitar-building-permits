@@ -15,6 +15,16 @@ export default class MunicipalPermitTypesEditController extends Controller {
   @tracked requiresInspection = true;
   @tracked isActive = true;
 
+  // Enhanced fee structure
+  @tracked feeStructureType = 'none';
+  @tracked feePercentage = '';
+  @tracked feePerSquareFoot = '';
+  @tracked minimumFee = '';
+  @tracked feeTiers = [];
+
+  // Department checklists
+  @tracked departmentChecklists = {};
+
   @tracked activeQuestionTab = 'default';
   @tracked defaultQuestions = [];
   @tracked customQuestions = [];
@@ -146,16 +156,21 @@ export default class MunicipalPermitTypesEditController extends Controller {
       this.permitName = permitType.name || '';
       this.permitCode = permitType.code || '';
       this.permitDescription = permitType.description || '';
-      this.baseFee =
-        permitType.fees && permitType.fees[0]
-          ? permitType.fees[0].amount.toString()
-          : '';
+      
+      // Initialize fee structure after a brief delay to ensure proper state management
+      setTimeout(() => {
+        this.initializeFeeStructure(permitType.feeStructure || permitType.fees);
+      }, 50);
+      
       this.processingTime = permitType.estimatedProcessingTime || 14;
       this.requiresInspection =
         permitType.requiredInspections &&
         permitType.requiredInspections.length > 0;
       this.isActive = permitType.isActive !== false;
       this.originalCategory = permitType.category;
+
+      // Initialize department checklists
+      this.departmentChecklists = permitType.departmentChecklists || {};
 
       // Load form fields into appropriate tabs
       this.loadFormFields(permitType.applicationFields || []);
@@ -220,46 +235,13 @@ export default class MunicipalPermitTypesEditController extends Controller {
 
   // Initialize visual state for departments that are already selected
   initializeDepartmentVisualState() {
-    try {
-      const selectedDepts = this.safeSelectedDepartments || [];
-      console.log('Initializing visual state for departments:', selectedDepts);
-      
-      // Find all department cards and update their visual state
-      const departmentCards = document.querySelectorAll('.department-card');
-      departmentCards.forEach(card => {
-        // Extract department ID from the card's data or find it through the click handler
-        const clickHandler = card.getAttribute('data-department-id');
-        
-        // Alternative: check each available department
-        this.availableDepartments.forEach(dept => {
-          const isSelected = selectedDepts.includes(dept.id);
-          const deptIcon = card.querySelector('.department-icon');
-          
-          // Match by department icon text to identify the card
-          if (deptIcon && deptIcon.textContent.trim() === dept.icon) {
-            if (isSelected) {
-              card.classList.add('selected');
-              const indicator = card.querySelector('.selection-indicator');
-              if (indicator) {
-                indicator.innerHTML = '<span class="selected-icon">✓</span>';
-              }
-            } else {
-              card.classList.remove('selected');
-              const indicator = card.querySelector('.selection-indicator');
-              if (indicator) {
-                indicator.innerHTML = '<span class="unselected-icon">+</span>';
-              }
-            }
-          }
-        });
-      });
-    } catch (error) {
-      console.error('Error initializing department visual state:', error);
-    }
+    // Visual state is now handled by Ember's reactive data binding
+    // No need for manual DOM manipulation
+    console.log('Department visual state initialized through reactive data');
   }
 
   @action
-  toggleDepartment(departmentId, event) {
+  toggleDepartment(departmentId) {
     try {
       if (!this || !departmentId) {
         console.error('toggleDepartment called with invalid parameters');
@@ -274,40 +256,14 @@ export default class MunicipalPermitTypesEditController extends Controller {
       const currentDepartments = this.safeSelectedDepartments || [];
       console.log('Toggling department:', departmentId, 'Current:', currentDepartments);
       
-      // Find the clicked department card element
-      let departmentCard = event.target;
-      while (departmentCard && !departmentCard.classList.contains('department-card')) {
-        departmentCard = departmentCard.parentElement;
-      }
-
       const isCurrentlySelected = currentDepartments.includes(departmentId);
       
       if (isCurrentlySelected) {
         console.log('Removing department:', departmentId);
         this.selectedDepartments = currentDepartments.filter(id => id !== departmentId);
-        
-        // Remove visual selection immediately
-        if (departmentCard) {
-          departmentCard.classList.remove('selected');
-          // Update the selection indicator
-          const indicator = departmentCard.querySelector('.selection-indicator');
-          if (indicator) {
-            indicator.innerHTML = '<span class="unselected-icon">+</span>';
-          }
-        }
       } else {
         console.log('Adding department:', departmentId);
         this.selectedDepartments = [...currentDepartments, departmentId];
-        
-        // Add visual selection immediately
-        if (departmentCard) {
-          departmentCard.classList.add('selected');
-          // Update the selection indicator
-          const indicator = departmentCard.querySelector('.selection-indicator');
-          if (indicator) {
-            indicator.innerHTML = '<span class="selected-icon">✓</span>';
-          }
-        }
       }
       
       console.log('New departments:', this.selectedDepartments);
@@ -315,7 +271,9 @@ export default class MunicipalPermitTypesEditController extends Controller {
       console.error('Error in toggleDepartment:', error);
       // Fallback - initialize as empty array and add the department
       try {
-        this.selectedDepartments = [departmentId];
+        if (!this.selectedDepartments.includes(departmentId)) {
+          this.selectedDepartments = [...(this.selectedDepartments || []), departmentId];
+        }
       } catch (fallbackError) {
         console.error('Even fallback failed:', fallbackError);
       }
@@ -436,6 +394,9 @@ export default class MunicipalPermitTypesEditController extends Controller {
         isActive: this.isActive,
         requiredDepartments: this.safeSelectedDepartments,
 
+        // Department-specific checklists
+        departmentChecklists: this.departmentChecklists,
+
         // Update form fields - map to expected backend format
         formFields: this.buildFormFields().map((field) => ({
           id: field.name,
@@ -446,8 +407,8 @@ export default class MunicipalPermitTypesEditController extends Controller {
           options: field.options ? field.options.map(opt => opt.value) : []
         })),
 
-        // Update fee structure if baseFee is provided
-        baseFee: this.baseFee ? parseFloat(this.baseFee) : 0,
+        // Enhanced fee structure
+        feeStructure: this.buildFeeStructure(),
 
         // Set inspection requirement
         requiresInspection: this.requiresInspection,
@@ -564,5 +525,221 @@ export default class MunicipalPermitTypesEditController extends Controller {
     });
 
     return fields;
+  }
+
+  // Build fee structure for API
+  buildFeeStructure() {
+    const feeStructure = {
+      baseFee: parseFloat(this.baseFee) || 0,
+      additionalType: this.feeStructureType
+    };
+
+    switch (this.feeStructureType) {
+      case 'percentage':
+        feeStructure.percentage = parseFloat(this.feePercentage) || 0;
+        feeStructure.minimumFee = parseFloat(this.minimumFee) || 0;
+        break;
+      case 'square_footage':
+        feeStructure.feePerSquareFoot = parseFloat(this.feePerSquareFoot) || 0;
+        feeStructure.minimumFee = parseFloat(this.minimumFee) || 0;
+        break;
+      case 'tiered':
+        feeStructure.tiers = this.feeTiers.map(tier => ({
+          minValue: parseFloat(tier.minValue) || 0,
+          maxValue: parseFloat(tier.maxValue) || 0,
+          fee: parseFloat(tier.fee) || 0
+        }));
+        break;
+    }
+
+    return feeStructure;
+  }
+
+  // Fee structure initialization
+  initializeFeeStructure(feeStructure) {
+    console.log('Initializing fee structure with:', feeStructure);
+    
+    // Handle fees array (current database format)
+    if (Array.isArray(feeStructure)) {
+      let baseFee = '';
+      let additionalType = 'none';
+      
+      // Reset fee structure fields first
+      this.feePercentage = '';
+      this.feePerSquareFoot = '';
+      this.minimumFee = '';
+      this.feeTiers = [];
+      
+      // Process each fee in the array
+      feeStructure.forEach(fee => {
+        console.log('Processing fee:', fee);
+        switch (fee.type) {
+          case 'fixed':
+            baseFee = fee.amount?.toString() || '';
+            break;
+          case 'percentage':
+            additionalType = 'percentage';
+            this.feePercentage = fee.percentage?.toString() || '';
+            this.minimumFee = fee.minimumAmount?.toString() || '';
+            break;
+          case 'per-unit':
+            additionalType = 'square_footage';
+            this.feePerSquareFoot = fee.unitAmount?.toString() || '';
+            this.minimumFee = fee.minimumAmount?.toString() || '';
+            break;
+          case 'tiered':
+            additionalType = 'tiered';
+            this.feeTiers = fee.tiers || [];
+            break;
+        }
+      });
+      
+      console.log('Setting baseFee to:', baseFee);
+      console.log('Setting feeStructureType to:', additionalType);
+      
+      this.baseFee = baseFee;
+      this.feeStructureType = additionalType;
+      
+      console.log('Final feeStructureType:', this.feeStructureType);
+      console.log('Final feePercentage:', this.feePercentage);
+      console.log('Final minimumFee:', this.minimumFee);
+      
+      // Force DOM update for select element
+      setTimeout(() => {
+        const selectElement = document.getElementById('additional-fee-structure');
+        if (selectElement) {
+          selectElement.value = this.feeStructureType;
+          console.log('Forced select element value to:', this.feeStructureType);
+        }
+      }, 100);
+      
+      return;
+    }
+
+    if (!feeStructure) {
+      this.feeStructureType = 'none';
+      this.baseFee = '';
+      return;
+    }
+
+    // Handle new fee structure format (if it exists)
+    this.baseFee = feeStructure.baseFee?.toString() || '';
+    this.feeStructureType = feeStructure.additionalType || 'none';
+    
+    switch (this.feeStructureType) {
+      case 'percentage':
+        this.feePercentage = feeStructure.percentage?.toString() || '';
+        this.minimumFee = feeStructure.minimumFee?.toString() || '';
+        break;
+      case 'square_footage':
+        this.feePerSquareFoot = feeStructure.feePerSquareFoot?.toString() || '';
+        this.minimumFee = feeStructure.minimumFee?.toString() || '';
+        break;
+      case 'tiered':
+        this.feeTiers = feeStructure.tiers || [];
+        break;
+    }
+  }
+
+  // Fee structure actions
+  @action
+  handleFeeStructureChange(event) {
+    this.feeStructureType = event.target.value;
+    
+    // Initialize default tier structure for tiered fees
+    if (event.target.value === 'tiered' && !this.feeTiers.length) {
+      this.feeTiers = [
+        { minValue: 0, maxValue: 10000, fee: 100 },
+        { minValue: 10000, maxValue: 50000, fee: 300 }
+      ];
+    }
+  }
+
+  @action
+  addTier() {
+    const lastTier = this.feeTiers[this.feeTiers.length - 1];
+    const newTier = {
+      minValue: lastTier ? lastTier.maxValue : 0,
+      maxValue: (lastTier ? lastTier.maxValue : 0) + 10000,
+      fee: 100
+    };
+    this.feeTiers = [...this.feeTiers, newTier];
+  }
+
+  @action
+  removeTier(index) {
+    this.feeTiers = this.feeTiers.filter((_, i) => i !== index);
+  }
+
+  @action
+  updateTierMinValue(index, event) {
+    const tiers = [...this.feeTiers];
+    tiers[index].minValue = parseFloat(event.target.value) || 0;
+    this.feeTiers = tiers;
+  }
+
+  @action
+  updateTierMaxValue(index, event) {
+    const tiers = [...this.feeTiers];
+    tiers[index].maxValue = parseFloat(event.target.value) || 0;
+    this.feeTiers = tiers;
+  }
+
+  @action
+  updateTierFee(index, event) {
+    const tiers = [...this.feeTiers];
+    tiers[index].fee = parseFloat(event.target.value) || 0;
+    this.feeTiers = tiers;
+  }
+
+  // Department checklist methods
+  getDepartmentInfo = (departmentId) => {
+    return this.availableDepartments.find(dept => dept.id === departmentId) || {
+      id: departmentId,
+      name: departmentId,
+      icon: '📋'
+    };
+  }
+
+  getDepartmentChecklist = (departmentId) => {
+    return this.departmentChecklists[departmentId] || [];
+  }
+
+  @action
+  addChecklistItem(departmentId) {
+    const checklists = { ...this.departmentChecklists };
+    if (!checklists[departmentId]) {
+      checklists[departmentId] = [];
+    }
+    const newItem = {
+      id: `${departmentId}-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      label: '',
+      required: false,
+      order: checklists[departmentId].length
+    };
+    checklists[departmentId] = [...checklists[departmentId], newItem];
+    this.departmentChecklists = checklists;
+  }
+
+  @action
+  removeChecklistItem(departmentId, index) {
+    const checklists = { ...this.departmentChecklists };
+    if (checklists[departmentId]) {
+      checklists[departmentId] = checklists[departmentId].filter((_, i) => i !== index);
+      this.departmentChecklists = checklists;
+    }
+  }
+
+  @action
+  updateChecklistItem(departmentId, index, field, event) {
+    const checklists = { ...this.departmentChecklists };
+    if (checklists[departmentId] && checklists[departmentId][index]) {
+      if (field === 'required') {
+        checklists[departmentId][index][field] = event.target.checked;
+      } else {
+        checklists[departmentId][index][field] = event.target.value;
+      }
+      this.departmentChecklists = checklists;
+    }
   }
 }

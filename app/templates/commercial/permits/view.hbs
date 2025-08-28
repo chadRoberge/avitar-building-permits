@@ -1,0 +1,347 @@
+{{page-title "Permit Details - Commercial Portal"}}
+
+<div class="permit-view commercial-permit-view">
+  {{#if @model.error}}
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h2>Error Loading Permit</h2>
+      <p>{{@model.error}}</p>
+      <button type="button" class="btn btn-primary" {{on "click" this.goBack}}>
+        ← Back to Permits
+      </button>
+    </div>
+  {{else if @model.permit}}
+    {{!-- Compact Professional Header --}}
+    <div class="permit-header-compact">
+      <div class="header-layout">
+        {{!-- Left: Back Button --}}
+        <div class="header-left">
+          <button type="button" class="btn btn-outline-secondary btn-sm" {{on "click" this.goBack}}>
+            ← Back
+          </button>
+        </div>
+
+        {{!-- Center: Permit Info --}}
+        <div class="header-center">
+          <h1 class="permit-number">{{@model.permit.permitNumber}}</h1>
+          <span class="permit-details">
+            {{@model.permit.type}} • 
+            <span class="status-badge {{get-status-badge-class @model.permit.status}}">
+              {{@model.permit.status}}
+            </span>
+          </span>
+        </div>
+
+        {{!-- Right: Actions --}}
+        <div class="header-right">
+          {{#if (eq @model.permit.status "approved")}}
+            <div class="inspection-request-container">
+              <button type="button" class="btn btn-primary btn-sm" {{on "click" this.toggleInspectionRequest}}>
+                📋 Request Inspection
+              </button>
+              {{#if this.showInspectionForm}}
+                <div class="inspection-dropdown">
+                  <div class="inspection-form">
+                    <h6>Request Inspection</h6>
+                    <div class="form-group">
+                      <label class="form-label">When would you like the inspection?</label>
+                      <div class="radio-options">
+                        <label class="radio-option">
+                          <input type="radio" name="requestType" value="asap" {{on "change" this.setRequestType}}>
+                          <span>As soon as possible</span>
+                        </label>
+                        <label class="radio-option">
+                          <input type="radio" name="requestType" value="within_week" {{on "change" this.setRequestType}}>
+                          <span>Within a week</span>
+                        </label>
+                        <label class="radio-option">
+                          <input type="radio" name="requestType" value="specific_date" {{on "change" this.setRequestType}}>
+                          <span>Specific date</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {{#if (eq this.requestType "specific_date")}}
+                      <div class="form-group">
+                        <label class="form-label" for="preferred-date">Preferred Date:</label>
+                        <input 
+                          type="date" 
+                          id="preferred-date"
+                          value={{this.preferredDate}}
+                          {{on "input" this.setPreferredDate}}
+                          min={{format-date-input (add-days (now) 1)}}
+                          class="form-input"
+                        >
+                      </div>
+                    {{/if}}
+                    
+                    <div class="form-group">
+                      <label class="form-label" for="inspection-notes">Notes (optional):</label>
+                      <textarea 
+                        id="inspection-notes"
+                        value={{this.inspectionNotes}}
+                        {{on "input" this.setInspectionNotes}}
+                        placeholder="Any additional information..."
+                        class="form-textarea"
+                        rows="2"
+                      ></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                      <button 
+                        type="button" 
+                        class="btn btn-primary btn-sm"
+                        {{on "click" this.requestInspection}}
+                        disabled={{or this.isSubmittingInspection (not this.requestType)}}
+                      >
+                        {{#if this.isSubmittingInspection}}
+                          Requesting...
+                        {{else}}
+                          Submit Request
+                        {{/if}}
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" {{on "click" this.toggleInspectionRequest}}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              {{/if}}
+            </div>
+          {{else if (eq @model.permit.status "inspection-requested")}}
+            <span class="status-text">
+              🕒 Inspection Pending
+            </span>
+          {{else if (eq @model.permit.status "inspections")}}
+            <span class="status-text">
+              🔍 Under Inspection
+            </span>
+          {{else if (eq @model.permit.status "completed")}}
+            <button type="button" class="btn btn-outline-success btn-sm">
+              ✓ Completed
+            </button>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+
+    {{!-- Horizontal Review Process Timeline (Sticky) --}}
+    <HorizontalTimeline @steps={{@model.permit.reviewProcess.steps}} @class="sticky" />
+
+    <div class="permit-content">
+      {{!-- Review Process and Chat Side by Side --}}
+      <div class="review-and-chat-container">
+
+        {{!-- Permit Chat/Messaging --}}
+        <section class="permit-messaging">
+          <PermitChat @permitId={{@model.permit.id}} />
+        </section>
+      </div>
+
+      {{!-- File Management Section --}}
+      <div class="file-management-container">
+        {{!-- File Display with Upload Button --}}
+        <section class="file-display-section">
+          <PermitFilesDisplay 
+            @permitId={{@model.permit.id}}
+            @onFileDeleted={{this.handleFileDeleted}}
+            @onMount={{this.setFilesDisplayComponent}}
+            @onUploadClick={{this.showFileUploadModal}}
+          />
+        </section>
+      </div>
+
+      {{!-- Permit Details Grid --}}
+      <div class="permit-details-grid">
+        {{!-- Project Information --}}
+        <section class="details-card">
+          <h3>Project Information</h3>
+          <div class="details-content">
+            <div class="detail-item">
+              <span class="detail-label">Type:</span>
+              <span class="detail-value">{{@model.permit.type}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Description:</span>
+              <span class="detail-value">{{@model.permit.description}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Estimated Value:</span>
+              <span class="detail-value">{{format-currency @model.permit.projectValue}}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Municipality:</span>
+              <span class="detail-value">{{@model.permit.municipality}}</span>
+            </div>
+          </div>
+        </section>
+
+        {{!-- Application Information --}}
+        <section class="details-card">
+          <h3>Application Information</h3>
+          <div class="details-content">
+            <div class="detail-item">
+              <span class="detail-label">Submitted:</span>
+              <span class="detail-value">{{format-date @model.permit.submittedDate}}</span>
+            </div>
+            {{#if @model.permit.approvedDate}}
+              <div class="detail-item">
+                <span class="detail-label">Approved:</span>
+                <span class="detail-value">{{format-date @model.permit.approvedDate}}</span>
+              </div>
+            {{/if}}
+            {{#if @model.permit.expiryDate}}
+              <div class="detail-item">
+                <span class="detail-label">Expires:</span>
+                <span class="detail-value">{{format-date @model.permit.expiryDate}}</span>
+              </div>
+            {{/if}}
+            <div class="detail-item">
+              <span class="detail-label">Application Fee:</span>
+              <span class="detail-value">{{format-currency @model.permit.fee}}</span>
+            </div>
+          </div>
+        </section>
+
+        {{!-- Inspection Status Display (Non-Approved Status) --}}
+        {{#if (eq @model.permit.status "inspection-requested")}}
+          <section class="details-card">
+            <h3>Inspection Status</h3>
+            <div class="details-content">
+              <div class="status-message">
+                <span class="status-icon">🔍</span>
+                <div>
+                  <h4>Inspection Requested</h4>
+                  <p>Your inspection request has been submitted. The municipality will schedule your inspection and notify you with the date and time.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        {{/if}}
+
+        {{!-- Payment Information --}}
+        <section class="details-card">
+          <PermitPayment @permit={{@model.permit}} />
+        </section>
+
+        {{!-- Inspection Scheduling --}}
+        <section class="details-card">
+          <InspectionScheduler 
+            @permit={{@model.permit}} 
+            @onInspectionScheduled={{this.handleInspectionScheduled}}
+          />
+        </section>
+
+        {{!-- Property Information --}}
+        {{#if @model.permit.property}}
+          <section class="details-card">
+            <h3>Property Information</h3>
+            <div class="details-content">
+              {{#if @model.permit.property.displayName}}
+                <div class="detail-item">
+                  <span class="detail-label">Property:</span>
+                  <span class="detail-value">{{@model.permit.property.displayName}}</span>
+                </div>
+              {{/if}}
+              {{#if @model.permit.property.address}}
+                <div class="detail-item">
+                  <span class="detail-label">Address:</span>
+                  <span class="detail-value">
+                    {{@model.permit.property.address.street}}<br>
+                    {{@model.permit.property.address.city}}, {{@model.permit.property.address.state}} {{@model.permit.property.address.zip}}
+                  </span>
+                </div>
+              {{/if}}
+            </div>
+          </section>
+        {{/if}}
+
+        {{!-- Applicant Information --}}
+        {{#if @model.permit.applicant}}
+          <section class="details-card">
+            <h3>Applicant Information</h3>
+            <div class="details-content">
+              <div class="detail-item">
+                <span class="detail-label">Name:</span>
+                <span class="detail-value">{{@model.permit.applicant.firstName}} {{@model.permit.applicant.lastName}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Email:</span>
+                <span class="detail-value">{{@model.permit.applicant.email}}</span>
+              </div>
+              {{#if @model.permit.applicant.phone}}
+                <div class="detail-item">
+                  <span class="detail-label">Phone:</span>
+                  <span class="detail-value">{{@model.permit.applicant.phone}}</span>
+                </div>
+              {{/if}}
+              <div class="detail-item">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">{{capitalize @model.permit.applicant.type}}</span>
+              </div>
+            </div>
+          </section>
+        {{/if}}
+
+        {{!-- Contractor Information --}}
+        {{#if @model.permit.contractor}}
+          <section class="details-card">
+            <h3>Contractor Information</h3>
+            <div class="details-content">
+              <div class="detail-item">
+                <span class="detail-label">Business:</span>
+                <span class="detail-value">{{@model.permit.contractor.businessName}}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Contact:</span>
+                <span class="detail-value">{{@model.permit.contractor.firstName}} {{@model.permit.contractor.lastName}}</span>
+              </div>
+              {{#if @model.permit.contractor.licenseNumber}}
+                <div class="detail-item">
+                  <span class="detail-label">License:</span>
+                  <span class="detail-value">{{@model.permit.contractor.licenseNumber}}</span>
+                </div>
+              {{/if}}
+              {{#if @model.permit.contractor.phone}}
+                <div class="detail-item">
+                  <span class="detail-label">Phone:</span>
+                  <span class="detail-value">{{@model.permit.contractor.phone}}</span>
+                </div>
+              {{/if}}
+              {{#if @model.permit.contractor.email}}
+                <div class="detail-item">
+                  <span class="detail-label">Email:</span>
+                  <span class="detail-value">{{@model.permit.contractor.email}}</span>
+                </div>
+              {{/if}}
+            </div>
+          </section>
+        {{/if}}
+      </div>
+
+      {{!-- Additional Information --}}
+      {{#if @model.permit.customFields.additionalInfo}}
+        <section class="additional-info">
+          <h3>Additional Information</h3>
+          <div class="info-content">
+            <p>{{@model.permit.customFields.additionalInfo}}</p>
+          </div>
+        </section>
+      {{/if}}
+    </div>
+  {{else}}
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading permit details...</p>
+    </div>
+  {{/if}}
+</div>
+
+{{!-- File Upload Modal --}}
+{{#if this.showUploadModal}}
+  <FileUploadModal 
+    @permitId={{@model.permit.id}}
+    @onClose={{this.hideFileUploadModal}}
+    @onUploadSuccess={{this.handleFileUploaded}}
+  />
+{{/if}}

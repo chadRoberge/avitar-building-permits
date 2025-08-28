@@ -168,11 +168,78 @@ router.put('/:id', auth, async (req, res) => {
       requiredDepartments: req.body.requiredDepartments,
       requiredInspections: req.body.requiredInspections,
       name: req.body.name,
-      baseFee: req.body.baseFee
+      feeStructure: req.body.feeStructure,
+      departmentChecklists: req.body.departmentChecklists
     });
 
-    // Handle baseFee specially - convert to fees array structure
-    if (req.body.baseFee !== undefined) {
+    // Handle enhanced fee structure
+    if (req.body.feeStructure !== undefined) {
+      console.log('Processing fee structure:', req.body.feeStructure);
+      
+      const feeStructure = req.body.feeStructure;
+      const fees = [];
+      
+      // Always add base fee if provided
+      if (feeStructure.baseFee && feeStructure.baseFee > 0) {
+        fees.push({
+          name: 'Base Application Fee',
+          type: 'fixed',
+          amount: parseFloat(feeStructure.baseFee),
+          description: 'Base application fee'
+        });
+      }
+      
+      // Add additional fee structure based on type
+      if (feeStructure.additionalType && feeStructure.additionalType !== 'none') {
+        switch (feeStructure.additionalType) {
+          case 'percentage':
+            if (feeStructure.percentage) {
+              fees.push({
+                name: 'Project Value Fee',
+                type: 'percentage',
+                percentage: parseFloat(feeStructure.percentage),
+                baseField: 'projectValue',
+                description: `${feeStructure.percentage}% of project value`,
+                minimumAmount: parseFloat(feeStructure.minimumFee) || 0
+              });
+            }
+            break;
+          case 'square_footage':
+            if (feeStructure.feePerSquareFoot) {
+              fees.push({
+                name: 'Square Footage Fee',
+                type: 'per-unit',
+                unitAmount: parseFloat(feeStructure.feePerSquareFoot),
+                unitField: 'squareFootage',
+                description: `$${feeStructure.feePerSquareFoot} per square foot`,
+                minimumAmount: parseFloat(feeStructure.minimumFee) || 0
+              });
+            }
+            break;
+          case 'tiered':
+            if (feeStructure.tiers && feeStructure.tiers.length > 0) {
+              fees.push({
+                name: 'Tiered Fee',
+                type: 'tiered',
+                baseField: 'projectValue',
+                description: 'Tiered fee based on project value',
+                tiers: feeStructure.tiers.map(tier => ({
+                  min: parseFloat(tier.minValue) || 0,
+                  max: parseFloat(tier.maxValue) || Infinity,
+                  amount: parseFloat(tier.fee) || 0
+                }))
+              });
+            }
+            break;
+        }
+      }
+      
+      permitType.fees = fees;
+      delete req.body.feeStructure;
+    }
+    
+    // Handle legacy baseFee for backwards compatibility
+    else if (req.body.baseFee !== undefined) {
       const baseFee = parseFloat(req.body.baseFee) || 0;
       if (baseFee > 0) {
         permitType.fees = [{
@@ -184,7 +251,6 @@ router.put('/:id', auth, async (req, res) => {
       } else {
         permitType.fees = [];
       }
-      // Remove baseFee from the request body since it's not a direct field
       delete req.body.baseFee;
     }
 
@@ -203,6 +269,29 @@ router.put('/:id', auth, async (req, res) => {
       }));
       // Remove formFields from the request body since it's converted to applicationFields
       delete req.body.formFields;
+    }
+
+    // Handle department checklists specially
+    if (req.body.departmentChecklists !== undefined) {
+      console.log('Processing department checklists:', req.body.departmentChecklists);
+      
+      // Validate and process department checklists
+      const validDepartments = ['building', 'planning', 'fire', 'health', 'engineering', 'zoning', 'environmental', 'finance'];
+      const processedChecklists = {};
+      
+      for (const [department, items] of Object.entries(req.body.departmentChecklists)) {
+        if (validDepartments.includes(department) && Array.isArray(items)) {
+          processedChecklists[department] = items.map((item, index) => ({
+            id: item.id || `${department}-item-${index}`,
+            label: item.label || '',
+            required: Boolean(item.required),
+            order: item.order || index
+          })).filter(item => item.label.trim() !== ''); // Remove empty labels
+        }
+      }
+      
+      permitType.departmentChecklists = processedChecklists;
+      delete req.body.departmentChecklists;
     }
 
     // Update remaining fields
@@ -292,6 +381,97 @@ router.get('/category/:category', auth, async (req, res) => {
     res
       .status(500)
       .json({ message: 'Error fetching permit types', error: error.message });
+  }
+});
+
+// Update department checklists for a permit type
+router.put('/:id/department-checklists', auth, async (req, res) => {
+  try {
+    const permitType = await PermitType.findById(req.params.id);
+
+    if (!permitType) {
+      return res.status(404).json({ message: 'Permit type not found' });
+    }
+
+    // Check if user belongs to the same municipality
+    const userMunicipalityId = req.user.municipality._id || req.user.municipality;
+    if (permitType.municipality.toString() !== userMunicipalityId.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const { departmentChecklists } = req.body;
+    
+    console.log('Updating department checklists for permit type:', permitType.name);
+    console.log('New checklists:', JSON.stringify(departmentChecklists, null, 2));
+
+    // Validate the checklist structure
+    const validDepartments = ['building', 'planning', 'fire', 'health', 'engineering', 'zoning', 'environmental', 'finance'];
+    
+    for (const department of Object.keys(departmentChecklists)) {
+      if (!validDepartments.includes(department)) {
+        return res.status(400).json({ 
+          message: `Invalid department: ${department}. Valid departments are: ${validDepartments.join(', ')}` 
+        });
+      }
+      
+      // Validate checklist items
+      for (const item of departmentChecklists[department]) {
+        if (!item.id || !item.label) {
+          return res.status(400).json({ 
+            message: `Each checklist item must have 'id' and 'label' properties. Department: ${department}` 
+          });
+        }
+      }
+    }
+
+    // Update the department checklists
+    permitType.departmentChecklists = departmentChecklists;
+    await permitType.save();
+
+    res.json({
+      message: 'Department checklists updated successfully',
+      permitType: {
+        id: permitType._id,
+        name: permitType.name,
+        departmentChecklists: permitType.departmentChecklists
+      }
+    });
+  } catch (error) {
+    console.error('Error updating department checklists:', error);
+    res.status(500).json({ 
+      message: 'Error updating department checklists', 
+      error: error.message 
+    });
+  }
+});
+
+// Get department checklists for a permit type
+router.get('/:id/department-checklists', auth, async (req, res) => {
+  try {
+    const permitType = await PermitType.findById(req.params.id);
+
+    if (!permitType) {
+      return res.status(404).json({ message: 'Permit type not found' });
+    }
+
+    // Check if user belongs to the same municipality
+    const userMunicipalityId = req.user.municipality._id || req.user.municipality;
+    if (permitType.municipality.toString() !== userMunicipalityId.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    res.json({
+      permitTypeId: permitType._id,
+      permitTypeName: permitType.name,
+      requiredDepartments: permitType.requiredDepartments || [],
+      departmentChecklists: permitType.departmentChecklists || {}
+    });
+  } catch (error) {
+    console.error('Error fetching department checklists:', error);
+    res.status(500).json({ 
+      message: 'Error fetching department checklists', 
+      error: error.message 
+    });
   }
 });
 

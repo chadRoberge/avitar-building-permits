@@ -1,0 +1,119 @@
+{{page-title "Commercial Portal"}}
+
+<div class="municipal-app">
+  <nav class="municipal-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <span class="sidebar-logo-icon">🏢</span>
+        <div class="sidebar-logo-content">
+          <h1 class="sidebar-title">Commercial Portal</h1>
+          <p class="sidebar-subtitle">Multi-Municipality Access</p>
+        </div>
+      </div>
+    </div>
+
+    {{!-- Municipality Selector --}}
+    <div class="municipality-selector">
+      <div class="municipality-selector-header">
+        <span class="municipality-icon">🏛️</span>
+        <span class="municipality-label">Municipality</span>
+      </div>
+      
+      {{#if this.selectedMunicipality}}
+        <div class="municipality-dropdown">
+          <button type="button" class="municipality-select-btn" {{on "click" this.toggleMunicipalityDropdown}}>
+            <span class="municipality-current">{{this.selectedMunicipality.name}}</span>
+            <span class="municipality-arrow">{{if this.showMunicipalityDropdown "▲" "▼"}}</span>
+          </button>
+          
+          {{#if this.showMunicipalityDropdown}}
+            <div class="municipality-options">
+              {{#each @model.municipalities as |municipality|}}
+                <button 
+                  type="button" 
+                  class="municipality-option {{if (eq municipality.id this.selectedMunicipality.id) 'active'}}"
+                  {{on "click" (fn this.selectMunicipality municipality)}}
+                >
+                  <span class="municipality-name">{{municipality.name}}</span>
+                  <span class="municipality-location">{{municipality.city}}, {{municipality.state}}</span>
+                </button>
+              {{/each}}
+            </div>
+          {{/if}}
+        </div>
+      {{else}}
+        <div class="no-municipality">
+          <div class="no-municipality-content">
+            <span class="no-municipality-text">Select Municipality</span>
+            <span class="no-municipality-hint">Choose to get started</span>
+          </div>
+          <button type="button" class="select-municipality-btn" {{on "click" this.showMunicipalitySelector}}>
+            <span class="select-icon">📍</span>
+          </button>
+        </div>
+      {{/if}}
+    </div>
+    
+    <div class="sidebar-menu">
+      <ul class="nav-list">
+        <li class="nav-item">
+          <LinkTo @route="commercial.dashboard" class="nav-link {{if this.isDashboardActive 'active'}}">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Dashboard</span>
+          </LinkTo>
+        </li>
+        <li class="nav-item">
+          <LinkTo @route="commercial.permits.index" class="nav-link {{if this.isPermitsActive 'active'}}">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">Permits</span>
+          </LinkTo>
+        </li>
+        <li class="nav-item">
+          <LinkTo @route="commercial.contractors" class="nav-link {{if this.isContractorsActive 'active'}}">
+            <span class="nav-icon">🔨</span>
+            <span class="nav-label">Find Contractors</span>
+          </LinkTo>
+        </li>
+      </ul>
+    </div>
+
+    <div class="sidebar-footer">
+      <LinkTo @route="commercial.profile" class="user-profile-section">
+        <div class="user-avatar">
+          <div class="avatar-circle">
+            <span class="avatar-initials">
+              {{this.userInitials}}
+            </span>
+          </div>
+          <div class="status-indicator online"></div>
+        </div>
+        <div class="user-details">
+          <div class="user-name">{{this.currentUser.firstName}} {{this.currentUser.lastName}}</div>
+          <div class="user-role">{{#if this.currentUser.userType}}{{capitalize this.currentUser.userType}}{{else}}Commercial User{{/if}}</div>
+          <div class="user-department">{{this.selectedMunicipality.name}}</div>
+        </div>
+        <div class="profile-action">
+          <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </LinkTo>
+      
+      <div class="user-actions">
+        <button type="button" class="logout-btn" {{on "click" this.logout}} title="Sign Out">
+          <svg class="logout-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd" />
+          </svg>
+          <span class="logout-text">Sign Out</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  
+  {{! Main Content Spacer }}
+  <div class="sidebar-spacer"></div>
+  
+  <main class="municipal-main">
+    {{outlet}}
+  </main>
+</div>

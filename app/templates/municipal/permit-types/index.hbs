@@ -4,14 +4,16 @@
   <header class="page-header">
     <div class="header-content">
       <h1>Permit Types</h1>
-      <p>Configure and manage permit categories for your municipality</p>
+      <p>{{if this.canManagePermitTypes "Configure and manage permit categories for your municipality" "View permit categories and requirements for inspections"}}</p>
     </div>
-    <div class="header-actions">
-      <LinkTo @route="municipal.permit-types.new" class="btn btn-primary">
-        <span class="btn-icon">➕</span>
-        Add Permit Type
-      </LinkTo>
-    </div>
+    {{#if this.canManagePermitTypes}}
+      <div class="header-actions">
+        <LinkTo @route="municipal.permit-types.new" class="btn btn-primary">
+          <span class="btn-icon">➕</span>
+          Add Permit Type
+        </LinkTo>
+      </div>
+    {{/if}}
   </header>
 
   {{#if this.isLoading}}
@@ -83,28 +85,30 @@
               </div>
             </div>
 
-            <div class="card-actions">
-              <LinkTo @route="municipal.permit-types.edit" @model={{permitType.id}} class="btn btn-outline">
-                <span class="btn-icon">✏️</span>
-                Edit
-              </LinkTo>
-              <button 
-                type="button" 
-                class="btn btn-outline {{if permitType.isActive 'warning' 'success'}}"
-                {{on "click" (fn this.togglePermitType permitType)}}
-              >
-                <span class="btn-icon">{{if permitType.isActive '🔒' '🔓'}}</span>
-                {{if permitType.isActive 'Deactivate' 'Activate'}}
-              </button>
-              <button 
-                type="button" 
-                class="btn btn-outline danger"
-                {{on "click" (fn this.deletePermitType permitType)}}
-              >
-                <span class="btn-icon">🗑️</span>
-                Delete
-              </button>
-            </div>
+            {{#if this.canManagePermitTypes}}
+              <div class="card-actions">
+                <LinkTo @route="municipal.permit-types.edit" @model={{permitType.id}} class="btn btn-outline">
+                  <span class="btn-icon">✏️</span>
+                  Edit
+                </LinkTo>
+                <button 
+                  type="button" 
+                  class="btn btn-outline {{if permitType.isActive 'warning' 'success'}}"
+                  {{on "click" (fn this.togglePermitType permitType)}}
+                >
+                  <span class="btn-icon">{{if permitType.isActive '🔒' '🔓'}}</span>
+                  {{if permitType.isActive 'Deactivate' 'Activate'}}
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-outline danger"
+                  {{on "click" (fn this.deletePermitType permitType)}}
+                >
+                  <span class="btn-icon">🗑️</span>
+                  Delete
+                </button>
+              </div>
+            {{/if}}
           </div>
         {{/each}}
       </div>
@@ -112,11 +116,15 @@
       <div class="empty-state">
         <div class="empty-icon">📋</div>
         <h3>No Permit Types Configured</h3>
-        <p>Get started by adding your first permit type. We'll provide default questions to help you get set up quickly.</p>
-        <LinkTo @route="municipal.permit-types.new" class="btn btn-primary">
-          <span class="btn-icon">➕</span>
-          Add Your First Permit Type
-        </LinkTo>
+        {{#if this.canManagePermitTypes}}
+          <p>Get started by adding your first permit type. We'll provide default questions to help you get set up quickly.</p>
+          <LinkTo @route="municipal.permit-types.new" class="btn btn-primary">
+            <span class="btn-icon">➕</span>
+            Add Your First Permit Type
+          </LinkTo>
+        {{else}}
+          <p>No permit types have been configured for this municipality yet. Contact your supervisor or administrator.</p>
+        {{/if}}
       </div>
     {{/if}}
   {{/if}}

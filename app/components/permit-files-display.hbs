@@ -1,13 +1,25 @@
 <div class="permit-files-display">
   <div class="files-header">
-    <h3>Permit Files</h3>
+    <div class="header-left">
+      <h3>Permit Files</h3>
+      {{#if this.hasFiles}}
+        <div class="files-summary">
+          <span class="file-count">{{this.totalFileCount}} files</span>
+          <span class="file-size">{{this.formatFileSize this.totalFileSize}}</span>
+        </div>
+      {{/if}}
+    </div>
     
-    {{#if this.hasFiles}}
-      <div class="files-summary">
-        <span class="file-count">{{this.totalFileCount}} files</span>
-        <span class="file-size">{{this.formatFileSize this.totalFileSize}}</span>
-      </div>
-    {{/if}}
+    <div class="header-actions">
+      <button 
+        type="button" 
+        class="btn btn-primary btn-sm upload-btn"
+        {{on "click" this.handleUploadClick}}
+        title="Upload New Files"
+      >
+        📤 Upload Files
+      </button>
+    </div>
   </div>
 
   {{#if this.isLoading}}
@@ -117,7 +129,7 @@
     <div class="empty-state">
       <div class="empty-icon">📁</div>
       <h4>No files uploaded</h4>
-      <p>Upload files using the form above to attach documents to this permit.</p>
+      <p>Click "Upload Files" to attach documents to this permit.</p>
     </div>
   {{/if}}
 </div>
@@ -139,6 +151,12 @@
   align-items: center;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .files-header h3 {
   margin: 0;
   color: #333;
@@ -150,6 +168,32 @@
   gap: 16px;
   font-size: 14px;
   color: #666;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.upload-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #007bff;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.upload-btn:hover {
+  background: #28a745;
+  transform: translateY(-1px);
 }
 
 .file-count::before {
@@ -359,12 +403,24 @@
   .files-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 8px;
+    align-self: stretch;
   }
   
   .files-summary {
     align-self: stretch;
     justify-content: space-between;
+  }
+  
+  .header-actions {
+    align-self: stretch;
+    justify-content: flex-end;
   }
   
   .file-main-info {

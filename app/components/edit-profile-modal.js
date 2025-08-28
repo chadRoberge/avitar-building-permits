@@ -243,7 +243,7 @@ export default class EditProfileModalComponent extends Component {
           alert('Your email has been updated. You may need to log in again with your new email address.');
           // Optionally force logout here
           // localStorage.removeItem('auth_token');
-          // this.router.transitionTo('auth');
+          // this.router.transitionTo('home');
         }
         this.closeModal();
       }, 1500);
