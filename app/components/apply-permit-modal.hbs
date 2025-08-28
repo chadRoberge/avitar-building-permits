@@ -1,0 +1,790 @@
+{{#if @isOpen}}
+  <div class="modal-overlay commercial-apply-permit-modal" {{on "click" this.closeModal}}>
+    <div class="modal-content" {{on "click" this.stopPropagation}}>
+      <div class="modal-header">
+        <div>
+          <h3>Apply for Building Permit</h3>
+          <p class="municipality-name">{{this.municipality}}</p>
+        </div>
+        <button type="button" class="modal-close" {{on "click" this.closeModal}}>
+          ×
+        </button>
+      </div>
+
+      <div class="modal-body">
+        {{#if (eq this.currentStep "property-search")}}
+          <!-- Property Search Step -->
+          <div class="step-content">
+            <div class="step-header">
+              <h3>Step 1: Select Property</h3>
+              <p>Search for the property where the permit will be applied</p>
+            </div>
+
+            <div class="property-search">
+              <div class="search-input-group">
+                <input
+                  type="text"
+                  placeholder="Search by address, owner name, or map-lot-sub (e.g., 1-1-1)"
+                  value={{this.searchQuery}}
+                  {{on "input" this.updateSearchQuery}}
+                  {{on "keyup" this.searchProperties}}
+                  class="search-input"
+                />
+                <button 
+                  type="button" 
+                  class="search-btn"
+                  {{on "click" this.searchProperties}}
+                  disabled={{this.isSearching}}
+                >
+                  {{#if this.isSearching}}
+                    <span class="spinner"></span>
+                  {{else}}
+                    🔍
+                  {{/if}}
+                </button>
+              </div>
+
+              {{#if this.searchQuery}}
+                <div class="search-results">
+                  {{#if this.isSearching}}
+                    <div class="loading-state">
+                      <span class="spinner"></span>
+                      <span>Searching properties...</span>
+                    </div>
+                  {{else if this.noResults}}
+                    <div class="no-results">
+                      <div class="no-results-icon">🏠</div>
+                      <h4>No properties found</h4>
+                      <p>Try searching by:</p>
+                      <ul>
+                        <li>Street address (e.g., "123 Main Street")</li>
+                        <li>Owner name (e.g., "John Smith")</li>
+                        <li>Map-Lot-Sub (e.g., "1-1-1")</li>
+                      </ul>
+                    </div>
+                  {{else if this.searchResults.length}}
+                    <div class="results-header">
+                      <span class="results-count">{{this.searchResults.length}} properties found</span>
+                    </div>
+                    
+                    <div class="property-table">
+                      <div class="table-header">
+                        <div class="header-cell address-col">Address</div>
+                        <div class="header-cell owner-col">Owner</div>
+                        <div class="header-cell map-lot-col">Map-Lot-Sub</div>
+                        <div class="header-cell type-col">Type</div>
+                        <div class="header-cell select-col">Select</div>
+                      </div>
+                      {{#each this.searchResults as |property|}}
+                        <div 
+                          class="table-row {{if (eq this.selectedProperty property) 'selected'}}"
+                          {{on "click" (fn this.selectProperty property)}}
+                        >
+                          <div class="table-cell address-col">{{property.address}}</div>
+                          <div class="table-cell owner-col">{{property.owner}}</div>
+                          <div class="table-cell map-lot-col">{{property.mapLotSub}}</div>
+                          <div class="table-cell type-col">
+                            <span class="property-type">{{property.propertyType}}</span>
+                          </div>
+                          <div class="table-cell select-col">
+                            {{#if (eq this.selectedProperty property)}}
+                              <div class="selected-indicator">✓</div>
+                            {{else}}
+                              <div class="select-indicator">Select</div>
+                            {{/if}}
+                          </div>
+                        </div>
+                      {{/each}}
+                    </div>
+                  {{/if}}
+                </div>
+              {{else}}
+                <div class="search-help">
+                  <div class="help-icon">💡</div>
+                  <h4>How to search for properties</h4>
+                  <p>You can search using any of the following:</p>
+                  <ul>
+                    <li><strong>Address:</strong> "123 Main Street" or "Oak Avenue"</li>
+                    <li><strong>Owner Name:</strong> "John Smith" or "Smith"</li>
+                    <li><strong>Map-Lot-Sub:</strong> "1-1-1" or "10-5-3"</li>
+                  </ul>
+                </div>
+              {{/if}}
+            </div>
+          </div>
+
+          <!-- Step Actions -->
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" {{on "click" this.closeModal}}>
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              {{on "click" this.proceedWithProperty}}
+              disabled={{not this.selectedProperty}}
+            >
+              Continue with Selected Property
+            </button>
+          </div>
+        {{else if (eq this.currentStep "permit-type-selection")}}
+          <!-- Permit Type Selection Step -->
+          <div class="step-content">
+            <div class="step-header">
+              <h3>Step 2: Select Permit Type</h3>
+              <p>Choose the type of permit you need for this property</p>
+            </div>
+
+            <!-- Property Overview Section -->
+            <div class="property-overview-section">
+              <!-- Property Map Card -->
+              <div class="aerial-view-card">
+                <PropertyMap @property={{this.selectedProperty}} />
+              </div>
+
+              <!-- Property Information -->
+              <div class="property-info-card">
+                <div class="property-info-header">
+                  <h4>Property Information</h4>
+                </div>
+                <div class="property-details">
+                  <div class="detail-row">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">{{this.selectedProperty.address}}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Owner:</span>
+                    <span class="detail-value">{{this.selectedProperty.owner}}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Map-Lot-Sub:</span>
+                    <span class="detail-value">{{this.selectedProperty.mapLotSub}}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">Property Type:</span>
+                    <span class="detail-value property-type-badge">{{this.selectedProperty.propertyType}}</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">PID:</span>
+                    <span class="detail-value">{{this.selectedProperty.pid}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Permit Types Section -->
+            <div class="permit-types-section">
+              <h4>Available Permit Types</h4>
+              {{#if this.isLoadingPermitTypes}}
+                <div class="loading-state">
+                  <span class="spinner"></span>
+                  <span>Loading permit types...</span>
+                </div>
+              {{else if this.permitTypes.length}}
+                <div class="permit-types-grid">
+                  {{#each this.permitTypes as |permitType|}}
+                    <div 
+                      class="permit-type-card {{if (eq this.selectedPermitType permitType) 'selected'}}"
+                      {{on "click" (fn this.selectPermitType permitType)}}
+                    >
+                      <div class="permit-type-header">
+                        <h5>{{permitType.name}}</h5>
+                        <div class="permit-fee">${{permitType.fee}}</div>
+                      </div>
+                      <div class="permit-type-description">
+                        {{permitType.description}}
+                      </div>
+                      {{#if permitType.requirements}}
+                        <div class="permit-requirements">
+                          <strong>Requirements:</strong>
+                          <ul>
+                            {{#each permitType.requirements as |requirement|}}
+                              <li>{{requirement}}</li>
+                            {{/each}}
+                          </ul>
+                        </div>
+                      {{/if}}
+                      <div class="permit-type-footer">
+                        <span class="processing-time">Processing: {{permitType.processingTime}}</span>
+                      </div>
+                    </div>
+                  {{/each}}
+                </div>
+              {{else}}
+                <div class="no-permit-types">
+                  <div class="no-results-icon">📄</div>
+                  <h4>No permit types available</h4>
+                  <p>No permit types found for this municipality.</p>
+                </div>
+              {{/if}}
+            </div>
+          </div>
+
+          <!-- Step Actions -->
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" {{on "click" this.backToPropertySearch}}>
+              ← Back to Property Selection
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              {{on "click" this.proceedWithPermitType}}
+              disabled={{not this.selectedPermitType}}
+            >
+              Continue with Selected Permit
+            </button>
+          </div>
+        {{else if (eq this.currentStep "application-form")}}
+          <!-- Application Form Step -->
+          <div class="step-content">
+            <div class="step-header">
+              <h3>Step 3: Application Details</h3>
+              <p>Provide the required information for your {{this.selectedPermitType.name}} application</p>
+            </div>
+
+            <!-- Application Summary -->
+            <div class="application-summary">
+              <div class="summary-section">
+                <h4>Application Summary</h4>
+                <div class="summary-details">
+                  <div class="summary-row">
+                    <span class="summary-label">Property:</span>
+                    <span class="summary-value">{{this.selectedProperty.address}}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">Permit Type:</span>
+                    <span class="summary-value">{{this.selectedPermitType.name}}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">Fee:</span>
+                    <span class="summary-value fee-amount">${{this.selectedPermitType.fee}}</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">Processing Time:</span>
+                    <span class="summary-value">{{this.selectedPermitType.processingTime}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Form -->
+            <div class="application-form">
+              <h4>Application Information</h4>
+              <div class="form-fields">
+                {{#each this.formFields as |field|}}
+                  <div class="form-field {{if field.required 'required'}}">
+                    <label for="{{field.id}}" class="form-label">
+                      {{field.label}}
+                      {{#if field.required}}<span class="required-indicator">*</span>{{/if}}
+                    </label>
+                    
+                    {{#if (eq field.type "textarea")}}
+                      <textarea
+                        id="{{field.id}}"
+                        class="form-input"
+                        placeholder="{{field.placeholder}}"
+                        value="{{this.getSelectedValue field.id}}"
+                        {{on "input" (fn this.updateFormField field.id)}}
+                        rows="4"
+                      ></textarea>
+                    {{else if (eq field.type "select")}}
+                      <div class="custom-select" data-field-id="{{field.id}}">
+                        <div 
+                          class="select-display"
+                          {{on "click" (fn this.toggleDropdown field.id)}}
+                        >
+                          {{#if (this.getSelectedValue field.id)}}
+                            {{this.getSelectedValue field.id}}
+                          {{else}}
+                            Select {{field.label}}
+                          {{/if}}
+                          <span class="select-arrow">▼</span>
+                        </div>
+                        <div class="select-options" style="display: none;">
+                          {{#each field.options as |option|}}
+                            <div  
+                              class="select-option {{if (eq (this.getSelectedValue field.id) option) 'selected'}}"
+                              {{on "click" (fn this.selectOption field.id option)}}
+                            >
+                              {{option}}
+                            </div>
+                          {{/each}}
+                        </div>
+                      </div>
+                    {{else if (eq field.type "checkbox")}}
+                      <div class="checkbox-debug">
+                        <p><strong>{{field.label}}</strong> (checkbox field)</p>
+                        <ul>
+                          {{#each field.options as |option index|}}
+                          <label class="checkbox-label" for="{{field.id}}-{{index}}">
+                          <input 
+                            type="checkbox" 
+                            id="{{field.id}}-{{index}}" 
+                            name="{{field.label}}" 
+                            checked={{if this.applicationData.[field.id] (includes this.applicationData.[field.id] option) false}}
+                            value="{{option}}" 
+                            {{on "change" (fn this.updateCheckboxField field.id option)}}
+                          >
+                          <span class="checkbox-text">
+                            {{option}}
+                            {{#if (and this.applicationData.[field.id] (includes this.applicationData.[field.id] option))}}
+                              ✓
+                            {{/if}}
+                          </span>
+                        </label>
+                          {{/each}}
+                        </ul>
+                      </div>
+                    {{else if (eq field.type 'currency')}}
+                      <input
+                        id="{{field.id}}"
+                        type="number"
+                        class="form-input"
+                        placeholder="{{field.placeholder}}"
+                        value="{{this.getSelectedValue field.id}}"
+                        {{on "input" (fn this.updateFormField field.id)}}
+                        step="0.01"
+                        min="0"
+                      />
+                    {{else}}
+                      <input
+                        id="{{field.id}}"
+                        type="{{field.type}}"
+                        class="form-input"
+                        placeholder="{{field.placeholder}}"
+                        value="{{this.getSelectedValue field.id}}"
+                        {{on "input" (fn this.updateFormField field.id)}}
+                      />
+                    {{/if}}
+                  </div>
+                {{/each}}
+              </div>
+            </div>
+
+            <!-- File Upload Section -->
+            <div class="file-upload-section">
+              <h4>Supporting Documents</h4>
+              {{#if this.selectedPermitType.requiredDocuments.length}}
+                <div class="required-documents">
+                  <h5>Required Documents</h5>
+                  <p class="required-docs-description">The following documents are required for this permit type:</p>
+                  <ul class="required-docs-list">
+                    {{#each this.selectedPermitType.requiredDocuments as |doc|}}
+                      <li class="required-doc-item {{if doc.required 'required' 'optional'}}">
+                        <strong>{{doc.name}}</strong>
+                        {{#if doc.required}}
+                          <span class="required-indicator">*</span>
+                        {{else}}
+                          <span class="optional-indicator">(optional)</span>
+                        {{/if}}
+                        {{#if doc.description}}
+                          <div class="doc-description">{{doc.description}}</div>
+                        {{/if}}
+                        {{#if doc.allowedFormats.length}}
+                          <div class="doc-formats">Accepted formats: {{join doc.allowedFormats ", "}}</div>
+                        {{/if}}
+                      </li>
+                    {{/each}}
+                  </ul>
+                </div>
+              {{/if}}
+              <p class="file-upload-description">
+                {{#if this.selectedPermitType.requiredDocuments.length}}
+                  Upload the required documents listed above along with any additional supporting documents.
+                {{else}}
+                  Upload any supporting documents for your permit application (optional).
+                {{/if}}
+              </p>
+              
+              <!-- File Type and Description -->
+              <div class="upload-options">
+                <div class="file-type-selector">
+                  <label for="file-type">File Type:</label>
+                  <select id="file-type" value={{this.selectedFileType}} {{on "change" this.updateFileType}}>
+                    {{#each this.fileTypes as |type|}}
+                      <option value={{type.value}}>{{type.label}}</option>
+                    {{/each}}
+                  </select>
+                </div>
+                
+                <div class="file-description">
+                  <label for="file-description">Description (optional):</label>
+                  <input 
+                    type="text" 
+                    id="file-description" 
+                    placeholder="Brief description of the files"
+                    value={{this.fileDescription}}
+                    {{on "input" this.updateFileDescription}}
+                  >
+                </div>
+              </div>
+
+              <!-- Drag and Drop Area -->
+              <div class="file-drop-zone {{if this.isDragOver 'drag-over'}}"
+                   {{on "dragover" this.handleDragOver}}
+                   {{on "dragleave" this.handleDragLeave}}
+                   {{on "drop" this.handleDrop}}>
+                
+                <div class="drop-zone-content">
+                  <div class="upload-icon">📎</div>
+                  <p class="drop-text">
+                    Drag and drop files here
+                  </p>
+                  <div class="drop-zone-buttons">
+                    <label class="btn btn-outline-primary file-input-label">
+                      📁 Choose Files
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                        class="file-input"
+                        {{on "change" this.handleFileSelect}}
+                      >
+                    </label>
+                  </div>
+                  <p class="upload-limits">
+                    Maximum 5 files, 10MB each<br>
+                    Allowed: Images, PDF, Word, Excel, Text, ZIP
+                  </p>
+                </div>
+              </div>
+
+              <!-- Selected Files List -->
+              {{#if this.hasSelectedFiles}}
+                <div class="selected-files">
+                  <h5>Selected Files ({{this.selectedFiles.length}}/5)</h5>
+                  <ul class="file-list">
+                    {{#each this.selectedFiles as |fileObj|}}
+                      <li class="file-item">
+                        <div class="file-info">
+                          <span class="file-name">{{fileObj.name}}</span>
+                          <span class="file-size">{{this.formatFileSize fileObj.size}}</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          class="remove-file-btn"
+                          {{on "click" (fn this.removeFile fileObj.id)}}
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    {{/each}}
+                  </ul>
+                  <button 
+                    type="button" 
+                    class="btn btn-secondary clear-files-btn"
+                    {{on "click" this.clearFiles}}
+                  >
+                    🗑️ Clear All Files
+                  </button>
+                </div>
+              {{/if}}
+
+              {{#if this.fileError}}
+                <div class="file-error-message">
+                  <span class="error-icon">⚠️</span>
+                  {{this.fileError}}
+                </div>
+              {{/if}}
+            </div>
+          </div>
+
+          <!-- Step Actions -->
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" {{on "click" this.backToPermitSelection}}>
+              ← Back to Permit Selection
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              {{on "click" this.submitApplication}}
+              disabled={{this.isSubmittingApplication}}
+            >
+              {{#if this.isSubmittingApplication}}
+                {{#if this.hasSelectedFiles}}
+                  Submitting & Uploading Files...
+                {{else}}
+                  Submitting Application...
+                {{/if}}
+              {{else}}
+                Submit Application
+              {{/if}}
+            </button>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+{{/if}}
+
+<style>
+/* Required Documents Styles */
+.required-documents {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.required-documents h5 {
+  margin: 0 0 8px 0;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.required-docs-description {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.required-docs-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.required-doc-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.required-doc-item:last-child {
+  border-bottom: none;
+}
+
+.required-doc-item.required .required-indicator {
+  color: #dc3545;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+.required-doc-item.optional .optional-indicator {
+  color: #6c757d;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.doc-description {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.doc-formats {
+  font-size: 11px;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+/* File Upload Section Styles */
+.file-upload-section {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.file-upload-section h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 1.1em;
+}
+
+.file-upload-description {
+  color: #666;
+  margin: 0 0 16px 0;
+  font-size: 0.9em;
+}
+
+.upload-options {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.file-type-selector label,
+.file-description label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9em;
+}
+
+.file-type-selector select,
+.file-description input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.file-drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 30px 20px;
+  text-align: center;
+  background: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-over {
+  border-color: var(--primary-color);
+  background: #f0f8ff;
+}
+
+.drop-zone-content {
+  pointer-events: none;
+}
+
+.upload-icon {
+  font-size: 2.5em;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.drop-text {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #666;
+}
+
+.drop-zone-buttons {
+  margin-bottom: 12px;
+}
+
+.file-input-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 2px solid var(--primary-color);
+  border-radius: 6px;
+  background: white;
+  color: var(--primary-color);
+  cursor: pointer;
+  pointer-events: all;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.file-input-label:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-limits {
+  font-size: 11px;
+  color: #888;
+  margin: 0;
+}
+
+.selected-files {
+  margin-top: 16px;
+}
+
+.selected-files h5 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 1em;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #666;
+}
+
+.remove-file-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.remove-file-btn:hover {
+  background: #c82333;
+}
+
+.clear-files-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.file-error-message {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .upload-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .file-drop-zone {
+    padding: 20px 16px;
+  }
+}
+</style>

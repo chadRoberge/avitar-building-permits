@@ -27,6 +27,12 @@ export default class MunicipalPermitTypesNewController extends Controller {
   
   // Document uploads
   @tracked uploadedDocuments = [];
+  
+  // Document requirements
+  @tracked activeDocumentTab = 'predefined';
+  @tracked selectedDocuments = [];
+  @tracked documentRequirements = {}; // Track whether each document is required
+  @tracked customDocuments = [];
 
   // Department review tracking
   @tracked selectedDepartments = [];
@@ -280,6 +286,145 @@ export default class MunicipalPermitTypesNewController extends Controller {
       description: 'Inspects environmental compliance and mitigation measures',
       icon: '🌿',
       estimatedDuration: 90
+    }
+  ];
+
+  // Available file formats for custom documents
+  availableFormats = [
+    { id: 'pdf', name: 'PDF' },
+    { id: 'doc', name: 'Word Document' },
+    { id: 'docx', name: 'Word Document (New)' },
+    { id: 'jpg', name: 'JPEG Image' },
+    { id: 'jpeg', name: 'JPEG Image' },
+    { id: 'png', name: 'PNG Image' },
+    { id: 'gif', name: 'GIF Image' },
+    { id: 'xls', name: 'Excel Spreadsheet' },
+    { id: 'xlsx', name: 'Excel Spreadsheet (New)' },
+    { id: 'dwg', name: 'AutoCAD Drawing' },
+    { id: 'dxf', name: 'AutoCAD Exchange' }
+  ];
+
+  // Common document types
+  commonDocuments = [
+    {
+      id: 'architectural-plans',
+      name: 'Architectural Plans',
+      description: 'Detailed architectural drawings and floor plans',
+      icon: '📐',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 25
+    },
+    {
+      id: 'structural-plans',
+      name: 'Structural Plans',
+      description: 'Structural engineering drawings and calculations',
+      icon: '🏗️',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 25
+    },
+    {
+      id: 'site-plan',
+      name: 'Site Plan',
+      description: 'Property survey and site layout plan',
+      icon: '🗺️',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 15
+    },
+    {
+      id: 'electrical-plans',
+      name: 'Electrical Plans',
+      description: 'Electrical system drawings and load calculations',
+      icon: '⚡',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 20
+    },
+    {
+      id: 'plumbing-plans',
+      name: 'Plumbing Plans',
+      description: 'Plumbing system layouts and specifications',
+      icon: '🚰',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 20
+    },
+    {
+      id: 'hvac-plans',
+      name: 'HVAC Plans',
+      description: 'Heating, ventilation, and air conditioning plans',
+      icon: '🌡️',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 20
+    },
+    {
+      id: 'energy-calculations',
+      name: 'Energy Calculations',
+      description: 'Energy efficiency calculations and compliance forms',
+      icon: '🔋',
+      allowedFormats: ['pdf', 'xls', 'xlsx'],
+      maxSize: 10
+    },
+    {
+      id: 'contractor-license',
+      name: 'Contractor License',
+      description: 'Valid contractor license and insurance certificate',
+      icon: '📜',
+      allowedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
+      maxSize: 5
+    },
+    {
+      id: 'property-deed',
+      name: 'Property Deed',
+      description: 'Property ownership documentation',
+      icon: '🏠',
+      allowedFormats: ['pdf', 'jpg', 'jpeg', 'png'],
+      maxSize: 5
+    },
+    {
+      id: 'zoning-compliance',
+      name: 'Zoning Compliance Letter',
+      description: 'Letter confirming project meets zoning requirements',
+      icon: '📋',
+      allowedFormats: ['pdf'],
+      maxSize: 5
+    },
+    {
+      id: 'environmental-assessment',
+      name: 'Environmental Assessment',
+      description: 'Environmental impact study or assessment',
+      icon: '🌿',
+      allowedFormats: ['pdf', 'doc', 'docx'],
+      maxSize: 15
+    },
+    {
+      id: 'fire-safety-plan',
+      name: 'Fire Safety Plan',
+      description: 'Fire safety and egress plan',
+      icon: '🔥',
+      allowedFormats: ['pdf', 'dwg', 'dxf'],
+      maxSize: 15
+    },
+    {
+      id: 'accessibility-compliance',
+      name: 'ADA Compliance Documentation',
+      description: 'Americans with Disabilities Act compliance documentation',
+      icon: '♿',
+      allowedFormats: ['pdf', 'doc', 'docx'],
+      maxSize: 10
+    },
+    {
+      id: 'soil-report',
+      name: 'Soil/Geotechnical Report',
+      description: 'Soil conditions and geotechnical analysis report',
+      icon: '🪨',
+      allowedFormats: ['pdf', 'doc', 'docx'],
+      maxSize: 20
+    },
+    {
+      id: 'traffic-impact-study',
+      name: 'Traffic Impact Study',
+      description: 'Analysis of traffic impact from proposed development',
+      icon: '🚦',
+      allowedFormats: ['pdf', 'doc', 'docx'],
+      maxSize: 15
     }
   ];
 
@@ -775,6 +920,99 @@ export default class MunicipalPermitTypesNewController extends Controller {
   }
 
   @action
+  setDocumentTab(tab) {
+    this.activeDocumentTab = tab;
+  }
+
+  @action
+  toggleDocument(documentId) {
+    if (this.selectedDocuments.includes(documentId)) {
+      this.selectedDocuments = this.selectedDocuments.filter(id => id !== documentId);
+      // Remove from requirements when deselected
+      const requirements = { ...this.documentRequirements };
+      delete requirements[documentId];
+      this.documentRequirements = requirements;
+    } else {
+      this.selectedDocuments = [...this.selectedDocuments, documentId];
+      // Default to required when first selected
+      this.documentRequirements = {
+        ...this.documentRequirements,
+        [documentId]: true
+      };
+    }
+  }
+
+  @action
+  toggleDocumentRequired(documentId) {
+    this.documentRequirements = {
+      ...this.documentRequirements,
+      [documentId]: !this.documentRequirements[documentId]
+    };
+  }
+
+  @action
+  addCustomDocument() {
+    const newDocument = {
+      name: '',
+      description: '',
+      allowedFormats: ['pdf'],
+      maxSize: 10,
+      required: false
+    };
+    this.customDocuments = [...this.customDocuments, newDocument];
+  }
+
+  @action
+  removeCustomDocument(index) {
+    this.customDocuments = this.customDocuments.filter((_, i) => i !== index);
+  }
+
+  @action
+  updateCustomDocumentName(index, event) {
+    const documents = [...this.customDocuments];
+    documents[index].name = event.target.value;
+    this.customDocuments = documents;
+  }
+
+  @action
+  updateCustomDocumentDescription(index, event) {
+    const documents = [...this.customDocuments];
+    documents[index].description = event.target.value;
+    this.customDocuments = documents;
+  }
+
+  @action
+  updateCustomDocumentMaxSize(index, event) {
+    const documents = [...this.customDocuments];
+    documents[index].maxSize = parseInt(event.target.value) || 10;
+    this.customDocuments = documents;
+  }
+
+  @action
+  toggleCustomDocumentRequired(index) {
+    const documents = [...this.customDocuments];
+    documents[index].required = !documents[index].required;
+    this.customDocuments = documents;
+  }
+
+  @action
+  toggleCustomDocumentFormat(index, formatId) {
+    const documents = [...this.customDocuments];
+    const document = documents[index];
+    
+    if (document.allowedFormats.includes(formatId)) {
+      // Don't allow removing the last format
+      if (document.allowedFormats.length > 1) {
+        document.allowedFormats = document.allowedFormats.filter(f => f !== formatId);
+      }
+    } else {
+      document.allowedFormats = [...document.allowedFormats, formatId];
+    }
+    
+    this.customDocuments = documents;
+  }
+
+  @action
   toggleDefaultQuestion(question) {
     question.isIncluded = !question.isIncluded;
   }
@@ -912,6 +1150,12 @@ export default class MunicipalPermitTypesNewController extends Controller {
     this.selectedBuildingCodes = [];
     this.requiresResidentialEnergyCode = false;
     this.uploadedDocuments = [];
+
+    // Reset document requirements
+    this.activeDocumentTab = 'predefined';
+    this.selectedDocuments = [];
+    this.documentRequirements = {};
+    this.customDocuments = [];
 
     // Explicitly reset arrays
     this.selectedDepartments = [];
@@ -1051,6 +1295,7 @@ export default class MunicipalPermitTypesNewController extends Controller {
           };
         }),
         formFields: this.buildFormFields(),
+        requiredDocuments: this.buildRequiredDocuments(),
         isActive: true,
       };
 
@@ -1104,6 +1349,21 @@ export default class MunicipalPermitTypesNewController extends Controller {
     return this.selectedDepartments && this.selectedDepartments.includes(departmentId);
   }
 
+  // Helper method to check if document is selected
+  isDocumentSelected = (documentId) => {
+    return this.selectedDocuments.includes(documentId);
+  }
+
+  // Helper method to check if document is required
+  isDocumentRequired = (documentId) => {
+    return this.documentRequirements[documentId] === true;
+  }
+
+  // Helper method to get document by ID
+  getDocumentById = (documentId) => {
+    return this.commonDocuments.find(doc => doc.id === documentId);
+  }
+
   buildFormFields() {
     const fields = [];
 
@@ -1137,5 +1397,38 @@ export default class MunicipalPermitTypesNewController extends Controller {
     });
 
     return fields;
+  }
+
+  buildRequiredDocuments() {
+    const documents = [];
+
+    // Add selected common documents
+    this.selectedDocuments.forEach(docId => {
+      const commonDoc = this.commonDocuments.find(doc => doc.id === docId);
+      if (commonDoc) {
+        documents.push({
+          name: commonDoc.name,
+          description: commonDoc.description,
+          required: this.documentRequirements[docId] === true,
+          allowedFormats: commonDoc.allowedFormats,
+          maxSize: commonDoc.maxSize
+        });
+      }
+    });
+
+    // Add custom documents
+    this.customDocuments.forEach(doc => {
+      if (doc.name.trim()) {
+        documents.push({
+          name: doc.name,
+          description: doc.description,
+          required: doc.required,
+          allowedFormats: doc.allowedFormats,
+          maxSize: doc.maxSize
+        });
+      }
+    });
+
+    return documents;
   }
 }
