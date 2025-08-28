@@ -75,81 +75,86 @@ export default class MunicipalPermitTypesEditController extends Controller {
   }
 
   // Available review departments
-  availableDepartments = [
-    {
-      id: 'zoning',
-      name: 'Zoning Department',
-      description: 'Reviews compliance with zoning regulations and land use requirements',
-      icon: '📋'
-    },
-    {
-      id: 'planning',
-      name: 'Planning Department', 
-      description: 'Reviews site plans, development standards, and comprehensive plan compliance',
-      icon: '🗺️'
-    },
-    {
-      id: 'public-works',
-      name: 'Public Works',
-      description: 'Reviews infrastructure, utilities, drainage, and traffic impact',
-      icon: '🚧'
-    },
-    {
-      id: 'fire',
-      name: 'Fire Department',
-      description: 'Reviews fire safety, access, and code compliance',
-      icon: '🚒'
-    },
-    {
-      id: 'building',
-      name: 'Building Department',
-      description: 'Reviews building codes, structural plans, and construction standards',
-      icon: '🏗️'
-    }
-  ];
+  get availableDepartments() {
+    return [
+      {
+        id: 'zoning',
+        name: 'Zoning Department',
+        description: 'Reviews compliance with zoning regulations and land use requirements',
+        icon: '📋'
+      },
+      {
+        id: 'planning',
+        name: 'Planning Department', 
+        description: 'Reviews site plans, development standards, and comprehensive plan compliance',
+        icon: '🗺️'
+      },
+      {
+        id: 'public-works',
+        name: 'Public Works',
+        description: 'Reviews infrastructure, utilities, drainage, and traffic impact',
+        icon: '🚧'
+      },
+      {
+        id: 'fire',
+        name: 'Fire Department',
+        description: 'Reviews fire safety, access, and code compliance',
+        icon: '🚒'
+      },
+      {
+        id: 'building',
+        name: 'Building Department',
+        description: 'Reviews building codes, structural plans, and construction standards',
+        icon: '🏗️'
+      }
+    ];
+  }
 
   // Load predefined categories (same as new controller)
-  predefinedCategories = [
-    {
-      id: 'building',
-      name: 'Building Permit',
-      icon: '🏗️',
-      description: 'New construction, additions, and structural modifications',
-    },
-    {
-      id: 'zoning',
-      name: 'Zoning Permit',
-      icon: '📋',
-      description: 'Land use compliance and zoning variances',
-    },
-    {
-      id: 'electrical',
-      name: 'Electrical Permit',
-      icon: '⚡',
-      description: 'Electrical installations and modifications',
-    },
-    {
-      id: 'plumbing',
-      name: 'Plumbing Permit',
-      icon: '🔧',
-      description: 'Plumbing installations and repairs',
-    },
-    {
-      id: 'mechanical',
-      name: 'Mechanical Permit',
-      icon: '🌡️',
-      description: 'HVAC and mechanical systems',
-    },
-    {
-      id: 'specialized',
-      name: 'Specialized Permits',
-      icon: '🛠️',
-      description: 'Special purpose permits and unique requirements',
-    },
-  ];
+  get predefinedCategories() {
+    return [
+      {
+        id: 'building',
+        name: 'Building Permit',
+        icon: '🏗️',
+        description: 'New construction, additions, and structural modifications',
+      },
+      {
+        id: 'zoning',
+        name: 'Zoning Permit',
+        icon: '📋',
+        description: 'Land use compliance and zoning variances',
+      },
+      {
+        id: 'electrical',
+        name: 'Electrical Permit',
+        icon: '⚡',
+        description: 'Electrical installations and modifications',
+      },
+      {
+        id: 'plumbing',
+        name: 'Plumbing Permit',
+        icon: '🔧',
+        description: 'Plumbing installations and repairs',
+      },
+      {
+        id: 'mechanical',
+        name: 'Mechanical Permit',
+        icon: '🌡️',
+        description: 'HVAC and mechanical systems',
+      },
+      {
+        id: 'specialized',
+        name: 'Specialized Permits',
+        icon: '🛠️',
+        description: 'Special purpose permits and unique requirements',
+      },
+    ];
+  }
 
   // Common document types available for selection
-  commonDocuments = [
+  get commonDocuments() {
+    return [
     {
       id: 'architectural-plans',
       name: 'Architectural Plans',
@@ -270,7 +275,8 @@ export default class MunicipalPermitTypesEditController extends Controller {
       allowedFormats: ['jpg', 'png', 'pdf'],
       maxSize: 25
     }
-  ];
+    ];
+  }
 
   // Initialize form with existing permit type data
   initializeForm(permitType) {
@@ -603,12 +609,14 @@ export default class MunicipalPermitTypesEditController extends Controller {
   }
 
   // Helper method to check if question type needs options
-  questionTypeNeedsOptions = (questionType) => {
+  @action
+  questionTypeNeedsOptions(questionType) {
     return ['select', 'radio', 'checkbox'].includes(questionType);
   }
 
   // Helper method to check if department is selected
-  isDepartmentSelected = (departmentId) => {
+  @action
+  isDepartmentSelected(departmentId) {
     try {
       if (!this || !departmentId) {
         return false;
@@ -786,14 +794,7 @@ export default class MunicipalPermitTypesEditController extends Controller {
       console.log('Final feePercentage:', this.feePercentage);
       console.log('Final minimumFee:', this.minimumFee);
       
-      // Force DOM update for select element
-      setTimeout(() => {
-        const selectElement = document.getElementById('additional-fee-structure');
-        if (selectElement) {
-          selectElement.value = this.feeStructureType;
-          console.log('Forced select element value to:', this.feeStructureType);
-        }
-      }, 100);
+      // DOM updates will happen automatically via Ember's data binding
       
       return;
     }
@@ -875,7 +876,8 @@ export default class MunicipalPermitTypesEditController extends Controller {
   }
 
   // Department checklist methods
-  getDepartmentInfo = (departmentId) => {
+  @action
+  getDepartmentInfo(departmentId) {
     return this.availableDepartments.find(dept => dept.id === departmentId) || {
       id: departmentId,
       name: departmentId,
@@ -883,7 +885,8 @@ export default class MunicipalPermitTypesEditController extends Controller {
     };
   }
 
-  getDepartmentChecklist = (departmentId) => {
+  @action
+  getDepartmentChecklist(departmentId) {
     return this.departmentChecklists[departmentId] || [];
   }
 
@@ -986,12 +989,13 @@ export default class MunicipalPermitTypesEditController extends Controller {
     };
   }
 
-  isDocumentSelected = (documentId) => {
+  @action
+  isDocumentSelected(documentId) {
     return this.selectedDocuments.includes(documentId);
   }
 
   @action
-  showCustomDocumentForm() {
+  openCustomDocumentForm() {
     this.showCustomDocumentForm = true;
     this.customDocumentName = '';
     this.customDocumentDescription = '';

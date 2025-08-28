@@ -190,4 +190,9 @@ export default class MunicipalPermitTypesIndexController extends Controller {
       this.closeDeleteModal();
     }
   }
+
+  @action
+  editPermitType(permitTypeId) {
+    this.router.transitionTo('municipal.permit-types.edit', permitTypeId);
+  }
 }

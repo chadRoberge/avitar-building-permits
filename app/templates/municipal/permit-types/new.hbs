@@ -126,8 +126,8 @@
                             type="radio" 
                             name="requirement-{{document.id}}" 
                             value="required"
-                            checked={{eq (get this.documentRequirements document.id).requirement 'required'}}
-                            {{on "change" (fn this.setDocumentRequirement document.id 'required')}}
+                            checked={{eq (get (get this.documentRequirements document.id) "requirement") "required"}}
+                            {{on "change" (fn this.setDocumentRequirement document.id "required")}}
                           />
                           Required
                         </label>
@@ -136,8 +136,8 @@
                             type="radio" 
                             name="requirement-{{document.id}}" 
                             value="optional"
-                            checked={{eq (get this.documentRequirements document.id).requirement 'optional'}}
-                            {{on "change" (fn this.setDocumentRequirement document.id 'optional')}}
+                            checked={{eq (get (get this.documentRequirements document.id) "requirement") "optional"}}
+                            {{on "change" (fn this.setDocumentRequirement document.id "optional")}}
                           />
                           Optional
                         </label>

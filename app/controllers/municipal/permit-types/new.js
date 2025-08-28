@@ -1107,23 +1107,27 @@ export default class MunicipalPermitTypesNewController extends Controller {
   }
 
   // Helper method to check if inspection is selected
-  isInspectionSelected = (inspectionType) => {
+  @action
+  isInspectionSelected(inspectionType) {
     return this.selectedInspections && this.selectedInspections.includes(inspectionType);
   }
 
   // Helper method to get inspection name by type
-  getInspectionName = (inspectionType) => {
+  @action
+  getInspectionName(inspectionType) {
     const inspection = this.availableInspections.find(insp => insp.type === inspectionType);
     return inspection ? inspection.name : inspectionType;
   }
 
   // Helper method to check if building code is selected
-  isBuildingCodeSelected = (codeId) => {
+  @action
+  isBuildingCodeSelected(codeId) {
     return this.selectedBuildingCodes.includes(codeId);
   }
 
   // Helper method to format file size
-  formatFileSize = (bytes) => {
+  @action
+  formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -1340,27 +1344,32 @@ export default class MunicipalPermitTypesNewController extends Controller {
   }
 
   // Helper method to check if question type needs options
-  questionTypeNeedsOptions = (questionType) => {
+  @action
+  questionTypeNeedsOptions(questionType) {
     return ['select', 'radio', 'checkbox'].includes(questionType);
   }
 
   // Helper method to check if department is selected  
-  isDepartmentSelected = (departmentId) => {
+  @action
+  isDepartmentSelected(departmentId) {
     return this.selectedDepartments && this.selectedDepartments.includes(departmentId);
   }
 
   // Helper method to check if document is selected
-  isDocumentSelected = (documentId) => {
+  @action
+  isDocumentSelected(documentId) {
     return this.selectedDocuments.includes(documentId);
   }
 
   // Helper method to check if document is required
-  isDocumentRequired = (documentId) => {
+  @action
+  isDocumentRequired(documentId) {
     return this.documentRequirements[documentId] === true;
   }
 
   // Helper method to get document by ID
-  getDocumentById = (documentId) => {
+  @action
+  getDocumentById(documentId) {
     return this.commonDocuments.find(doc => doc.id === documentId);
   }
 

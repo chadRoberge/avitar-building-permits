@@ -87,10 +87,14 @@
 
             {{#if this.canManagePermitTypes}}
               <div class="card-actions">
-                <LinkTo @route="municipal.permit-types.edit" @model={{permitType.id}} class="btn btn-outline">
+                <button 
+                  type="button"
+                  class="btn btn-outline"
+                  {{on "click" (fn this.editPermitType permitType.id)}}
+                >
                   <span class="btn-icon">✏️</span>
                   Edit
-                </LinkTo>
+                </button>
                 <button 
                   type="button" 
                   class="btn btn-outline {{if permitType.isActive 'warning' 'success'}}"
